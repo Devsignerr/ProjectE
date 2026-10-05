@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "CaveFx.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Web0"
+    },
+    {
+      "Slice": "Web1"
+    }
+  ]
+}

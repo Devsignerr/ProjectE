@@ -22,7 +22,14 @@
         "DropItem": "Potion",
         "DropChance": 0.15,
         "Radius": 48,
-        "RespawnTime": 12
+        "RespawnTime": 12,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
       }
     },
     {
@@ -45,7 +52,14 @@
         "DropItem": "Ether",
         "DropChance": 0.15,
         "Radius": 50,
-        "RespawnTime": 14
+        "RespawnTime": 14,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
       }
     },
     {
@@ -68,7 +82,14 @@
         "DropItem": "Potion",
         "DropChance": 0.2,
         "Radius": 48,
-        "RespawnTime": 16
+        "RespawnTime": 16,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
       }
     },
     {
@@ -91,7 +112,14 @@
         "DropItem": "HiPotion",
         "DropChance": 0.1,
         "Radius": 46,
-        "RespawnTime": 18
+        "RespawnTime": 18,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
       }
     },
     {
@@ -114,7 +142,14 @@
         "DropItem": "Ether",
         "DropChance": 0.15,
         "Radius": 50,
-        "RespawnTime": 16
+        "RespawnTime": 16,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
       }
     },
     {
@@ -137,7 +172,104 @@
         "DropItem": "Elixir",
         "DropChance": 1.0,
         "Radius": 115,
-        "RespawnTime": 0
+        "RespawnTime": 0,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "Name": "CaveBat",
+      "Values": {
+        "DisplayName": "동굴 흡혈 박쥐",
+        "Behavior": "Flyer",
+        "MaxHealth": 30,
+        "ContactDamage": 8,
+        "AttackDamage": 14,
+        "MoveSpeed": 430,
+        "AggroRange": 1000,
+        "AttackRange": 460,
+        "AttackCooldown": 1.9,
+        "WindupTime": 0.4,
+        "ProjectileSpeed": 1250,
+        "GoldMin": 3,
+        "GoldMax": 6,
+        "Exp": 11,
+        "DropItem": "Ether",
+        "DropChance": 0.2,
+        "Radius": 50,
+        "RespawnTime": 14,
+        "Look": "Bat",
+        "Tint": [
+          0.62,
+          0.92,
+          1.45,
+          1.0
+        ]
+      }
+    },
+    {
+      "Name": "CrystalSlime",
+      "Values": {
+        "DisplayName": "수정 슬라임",
+        "Behavior": "Hopper",
+        "MaxHealth": 58,
+        "ContactDamage": 13,
+        "AttackDamage": 13,
+        "MoveSpeed": 280,
+        "AggroRange": 750,
+        "AttackRange": 0,
+        "AttackCooldown": 1.0,
+        "WindupTime": 0.0,
+        "ProjectileSpeed": 0,
+        "GoldMin": 4,
+        "GoldMax": 7,
+        "Exp": 14,
+        "DropItem": "HiPotion",
+        "DropChance": 0.15,
+        "Radius": 50,
+        "RespawnTime": 14,
+        "Look": "Slime",
+        "Tint": [
+          0.55,
+          1.05,
+          1.7,
+          1.0
+        ]
+      }
+    },
+    {
+      "Name": "SpiderQueen",
+      "Values": {
+        "DisplayName": "수정 거미 여왕",
+        "Behavior": "Boss",
+        "MaxHealth": 1500,
+        "ContactDamage": 14,
+        "AttackDamage": 22,
+        "MoveSpeed": 240,
+        "AggroRange": 780,
+        "AttackRange": 520,
+        "AttackCooldown": 1.35,
+        "WindupTime": 0.7,
+        "ProjectileSpeed": 950,
+        "GoldMin": 220,
+        "GoldMax": 220,
+        "Exp": 220,
+        "DropItem": "Elixir",
+        "DropChance": 1.0,
+        "Radius": 125,
+        "RespawnTime": 0,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
       }
     }
   ]

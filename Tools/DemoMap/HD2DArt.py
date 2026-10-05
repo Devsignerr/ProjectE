@@ -1604,5 +1604,172 @@ def WriteAll(Folder):
 	WriteFlipbook(Folder, "Fx_Ring", "Fx.esprite", ["Ring"], 1.0)
 
 
+# ---- 3차: 동굴 유적 (BuildHD2DCave.py가 WriteCaveArt를 부른다) — 보스 "수정 거미 여왕", 동굴 효과(경고 판·거미줄 탄·수정 가시), 동굴 아이템 아이콘 ----
+QUEEN, QUEEN_L, QUEEN_D = (104, 74, 150), (156, 120, 202), (62, 42, 96)
+QLEG, QLEG_L = (82, 60, 120), (138, 110, 180)
+CRYSTAL, CRYSTAL_L, CRYSTAL_D = (110, 214, 255), (226, 250, 255), (58, 126, 206)
+AMETHYST, AMETHYST_L = (176, 104, 250), (232, 196, 255)
+QUEEN_EYE = (255, 66, 96)
+QUEEN_POSES = {"Dormant": 1, "Idle": 2, "Walk": 4, "Rear": 1, "Spit": 1, "Crouch": 1, "Leap": 1}
+
+
+def _ThickLine(C, X0, Y0, X1, Y1, Col, ColL=None):
+	C.Line(X0, Y0, X1, Y1, Col)
+	C.Line(X0 + 1, Y0, X1 + 1, Y1, Col)
+	if ColL:
+		C.Line(X0, Y0 - 1, X1, Y1 - 1, ColL)
+
+
+def _CrystalSpike(C, X, Y, H, W, Lean, Col=CRYSTAL, ColL=CRYSTAL_L, ColD=CRYSTAL_D):
+	# 바닥(X, Y)에서 위로 솟은 수정 한 개 (Lean = 꼭대기 가로 치우침)
+	Poly(C, [(X - W, Y), (X + Lean, Y - H), (X + W, Y)], Col)
+	Poly(C, [(X - W * 0.2, Y), (X + Lean, Y - H), (X + W, Y)], ColD)
+	C.Line(X - W * 0.5 + 0.5, Y - 1, X + Lean, Y - H + 1, ColL)
+
+
+def DrawSpiderQueen(Pose, Frame):
+	# 80x60 칸, 피벗 = 아래 가운데. 정면에서 조금 위로 본 거대한 거미: 뒤 배(등에 수정 무리) + 앞 머리가슴(붉은 눈 6개·송곳니) + 다리 8개
+	C = FCanvas(80, 60)
+	CX, Base = 40, 59
+	Bob = (Frame % 2) if Pose == "Idle" else 0
+	Lift = {"Dormant": -8, "Rear": 6, "Spit": 4, "Crouch": -6, "Leap": 4}.get(Pose, 0) - Bob
+	BodyY = 34 - Lift          # 머리가슴 가운데
+	AbdY = BodyY - 9           # 배 가운데 (뒤 = 화면 위)
+	Gait = (0, 1, 0, -1)[Frame % 4] if Pose == "Walk" else 0
+	# 다리 (Pair 0 = 맨 뒤 → 3 = 맨 앞, 뒤부터 그려 앞다리가 위에) — 엉덩이(몸 옆) → 무릎(위로 꺾임) → 발(바닥, 뒷다리일수록 화면 위 = 멀리)
+	for Pair in range(4):
+		for S in (-1, 1):
+			bLifted = Gait != 0 and ((Pair + (S > 0)) % 2 == 0) == (Gait > 0)
+			HipX, HipY = CX + S * (6 + Pair), BodyY - 4 + Pair * 2
+			KneeX, KneeY = CX + S * (14 + Pair * 5), BodyY - 16 + Pair + (7 if Pose == "Crouch" else 0)
+			FootX, FootY = CX + S * (20 + Pair * 5.5), Base - (3 - Pair) * 4
+			if bLifted:
+				FootX, FootY, KneeY = FootX + S * 2, FootY - 4, KneeY - 2
+			if Pose == "Leap":
+				KneeX, FootX, FootY = KneeX + S * 2, FootX + S * 3, FootY - 9
+			if Pose == "Dormant":
+				KneeX, KneeY, FootX, FootY = CX + S * (10 + Pair * 3), BodyY - 6, CX + S * (13 + Pair * 3.5), Base - 1 - (3 - Pair) * 2
+			if Pose == "Rear" and Pair == 3:
+				KneeX, KneeY, FootX, FootY = CX + S * 17, BodyY - 24, CX + S * 10, BodyY - 36  # 앞다리를 치켜든다
+			_ThickLine(C, HipX, HipY, KneeX, KneeY, QLEG, QLEG_L)
+			_ThickLine(C, KneeX, KneeY, FootX, FootY, QLEG)
+			C.Px(KneeX, KneeY - 1, AMETHYST if Pose != "Dormant" else QUEEN_L)  # 무릎 수정 마디
+	# 배 (뒤, 크게) + 등의 수정 무리
+	C.Ellipse(CX, AbdY, 15, 11, QUEEN)
+	C.Ellipse(CX - 3, AbdY - 3, 8, 5, QUEEN_L)
+	for X in range(CX - 12, CX + 13, 4):
+		C.Px(X, AbdY + 4, QUEEN_D)
+	Glow = Pose != "Dormant"
+	for Index, (DX, H, W, Lean) in enumerate(((-9, 9, 2.6, -2), (-3, 15, 3.2, -1), (3, 13, 3.0, 1), (9, 8, 2.4, 2), (0, 7, 2.2, 0))):
+		Col = (AMETHYST, AMETHYST_L, QUEEN_L) if Index in (1, 3) else (CRYSTAL, CRYSTAL_L, CRYSTAL_D)
+		if not Glow:
+			Col = (QUEEN_L, (150, 130, 180), QUEEN)
+		_CrystalSpike(C, CX + DX, AbdY - 5 + abs(DX) * 0.25, H, W, Lean, *Col)
+	# 머리가슴 (앞, 작게) + 눈 + 송곳니
+	C.Ellipse(CX, BodyY, 9, 7, QUEEN)
+	C.Ellipse(CX - 2, BodyY - 2, 5, 3.4, QUEEN_L)
+	C.Rect(CX - 7, BodyY + 4, CX + 7, BodyY + 6, QUEEN_D)
+	EyeC = QUEEN_EYE if Glow else QUEEN_D
+	for EX, EY in ((-4, -1), (4, -1), (-2, -3), (2, -3), (-5, 1), (5, 1)):
+		C.Px(CX + EX, BodyY + EY, EyeC)
+	if Glow:
+		C.Px(CX - 2, BodyY - 4, WHITE)
+	Open = 2 if Pose in ("Spit", "Rear") else 0
+	for S in (-1, 1):
+		C.Line(CX + S * 2, BodyY + 6, CX + S * (3 + Open), BodyY + 10, (230, 220, 240))
+		C.Px(CX + S * (3 + Open), BodyY + 11, CRYSTAL_L)
+	if Pose == "Spit":
+		C.Ellipse(CX, BodyY + 12, 3, 2.5, (240, 240, 250))
+		C.Px(CX - 1, BodyY + 11, WHITE)
+	C.Outline((20, 12, 30))
+	return C
+
+
+def DrawWarnTile():
+	# 바닥 함정 경고 판 (네모 점선 + 옅은 안 — 눕혀서 쓴다, 판 크기로 늘림)
+	C = FCanvas(16, 16)
+	C.Rect(1, 1, 14, 14, (255, 70, 50), 80)
+	for K in range(16):
+		if (K // 2) % 2 == 0:
+			for X, Y in ((K, 0), (K, 15), (0, K), (15, K)):
+				C.Px(X, Y, (255, 96, 70))
+	return C
+
+
+def DrawWeb(Frame):
+	# 거미줄 탄: 흰 실 뭉치 + 바퀴살 (프레임마다 45도 돌림)
+	C = FCanvas(16, 16)
+	C.Ellipse(8, 8, 3.2, 3.2, (236, 236, 248))
+	for K in range(4):
+		A = math.radians(K * 45 + Frame * 22.5)
+		C.Line(8, 8, 8 + math.cos(A) * 7, 8 + math.sin(A) * 7, (210, 214, 236))
+		C.Line(8, 8, 8 - math.cos(A) * 7, 8 - math.sin(A) * 7, (210, 214, 236))
+	for R in (4.5, 6.5):
+		for K in range(16):
+			A = K / 16 * math.tau + Frame * 0.2
+			C.Px(8 + math.cos(A) * R, 8 + math.sin(A) * R, (190, 196, 224))
+	C.Px(7, 7, WHITE)
+	return C
+
+
+def DrawShard(Frame):
+	# 바닥에서 솟는 수정 가시 (0 끝만 → 1 반 → 2 다 솟음 → 3 금이 가며 옅어짐) — 피벗 = 아래
+	C = FCanvas(28, 34)
+	Grow = (0.25, 0.65, 1.0, 1.0)[Frame]
+	for DX, H, W, Lean, Ame in ((-7, 18, 3.2, -3, False), (0, 30, 4.4, 0, False), (7, 22, 3.4, 3, True), (-3, 12, 2.6, -1, True), (4, 13, 2.6, 1, False)):
+		Col = (AMETHYST, AMETHYST_L, QUEEN_L) if Ame else (CRYSTAL, CRYSTAL_L, CRYSTAL_D)
+		_CrystalSpike(C, 14 + DX, 33, H * Grow, W, Lean * Grow, *Col)
+	if Frame == 3:
+		for Y in range(6, 33, 5):
+			C.Px(14 + (Y % 3) - 1, Y, (40, 70, 110))
+	C.Outline((24, 30, 60))
+	if Frame == 3:
+		C.P[..., 3] = (C.P[..., 3] * 0.55).astype(np.uint8)
+	return C
+
+
+def DrawCaveIcon(Name):
+	C = FCanvas(16, 16)
+	if Name == "CrystalSword":
+		C.Line(4, 11, 13, 2, CRYSTAL)
+		C.Line(5, 11, 13, 3, CRYSTAL_D)
+		C.Line(6, 8, 11, 3, CRYSTAL_L)
+		C.Line(2, 9, 6, 13, AMETHYST)
+		C.Line(2, 13, 4, 11, SHAFT)
+		C.Px(1, 14, AMETHYST_L)
+	elif Name == "CrystalCharm":
+		C.Line(8, 1, 8, 4, (200, 190, 220))
+		Poly(C, [(8, 4), (12, 9), (8, 15), (4, 9)], CRYSTAL)
+		Poly(C, [(8, 4), (12, 9), (8, 9)], CRYSTAL_L)
+		Poly(C, [(8, 9), (8, 15), (4, 9)], CRYSTAL_D)
+		C.Px(8, 9, AMETHYST_L)
+	C.Outline((24, 16, 28))
+	return C
+
+
+CAVE_ICONS = ("CrystalSword", "CrystalCharm")
+
+
+def WriteCaveArt(SpriteFolder, UiFolder):
+	Queen = FAtlas(81 * 4 + 1)
+	for Pose, Count in QUEEN_POSES.items():
+		for Frame in range(Count):
+			Queen.Add(f"{Pose}{Frame}", DrawSpiderQueen(Pose, Frame))
+	Queen.Save(SpriteFolder, "SpiderQueen")
+	for Pose, Count in QUEEN_POSES.items():
+		WriteFlipbook(SpriteFolder, f"SpiderQueen_{Pose}", "SpiderQueen.esprite", [f"{Pose}{I}" for I in range(Count)], {"Idle": 2.5, "Walk": 9.0}.get(Pose, 1.0))
+	Fx = FAtlas(128)
+	Fx.Add("WarnTile", DrawWarnTile(), (0.5, 0.5))
+	for I in range(2):
+		Fx.Add(f"Web{I}", DrawWeb(I), (0.5, 0.5))
+	for I in range(4):
+		Fx.Add(f"Shard{I}", DrawShard(I), (0.5, 0.0))
+	Fx.Save(SpriteFolder, "CaveFx")
+	WriteFlipbook(SpriteFolder, "CaveFx_Web", "CaveFx.esprite", ["Web0", "Web1"], 10.0)
+	WriteFlipbook(SpriteFolder, "CaveFx_Shard", "CaveFx.esprite", [f"Shard{I}" for I in range(4)], 0, "Once", [0.05, 0.06, 0.45, 0.3])
+	for Name in CAVE_ICONS:
+		UpscaleSave(DrawCaveIcon(Name), os.path.join(UiFolder, "Icons", f"{Name}.png"))
+
+
 if __name__ == "__main__":
 	WriteAll(os.path.join(os.path.dirname(__file__), "..", "..", "Projects", "Sample", "Content", "Sprites", "HD2D"))

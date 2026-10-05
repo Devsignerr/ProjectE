@@ -5,6 +5,7 @@
 --   Charger (고블린)   다가가다 예비 동작(단검 치켜듦) 뒤 직선 돌진 찌르기
 --   Archer  (해골 궁수) 거리를 두며 활시위를 당긴 뒤 화살 (관리자 투사체) — 너무 가까우면 물러난다
 --   Spore   (독버섯)   느리게 다가가 부풀었다가 발밑에 독 웅덩이 (관리자 위험 지대 — 0.5초마다 피해)
+-- 변형(동굴 박쥐·수정 슬라임): 행의 Look = 그림·몸 모양을 빌릴 바탕 종류(플립북 <Look>_<동작>), Tint = 몸 색 배율 (HD2DData.EnemyLook).
 -- 공통: 발견 거리 밖이면 집 근처를 어슬렁, 맞으면 하얗게 번쩍 + 넉백 + 머리 위 체력바 3초, 예비 동작 중 맞으면 끊긴다(경직),
 --       체력 0 → 관리자 OnEnemyKilled(전리품·경험치·부활 예약) 후 펑 효과와 함께 사라짐.
 --   돌진·급강하는 entity:AddKnockback(방향 × ProjectileSpeed, 시간) — 이동기가 경직 동안 수평 속도를 덮어써 미끄러진다.
@@ -33,7 +34,10 @@ local function Flat(V) return Vector3(V.X, V.Y, 0) end
 function HD2DEnemy:OnStart()
 	self.Kind = self.Properties.Kind
 	self.Row = D.Enemy(self.Kind)
-	self.Shape = Shapes[self.Kind] or Shapes.Slime
+	self.Look = D.EnemyLook(self.Kind)
+	self.Shape = Shapes[self.Look] or Shapes.Slime
+	local T = self.Row.Tint or {}
+	self.Tint = Vector4(T[1] or 1, T[2] or 1, T[3] or 1, T[4] or 1)
 	self.GM = Scene.Find("HD2DGame"):GetScript()
 	self.Visual = self.entity:FindChild("Visual")
 	self.Body = self.Visual:FindChild("Body")
@@ -70,10 +74,10 @@ end
 
 function HD2DEnemy:Play(Anim)
 	local Book = Anim
-	if self.Kind == "Slime" then Book = (Anim == "Move" or Anim == "Attack") and "Hop" or "Idle" end
+	if self.Look == "Slime" then Book = (Anim == "Move" or Anim == "Attack") and "Hop" or "Idle" end
 	if Book ~= self.Anim then
 		self.Anim = Book
-		self.Body:PlayFlipbook("Sprites/HD2D/" .. self.Kind .. "_" .. Book .. ".eflipbook")
+		self.Body:PlayFlipbook("Sprites/HD2D/" .. self.Look .. "_" .. Book .. ".eflipbook")
 	end
 end
 
@@ -159,13 +163,13 @@ function HD2DEnemy:OnUpdate(Dt)
 		self.Flash = self.Flash - Dt
 		-- 하얗게 덮었다가 빠르게 풀림 (SpriteComponent.FlashColor)
 		self.Sprite.FlashColor = Vector4(1, 1, 1, self.Flash > 0 and math.min(0.9, self.Flash * 10) or 0)
-		self.Sprite.Color = Vector4(1, 1, 1, 1)
+		self.Sprite.Color = self.Tint
 	elseif self.State == "Windup" then
 		-- 예비 동작: 붉게 깜빡 (피할 신호)
 		local Blink = math.floor(self.Time * 14) % 2 == 0
-		self.Sprite.Color = Blink and Vector4(1.6, 0.7, 0.6, 1) or Vector4(1, 1, 1, 1)
+		self.Sprite.Color = Blink and Vector4(1.6, 0.7, 0.6, 1) or self.Tint
 	else
-		self.Sprite.Color = Vector4(1, 1, 1, 1)
+		self.Sprite.Color = self.Tint
 	end
 	-- 머리 위 체력바
 	if self.BarTime > 0 then

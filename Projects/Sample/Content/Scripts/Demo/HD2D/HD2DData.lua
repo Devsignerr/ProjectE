@@ -38,6 +38,21 @@ function HD2DData.Npc(Id) return ByName("Npcs.etable")[Id] end
 function HD2DData.Quest(Stage) return ByName("Quests.etable")["Stage" .. tostring(Stage)] end
 function HD2DData.SubQuest(Id) return ByName("SubQuests.etable")[Id] end
 
+-- 메인 퀘스트 마지막 단계 번호 (Quests.etable의 Stage<n> 중 가장 큰 n — 엔딩 단계)
+function HD2DData.FinalQuestStage()
+	return Memo("FinalStage", function()
+		local Last = 0
+		while ByName("Quests.etable")["Stage" .. tostring(Last + 1)] do Last = Last + 1 end
+		return Last
+	end)
+end
+
+-- 적 행의 그림·몸 모양 종류 (동굴 변형은 바탕 종류의 그림을 색만 바꿔 쓴다 — 행의 Look, 비면 자기 종류)
+function HD2DData.EnemyLook(Kind)
+	local Row = HD2DData.Enemy(Kind)
+	return (Row and Row.Look ~= nil and Row.Look ~= "") and Row.Look or Kind
+end
+
 function HD2DData.Balance()
 	return Memo("Balance", function()
 		local Value = Data.Load(Root .. "Balance.edata")
@@ -49,9 +64,9 @@ function HD2DData.Balance()
 end
 
 -- 표시 순서: 무기 / 방어구 / 장신구 (장비 탭) · 소모품 / 재료 (도구 탭) · 서브 퀘스트 (퀘스트 탭)
-HD2DData.WeaponOrder = { "Sword", "Spear", "Bow", "Staff" }
+HD2DData.WeaponOrder = { "Sword", "Spear", "Bow", "Staff", "CrystalSword" }
 HD2DData.ArmorOrder = { "LeatherVest", "ChainMail", "KnightPlate" }
-HD2DData.AccessoryOrder = { "LuckyRing", "SwiftCharm", "LifeAmulet" }
+HD2DData.AccessoryOrder = { "LuckyRing", "SwiftCharm", "LifeAmulet", "CrystalCharm" }
 HD2DData.ConsumableOrder = { "Potion", "HiPotion", "Ether", "Elixir" }
 HD2DData.MaterialOrder = { "Jelly", "LostCat" }
 HD2DData.SubQuestOrder = { "Cat", "Smith", "Scarecrow" }

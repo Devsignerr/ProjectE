@@ -89,6 +89,28 @@
         "Flipbook": "Hero_AttackStaff",
         "Sound": "Audio/RPG/Spin.wav"
       }
+    },
+    {
+      "Name": "CrystalSword",
+      "Values": {
+        "DisplayName": "수정 검",
+        "Kind": "Slash",
+        "Icon": "UI/Demo/HD2D/Icons/CrystalSword.png",
+        "Description": "동굴 유적 깊은 곳에 잠들어 있던 푸른 수정 검. 가볍고 날카로워 여행자의 검보다 훨씬 깊게 벤다.",
+        "Damage": 21,
+        "Cooldown": 0.2,
+        "Range": 165,
+        "Arc": 175,
+        "Knockback": 760,
+        "ProjectileSpeed": 0,
+        "ManaCost": 0,
+        "Splash": 0,
+        "HitStop": 0.05,
+        "AttackTime": 0.28,
+        "HitDelay": 0.09,
+        "Flipbook": "Hero_Attack",
+        "Sound": "Audio/RPG/Swing1.wav"
+      }
     }
   ]
 }

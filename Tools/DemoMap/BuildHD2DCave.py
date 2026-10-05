@@ -2,7 +2,11 @@
 #   지형(.eterrain: 동굴 바닥·바위 벽·유적 바닥돌·이끼) + KayKit 던전 키트(벽·기둥·아치·횃불·통·상자·깃발) + 바위·종유석 + 푸른 수정
 #   + 물(지하 호수·구덩이) + 횃불 점광원(깜빡임)·수정 발광·볼류메트릭 안개·물방울·먼지 파티클 + 플레이어/게임 관리자(HD2DGameplay)
 #   실행: python Tools/DemoMap/BuildHD2DCave.py [--views]   (머티리얼·파티클 일부는 BuildHD2D.py가 먼저 써 둔 HD2D 공용 것을 쓴다)
-#   --views: 확인용 변형(커밋하지 않음) — Scenes/Demo/_HD2DCave_<방>.escene(시작 자리만 다름), _HD2DCave_Over<이름>.escene(흐림 끈 자유 시점)
+#   --views: 확인용 변형(커밋하지 않음) — Scenes/Demo/_HD2DCave_<방>.escene(시작 자리만 다름), _HD2DCave_Over<이름>.escene(흐림 끈 자유 시점),
+#            _HD2DCaveAutoPlay.escene(자동 검증 — 동굴 전 구간 + 메인 맵 귀환·엔딩), _HD2DCaveShot_<이름>.escene(스크린샷·측정), _HD2DCaveNavBake.escene(내비메시 굽기)
+#   --install-nav: 구운 _HD2DCaveNavBake.enav → Scenes/Demo/HD2DCave.enav (순서는 Docs/Rules/DataAndDemos.md HD2D 동굴 항목)
+#   게임: 적·보물·보스·문·함정 자리는 HD2DCaveLayout.py → HD2DGameplay.FMapLayout("Cave") → AddGame (타이틀 없음 — 바로 플레이),
+#         던전 장치는 Scripts/Demo/HD2D/HD2DDungeon.lua, 보스는 HD2DSpiderQueen.lua. 데이터 표·UI·프리팹은 BuildHD2D.py와 같은 HD2DGameplay.WriteAll
 #   규약: 메인 맵과 같은 고정 원근 디오라마 카메라(+Y 위에서 -Y를 봄, 피치 -28·시야각 24). 동굴 벽은 안쪽(-Y)으로 높이 솟고
 #         카메라 쪽(+Y)은 낮은 바위 턱만 둔다(캐릭터를 가리지 않게). 자리 계약(적·보물·보스·도착 자리)은 HD2DCaveLayout.py
 #   배치를 바꿀 때는 씬 파일이 아니라 이 스크립트를 고치고 다시 실행한다 (결정적 — 고정 시드)
@@ -21,6 +25,7 @@ from BuildCampfire import SHAPE_BOX, SHAPE_SPHERE  # noqa: E402
 import BuildHD2D as Main  # noqa: E402 — 카메라 규약·공용 함수 (임포트만 — Main()은 돌지 않는다)
 import HD2DEnvironment as Env  # noqa: E402
 import HD2DGameplay  # noqa: E402
+import HD2DArt  # noqa: E402
 import HD2DCaveLayout as Layout  # noqa: E402
 
 CONTENT  = Main.CONTENT
@@ -43,6 +48,12 @@ LAKE_LEVEL     = -60.0
 PIT            = (650.0, 1150.0)                  # 함정 복도 구덩이 X 범위 (복도 폭 전체)
 BRIDGE_HALF_W  = 115.0
 CORRIDOR_HALF  = 330.0
+# ---- 게임 ------------------------------------------------------------------------------------------------------------
+CAVE_PATH = [(-3150.0, -100.0), (-900.0, -100.0), (900.0, 0.0), (2600.0, 150.0), (3880.0, 0.0)]  # 내비메시가 없을 때 자동 조종 길
+NAV_ASSET = "Scenes/Demo/HD2DCave.enav"
+GATE_LIFT = 200.0          # 보스 방 문 프리팹 루트(콜라이더 가운데) = 지면 + 이만큼
+GATE_BAR_H = 270.0         # 창살 높이
+GATE_DOWN = GATE_BAR_H + 40.0  # 열린 문: 창살 묶음을 이만큼 땅속으로 (HD2DDungeon.lua와 같은 값)
 
 # 걷는 방 모양: (이름, 종류, 값) — 종류 "E" 타원 (X, Y, RX, RY), "R" 사각 (X0, Y0, X1, Y1), "C" 캡슐 (AX, AY, BX, BY, R)
 ROOMS = [
@@ -51,6 +62,7 @@ ROOMS = [
 	("Pass", "C", (-1900.0, -150.0, -1300.0, -120.0, 340.0)),
 	("Fork", "E", (-850.0, -150.0, 620.0, 560.0)),
 	("Ledge", "R", (-1500.0, -1480.0, -350.0, -980.0)),
+	("LedgeStairs", "R", (-1010.0, -1000.0, -790.0, -640.0)),  # 갈림길 → 보물 단 돌계단 자리 (바위 벽이 계단을 덮지 않게 판다)
 	("Corridor", "R", (-350.0, -CORRIDOR_HALF, 2000.0, CORRIDOR_HALF)),
 	("Lake", "E", (2600.0, -250.0, 880.0, 680.0)),
 	("Boss", "E", (3880.0, -350.0, 820.0, 720.0)),
@@ -263,14 +275,42 @@ def Fx(Name):
 	return f"{CAVE_FX}/{Name}.eparticle"
 
 
+def WriteGatePrefab():
+	# 보스 방 문 (Prefabs/Demo/HD2D/CaveGate.eprefab — 관리자가 보스 방에 들어서면 만든다): 루트 = 막는 상자 콜라이더(길목 전체),
+	#   "Bars" = 돌 창살 + 수정 끝 + 가로대 묶음. 프리팹에는 땅속(열린 자리)으로 두고 관리자가 GATE_DOWN만큼 올려 닫는다
+	_, _, Half = Layout.BOSS_GATE
+	Link = HD2DGameplay.Link
+	Tf = HD2DGameplay.Transform
+	Entities = [
+		{"Name": "CaveGate", "Parent": -1, "Components": {"BoxColliderComponent": {"HalfExtents": [40.0, Half, 230.0]},
+														   "PrefabLinkComponent": Link(1), "TransformComponent": Tf()}},
+		{"Name": "Bars", "Parent": 0, "Components": {"PrefabLinkComponent": Link(2), "TransformComponent": Tf((0.0, 0.0, -GATE_LIFT - GATE_DOWN))}},
+	]
+
+	def Mesh(Name, Pos, Scale, Material, Yaw=0.0):
+		Entities.append({"Name": Name, "Parent": 1, "Components": {
+			"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": Material}, "PrefabLinkComponent": Link(len(Entities) + 1),
+			"TransformComponent": Tf(Pos, QuatFromEuler(Yaw=Yaw), Scale)}})
+
+	Count = int((Half * 2.0 - 60.0) // 80.0) + 1
+	for K in range(Count):
+		Y = -Half + 30.0 + K * 80.0
+		Mesh(f"Bar{K}", (0.0, Y, GATE_BAR_H * 0.5), (0.4, 0.4, GATE_BAR_H / 100.0), Env.Mat("EnvStoneDark"))
+		Mesh(f"Tip{K}", (0.0, Y, GATE_BAR_H + 18.0), (0.26, 0.26, 0.5), CMat("CrystalViolet" if K % 2 else "CrystalBlue"), 45.0)
+	for Index, Z in enumerate((70.0, 200.0)):
+		Mesh(f"Cross{Index}", (0.0, 0.0, Z), (0.3, Half * 2.0 / 100.0, 0.22), Env.Mat("EnvStone"))
+	HD2DGameplay.WritePrefab(CONTENT, "CaveGate", Entities)
+
+
 CAVE_GRASS_TYPE = Env.FoliageType("CaveGrass", "foliage:grass", CMat("Grass"), 0.4, 0.7, ZOffset=-2.0, Cull=5000.0)
 
 
 # ---- 씬 ---------------------------------------------------------------------------------------------------------------
-def BuildScene(Height, Start=Layout.PLAYER_START, Overview=None):
+def BuildScene(Height, Start=Layout.PLAYER_START, Overview=None, AutoPlay=""):
 	Rng = random.Random(77)
 	S = FScene()
 	Occupied = []
+	TrapSpots = []
 
 	def Reserve(X, Y, Radius):
 		Occupied.append((X, Y, Radius))
@@ -388,6 +428,9 @@ def BuildScene(Height, Start=Layout.PLAYER_START, Overview=None):
 	for X, Y in Layout.CHEST_SPOTS:
 		Reserve(X, Y, 130.0)
 	Reserve(*Layout.BOSS_SPOT, Layout.BOSS_ARENA_RADIUS)
+	GateX, GateY, GateHalf = Layout.BOSS_GATE
+	for K in range(int(GateHalf * 2.0 // 100.0) + 1):
+		Reserve(GateX, GateY - GateHalf + K * 100.0, 90.0)  # 보스 방 문 길목 (문은 관리자가 프리팹으로 세운다)
 	for Name, (X, Y, Yaw) in Layout.SPAWNS.items():
 		S.Add(f"Spawn_{Name}", {}, (X, Y, Height.Floor(X, Y)), QuatFromEuler(Yaw=Yaw))
 		Reserve(X, Y, 150.0)
@@ -479,15 +522,21 @@ def BuildScene(Height, Start=Layout.PLAYER_START, Overview=None):
 	for Index, (DX, DY) in enumerate(((-150.0, -260.0), (120.0, -160.0), (0.0, -380.0))):
 		Crystal(f"Pit_Crystal_{Index}", Mid + DX, DY, 0.9, "CrystalBlue" if Index != 1 else "CrystalViolet", Light=Index != 2, Z=-600.0)
 	Point("Pit_Glow", (Mid, 0.0, -350.0), (0.3, 0.6, 1.0), 14.0, 900.0)
-	for Index in range(4):
-		X = 1450.0 + Index * 110.0
-		E.Box(f"Trap_Plate_{Index}", (X, 0.0, 1.5), (90.0, 180.0, 4.0), "EnvStoneDark")
-		for K in range(5):
-			for J in range(3):
-				S.Add(f"Trap_Spike_{Index}_{K}_{J}", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": CMat("Spike")}},
-					  (X - 32.0 + K * 16.0, -55.0 + J * 55.0, 8.0), QuatFromEuler(Pitch=45.0, Roll=35.3), (0.07, 0.07, 0.07))
-	S.Add("Trap_RuneGlow", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": CMat("Rune")}}, (1615.0, 250.0, 2.0), None, (0.5, 0.5, 0.02))
-	Bones("Corridor_Bones_0", 1750.0, 230.0)
+	# 가시 함정판 (복도 폭 전체 — 피해 갈 수 없고 때를 맞춰 건넌다): 판(움직이지 않음) + "Trap_<번호>" 가시 묶음(관리자 HD2DDungeon.lua가
+	#   주기마다 내렸다 올린다 — 씬에는 솟은 자리로 둔다). 관리자 속성 Traps = "x,y,z,반폭X,반폭Y;..." (z = 판 윗면 근처 가시 묶음 기준)
+	TrapHX, TrapHY = Layout.TRAP_HALF
+	for Index, X in enumerate(Layout.TRAP_XS):
+		Z0 = max(Height(X + DX, DY) for DX in (-TrapHX, 0.0, TrapHX) for DY in (-TrapHY, -TrapHY * 0.5, 0.0, TrapHY * 0.5, TrapHY)) + 1.0
+		E.Box(f"Trap_Plate_{Index + 1}", (X, 0.0, Z0 - 4.0), (TrapHX * 2.0 - 6.0, TrapHY * 2.0, 12.0), "EnvStoneDark")
+		Root = S.Add(f"Trap_{Index + 1}", {}, (X, 0.0, Z0))
+		Rows = int(TrapHY * 2.0 // 62.0)
+		for K in range(3):
+			for J in range(Rows):
+				S.Add(f"Trap_{Index + 1}_Spike{K}_{J}", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": CMat("Spike")}},
+					  (-28.0 + K * 28.0 + (J % 2) * 8.0 - 4.0, -TrapHY + 31.0 + J * 62.0, 12.0), QuatFromEuler(Pitch=45.0, Roll=35.3), (0.1, 0.1, 0.1), Root)
+		TrapSpots.append((X, 0.0, Z0, TrapHX, TrapHY))
+	S.Add("Trap_RuneGlow", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": CMat("Rune")}}, (1300.0, 250.0, 2.0), None, (0.5, 0.5, 0.02))
+	Bones("Corridor_Bones_0", 1950.0, 230.0)
 	Bones("Corridor_Bones_1", 400.0, -220.0)
 
 	# ---- 4. 수정 호수: 큰 수정 무리 + 물가 바위 + 이끼·풀 + 종유석
@@ -595,13 +644,16 @@ def BuildScene(Height, Start=Layout.PLAYER_START, Overview=None):
 		N = Height.Normal(X, Y)
 		Grass.append((X, Y, Height(X, Y), float(GrassRng.uniform(0, 360)), float(GrassRng.uniform(0.4, 0.75)), float(N[0]), float(N[1]), float(N[2])))
 
-	# ---- 게임: 관리자·HUD + 카메라 + 플레이어 (HD2DGameplay — 동굴 적·보물·보스는 2단계에서 HD2DCaveLayout 자리로)
-	HD2DGameplay.AddGame(S, Height, [(-3150.0, -100.0), (-900.0, -100.0), (900.0, 0.0), (2600.0, 150.0), (3880.0, 0.0)])
-	for Entity in S.Entities:
-		if Entity["Name"] == "HD2DGame":
-			Props = json.loads(Entity["Components"]["ScriptComponent"]["PropertyOverrides"])
-			Props.update({"Enemies": "", "Npcs": "", "Chests": "", "Boss": ""})  # AddGame은 메인 맵 자리를 넣는다 — 동굴은 비워 둔다(2단계)
-			Entity["Components"]["ScriptComponent"]["PropertyOverrides"] = json.dumps(Props, ensure_ascii=False)
+	# ---- 게임: 관리자·HUD + 카메라 + 플레이어 (HD2DGameplay — 자리는 HD2DCaveLayout). 타이틀 없음: 세션 없이 열면 기본 상태로 바로 플레이
+	GX, GY, GHalf = Layout.BOSS_GATE
+	GateZ = Height(GX, GY) + GATE_LIFT
+	CaveLayout = HD2DGameplay.FMapLayout(
+		"Cave", Chests=[(X, Y, C) for (X, Y), C in zip(Layout.CHEST_SPOTS, Layout.CHEST_CONTENTS)],
+		Enemies=[(Kind, X, Y) for Room, Spots in Layout.ENEMY_SPOTS.items() for Kind, (X, Y) in zip(Layout.ENEMY_KINDS[Room], Spots)],
+		Boss=Layout.BOSS_SPOT, BossKind="SpiderQueen", BossReward=Layout.BOSS_REWARD, Respawn=False,
+		Extra={"Traps": ";".join(f"{X:.0f},{Y:.0f},{Z:.1f},{HX:.0f},{HY:.0f}" for X, Y, Z, HX, HY in TrapSpots),
+			   "Gate": f"{GX:.0f},{GY:.0f},{GateZ:.0f},{GATE_DOWN:.0f}", "Arena": f"{Layout.BOSS_SPOT[0]:.0f},{Layout.BOSS_SPOT[1]:.0f},{Layout.BOSS_ARENA_RADIUS + 120.0:.0f}"})
+	HD2DGameplay.AddGame(S, Height, CAVE_PATH, AutoPlay, Layout=CaveLayout, Title=False, NavMesh=NAV_ASSET)
 	StartZ = Height(*Start) + HD2DGameplay.PLAYER_RADIUS + HD2DGameplay.PLAYER_HALF + 4.0
 	Forward = (0.0, -math.cos(math.radians(-Main.CAMERA_PITCH)), -math.sin(math.radians(-Main.CAMERA_PITCH)))
 	Focus = (Start[0], Start[1], StartZ - 85.0 + 70.0)
@@ -629,15 +681,44 @@ def BuildScene(Height, Start=Layout.PLAYER_START, Overview=None):
 VIEW_STARTS = {"Hall": (-2550.0, 350.0), "Fork": (-900.0, 100.0), "Ledge": (-900.0, -1250.0), "Corridor": (1500.0, 100.0),
 			   "Lake": (2500.0, 150.0), "Boss": (3880.0, 150.0)}
 OVERVIEW_VIEWS = {"West": (-1500.0, 3200.0, 3600.0, -45.0, -90.0, 50.0), "East": (2600.0, 3200.0, 3600.0, -45.0, -90.0, 50.0)}
+# 자동 검증·스크린샷 시나리오 (이름: (시작 자리, HD2DAutoPilot 시나리오)) → _HD2DCave<이름>.escene
+AUTO_SCENES = {
+	"AutoPlay":    (Layout.PLAYER_START, "Cave"),        # 입구 → 방마다 적 → 상자 3 → 함정 → 보스 → 보상 → 출구로 메인 맵(엔딩까지)
+	"Shot_Combat": ((2300.0, 150.0), "CaveCombat"),       # 수정 호수 전투 (성능 측정)
+	"Shot_Boss":   ((3500.0, -200.0), "CaveBoss"),        # 보스전
+	"Shot_Trap":   ((1250.0, 60.0), "CaveTrap"),          # 가시 함정 경고·솟음
+	"Shot_Ending": (Layout.PLAYER_START, "CaveEnding"),   # 엔딩·크레딧 화면 (마지막 단계로 바로)
+}
+
+
+def NavBakeHeight(Height):
+	# 굽기용 바닥 판: 걷는 방 안(벽 경사 시작 전)만 — 바깥 벽 위·낭떠러지는 비운다 (WaterBelow 아래 = 빈칸)
+	def Sample(X, Y):
+		return Height(X, Y) if float(WalkDistance(np.array(X), np.array(Y))) < 30.0 else -1.0e4
+	return Sample
+
+
+def InstallNav():
+	import shutil
+	Root = os.path.join(CONTENT, "Scenes", "Demo")
+	shutil.copyfile(os.path.join(Root, "_HD2DCaveNavBake.enav"), os.path.join(Root, "HD2DCave.enav"))
+	print("Scenes/Demo/HD2DCave.enav 설치")
 
 
 def Main_():
+	if "--install-nav" in sys.argv:
+		InstallNav()
+		return
 	X, Y, H, D = BuildHeights()
 	Weights, Stack = BuildWeights(X, Y, H, D)
 	WriteTerrain(os.path.join(CONTENT, "Terrain", "Demo", "HD2DCave.eterrain"), H, Weights)
 	Sampler = FCaveHeight(H, Stack)
 	WriteMaterials()
 	WriteParticles()
+	# 게임 공용 (데이터 표·UI·프리팹 — BuildHD2D.py와 같은 결과) + 동굴 도트 아트·보스 방 문 프리팹
+	HD2DGameplay.WriteAll(CONTENT, Main.CAMERA_DISTANCE, Main.PLAY_MIN, Main.PLAY_MAX)
+	HD2DArt.WriteCaveArt(os.path.join(CONTENT, "Sprites", "HD2D"), os.path.join(CONTENT, *HD2DGameplay.UI_DIR.split("/")))
+	WriteGatePrefab()
 	Scene, Grass = BuildScene(Sampler)
 	WriteFoliage(os.path.join(CONTENT, "Foliage", "Demo", "HD2DCave.efoliage"), [(CAVE_GRASS_TYPE, Grass)])
 	Scene.Save(os.path.join(CONTENT, *SCENE.split("/")))
@@ -649,7 +730,11 @@ def Main_():
 		for Name, View in OVERVIEW_VIEWS.items():
 			Variant, _ = BuildScene(Sampler, Layout.PLAYER_START, View)
 			Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", f"_HD2DCave_Over{Name}.escene"))
-		print("확인용 변형: Scenes/Demo/_HD2DCave_*.escene (커밋하지 않음)")
+		for Name, (Start, Scenario) in AUTO_SCENES.items():
+			Variant, _ = BuildScene(Sampler, Start, AutoPlay=Scenario)
+			Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", f"_HD2DCave{Name}.escene"))
+		HD2DGameplay.WriteNavBake(CONTENT, Scene, NavBakeHeight(Sampler), Layout.PLAY_MIN, Layout.PLAY_MAX, CAVE_PATH, "_HD2DCaveNavBake", 50.0)
+		print("확인용 변형: Scenes/Demo/_HD2DCave_*.escene, _HD2DCaveAutoPlay.escene, _HD2DCaveShot_*.escene (커밋하지 않음)")
 
 
 if __name__ == "__main__":

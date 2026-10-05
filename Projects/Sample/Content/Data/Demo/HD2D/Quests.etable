@@ -9,7 +9,13 @@
         "Objective": "광장의 촌장 바르톨로에게 말을 걸자",
         "KillGoal": 0,
         "Lines": [],
-        "WaitLines": []
+        "WaitLines": [],
+        "AdvanceOnTalk": true,
+        "BossGoal": "",
+        "NewGoal": false,
+        "RewardGold": 0,
+        "RewardItem": "",
+        "Ending": false
       }
     },
     {
@@ -26,7 +32,13 @@
         "WaitLines": [
           "들판의 마물을 부탁하네. 대장간 옆 상자도 잊지 말게나.",
           "야영지 쪽에도 누가 두고 간 상자가 있다더군."
-        ]
+        ],
+        "AdvanceOnTalk": false,
+        "BossGoal": "",
+        "NewGoal": false,
+        "RewardGold": 0,
+        "RewardItem": "",
+        "Ending": false
       }
     },
     {
@@ -42,7 +54,13 @@
         ],
         "WaitLines": [
           "골렘은 들판 동쪽 끝에 있다네. 바위를 던지니 바닥의 붉은 원을 조심하게."
-        ]
+        ],
+        "AdvanceOnTalk": false,
+        "BossGoal": "Village",
+        "NewGoal": true,
+        "RewardGold": 0,
+        "RewardItem": "",
+        "Ending": false
       }
     },
     {
@@ -54,22 +72,77 @@
         "Lines": [
           "골렘은 쓰러뜨렸는가? 어서 돌아와 이야기를 들려주게."
         ],
-        "WaitLines": []
+        "WaitLines": [],
+        "AdvanceOnTalk": true,
+        "BossGoal": "",
+        "NewGoal": false,
+        "RewardGold": 0,
+        "RewardItem": "",
+        "Ending": false
       }
     },
     {
       "Name": "Stage4",
       "Values": {
-        "Title": "마을의 영웅",
-        "Objective": "모든 의뢰 완료! 들판을 자유롭게 탐험하자",
+        "Title": "동굴 유적의 그림자",
+        "Objective": "폭포 옆 벼랑의 동굴 유적 깊은 곳을 살펴보자",
         "KillGoal": 0,
         "Lines": [
-          "정말로 해냈구먼! 자네는 이 마을의 영웅일세.",
-          "약소하지만 사례를 받아 주게. 마을 사람 모두의 마음이라네."
+          "정말로 해냈구먼! 골렘을 쓰러뜨리다니, 자네는 이 마을의 은인일세.",
+          "약소하지만 사례를 받아 주게. 마을 사람 모두의 마음이라네.",
+          "헌데… 골렘이 깨어난 그날 밤부터 폭포 옆 벼랑의 오래된 동굴 유적에서 푸른 빛이 새어 나온다네.",
+          "유적 깊은 곳에 무언가가 둥지를 틀었다는 소문일세. 부디 살펴봐 주게."
+        ],
+        "WaitLines": [
+          "동굴 유적은 폭포 옆 벼랑에 입구가 있다네.",
+          "안쪽 복도엔 가시 함정이 있다더군. 바닥이 붉게 깜빡이면 물러서게."
+        ],
+        "AdvanceOnTalk": false,
+        "BossGoal": "Cave",
+        "NewGoal": true,
+        "RewardGold": 300,
+        "RewardItem": "Elixir",
+        "Ending": false
+      }
+    },
+    {
+      "Name": "Stage5",
+      "Values": {
+        "Title": "동굴 유적의 그림자",
+        "Objective": "마을로 돌아가 촌장 바르톨로에게 보고하자",
+        "KillGoal": 0,
+        "Lines": [
+          "돌아왔구먼! 유적 깊은 곳에서 무엇을 보았나?"
+        ],
+        "WaitLines": [],
+        "AdvanceOnTalk": true,
+        "BossGoal": "",
+        "NewGoal": false,
+        "RewardGold": 0,
+        "RewardItem": "",
+        "Ending": false
+      }
+    },
+    {
+      "Name": "Stage6",
+      "Values": {
+        "Title": "마을의 영웅",
+        "Objective": "모든 의뢰 완료! 들판과 유적을 자유롭게 탐험하자",
+        "KillGoal": 0,
+        "Lines": [
+          "수정 거미 여왕이라니…! 그런 것이 유적에 숨어 있었구먼.",
+          "자네 덕에 하르트 마을에 다시 아침이 찾아왔네. 정말로 이 마을의 영웅일세.",
+          "마을 사람 모두가 모은 사례일세. 부디 받아 주게."
         ],
         "WaitLines": [
           "덕분에 마을이 평화롭구먼. 고맙네, 젊은이."
-        ]
+        ],
+        "AdvanceOnTalk": false,
+        "BossGoal": "",
+        "NewGoal": false,
+        "RewardGold": 500,
+        "RewardItem": "",
+        "Ending": true
       }
     }
   ]

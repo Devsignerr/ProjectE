@@ -541,7 +541,7 @@ function HD2DPlayer:Respawn()
 	self.Mana = self.MaxMana
 	self.Invuln = 2.0
 	self.Stats.Deaths = self.Stats.Deaths + 1
-	self.GM:Hud():Announce("쓰러졌다…", "마을에서 다시 일어섰다", 2.5)
+	self.GM:Hud():Announce("쓰러졌다…", self.GM.Properties.Map == "Village" and "마을에서 다시 일어섰다" or "입구에서 다시 일어섰다", 2.5)
 	Log.Info("[HD2D] 플레이어 쓰러짐 → 시작 자리에서 부활")
 end
 

@@ -120,6 +120,47 @@ function AutoCombat:PoisonAndCure()
 	self:Wait(0.2)
 end
 
+-- 날아오는 적 투사체(화살·거미줄)는 옆으로, 바위 착지점 원은 밖으로 비킨다 (이번 프레임 이동을 정했으면 true)
+function AutoCombat:DodgeProjectiles()
+	local P = self.Player
+	local Pos = self:Pos()
+	for _, Pr in ipairs(self.GM.Projectiles) do
+		if Pr.Team == "Enemy" then
+			if Pr.Kind == "Rock" then
+				local Away = Flat(Pos - Pr.Target)
+				if Away:Length() < 175 and Pr.Time < Pr.Duration then
+					self.In.Move = Away:Length() > 1 and Away:Normalized() or Vector3(1, 0, 0)
+					return true
+				end
+			else
+				local To = Flat(Pos - Pr.Pos)
+				local Along = To:Dot(Pr.Dir)
+				local Side = (To - Pr.Dir * Along):Length()
+				if Along > 0 and Along < 420 and Side < 70 then
+					local Perp = Vector3(-Pr.Dir.Y, Pr.Dir.X, 0)
+					if Perp:Dot(To) < 0 then Perp = Perp * -1 end
+					self.In.Move = Perp
+					if Along < 200 and P.DashCooldown <= 0 then self.In.Dash = true end
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+function AutoCombat:PotionsUsed()
+	local N = 0
+	for _, Id in ipairs({ "Potion", "HiPotion", "Elixir" }) do N = N + (self.GM.Report.Used[Id] or 0) end -- 체력 회복약만
+	return N
+end
+
+-- 보스전 기록: 가장 낮았던 HP 비율 (난이도 확인 — 자동 조종도 회복약·회피를 써야 이기는가)
+function AutoCombat:TrackLowHp()
+	local P = self.Player
+	self.LowHp = math.min(self.LowHp or 1, P.Health / P.MaxHealth)
+end
+
 -- 동료: 촌장 퀘스트를 받은 뒤 광장의 엘라에게 말을 걸어 영입
 function AutoCombat:RecruitCompanionCheck()
 	local GM = self.GM

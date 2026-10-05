@@ -167,7 +167,7 @@ function Skills:UpdateSkillCast(Dt)
 	-- 몸이 속성 빛으로 (시전 동안)
 	local Col = self.GM.ElementColor[Row.Element] or { 1, 1, 1, 1 }
 	local Glow = math.max(0, 1.0 - C.Elapsed / math.max(Row.CastTime, 0.05))
-	self.Sprite.FlashColor = Vector4(Col[1], Col[2], Col[3], 0.45 * Glow)
+	self.Sprite.FlashColor = Vector4(Col[1], Col[2], Col[3], 0.2 * Glow)
 	if C.Elapsed >= Row.CastTime and (Row.Kind ~= "Rush" or self.DashTimer <= 0) then
 		self.Cast = nil
 		self.AttackTimer = 0
@@ -396,7 +396,8 @@ function Skills:StartPillar(C, Pos)
 	self:Later(Row.HitDelay, function()
 		self.GM:SpawnSprite({ Sprite = CombatSprite, Flipbook = Book .. "HolyBeam.eflipbook", Position = Spot + Vector3(0, 10, 0), Blend = 2, Life = 0.55,
 		                      Scale = { Row.Radius / 95.0, 1.6 } })
-		self.GM:SpawnFx("Ring", Spot + Vector3(0, 0, 4), { Flat = true, Blend = 2, Scale = 0.5, Grow = 4.0, Life = 0.4, Fade = true, Color = { 1, 0.92, 0.6, 1 } })
+		self.GM:SpawnSprite({ Sprite = CombatSprite, Flipbook = Book .. "Shockwave.eflipbook", Position = Spot + Vector3(0, 0, 4), Flat = true, Blend = 2,
+		                      Life = 0.31, Scale = Row.Radius / 330.0, Color = { 1, 0.92, 0.6, 1 } })
 		self.GM:AddShake(7, 0.2)
 		Audio.PlayOneShot("Audio/RPG/Spin.wav", Spot, 1.0, 1.35)
 	end)
@@ -453,7 +454,8 @@ function Skills:StartBolt(C, Pos)
 		local function Explode(Shot, Center)
 			GM:SpawnSprite({ Sprite = CombatSprite, Flipbook = Book .. "FireBurst.eflipbook", Position = Center + Vector3(0, 20, 0), Blend = 0, Life = 0.44,
 			                 Scale = Row.Radius / 90.0 })
-			GM:SpawnFx("Ring", Center + Vector3(0, 0, -60), { Flat = true, Blend = 2, Scale = 0.4, Grow = 4.5, Life = 0.3, Fade = true, Color = { 1, 0.6, 0.3, 1 } })
+			GM:SpawnSprite({ Sprite = CombatSprite, Flipbook = Book .. "Shockwave.eflipbook", Position = Center + Vector3(0, 0, -60), Flat = true, Blend = 2,
+			                 Life = 0.31, Scale = Row.Radius / 330.0, Color = { 1, 0.6, 0.3, 1 } })
 			GM:AddShake(7, 0.16)
 			Audio.PlayOneShot("Audio/RPG/HitHeavy.wav", Center, 1.0, 0.72)
 			Audio.PlayOneShot("Audio/RPG/Spin.wav", Center, 0.7, 0.55)

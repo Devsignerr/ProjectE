@@ -170,6 +170,12 @@
       "Description": "브레이크 기절 시간 (초)"
     },
     {
+      "Name": "TagHeight",
+      "Type": "Float",
+      "Default": 150,
+      "Description": "머리 위 태그(실드·약점·체력) 아래 끝 높이 (발 위 cm — HD2DGameplay.ENEMY_CAPSULE 체력바 높이)"
+    },
+    {
       "Name": "Guard",
       "Type": "Float",
       "Default": 1.0,

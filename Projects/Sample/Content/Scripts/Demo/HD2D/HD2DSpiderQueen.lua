@@ -162,14 +162,14 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 			self:Play("Idle")
 			local PP = Player and Player.entity:GetWorldPosition() or Pos
 			local Center = Vector3(PP.X, PP.Y, Ground.Z)
-			local Count = self.Phase == 2 and 6 or 3
+			local Count = self.Phase == 2 and 7 or 4
 			for I = 1, Count do
 				local Offset = Vector3(0, 0, 0)
 				if I > 1 then
 					local A = (I - 2) / (Count - 1) * math.pi * 2 + self.Time
 					Offset = Vector3(math.cos(A), math.sin(A), 0) * (self.Phase == 2 and 260 or 230)
 				end
-				self.GM:SpawnEruption(Center + Offset, 0.85 + (I - 1) * 0.1, 115, R.AttackDamage, { Status = "Freeze", Chance = 0.5 })
+				self.GM:SpawnEruption(Center + Offset, 0.85 + (I - 1) * 0.1, 130, R.AttackDamage, { Status = "Freeze", Chance = 0.5 })
 			end
 			self:Sound("Audio/RPG/Spin.wav", 0.9, 0.6)
 			self:EndPattern("Shards")
@@ -212,7 +212,7 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 			end
 			self:Sound("Audio/RPG/HitHeavy.wav", 1.0, 0.8)
 			local PP = Player and Player.entity:GetWorldPosition()
-			if PP and Flat(PP - Ground):Length() < 240 then
+			if PP and Flat(PP - Ground):Length() < 280 then
 				Player:TakeDamage(R.AttackDamage * 1.2, Pos, self.HitOpt) -- 착지 = 기절 (표 Inflict)
 			end
 			self:EndPattern("Pounce")
@@ -247,7 +247,7 @@ function HD2DSpiderQueen:BeginPounce(Player, Ground)
 	self:SetState("PounceWindup", self:Windup())
 	self:Play("Crouch")
 	self.Warn = self.GM:SpawnSprite({ Sprite = "Sprites/HD2D/Fx.esprite", Slice = "Warn", Position = self.PounceTarget + Vector3(0, 0, 3), Flat = true,
-	                                  Blend = 0, Life = self:Windup() + 0.7, Scale = 240 / 108.0, Color = { 1, 1, 1, 0.9 } })
+	                                  Blend = 0, Life = self:Windup() + 0.7, Scale = 280 / 108.0, Color = { 1, 1, 1, 0.9 } })
 end
 
 function HD2DSpiderQueen:StartPattern(Dist, DirP, Ground, Player)

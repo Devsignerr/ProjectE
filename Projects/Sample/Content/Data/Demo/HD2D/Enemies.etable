@@ -30,6 +30,7 @@
           1,
           1
         ],
+        "TagHeight": 95.0,
         "Weakness": [
           "Slash",
           "Fire"
@@ -72,6 +73,7 @@
           1,
           1
         ],
+        "TagHeight": 185.0,
         "Weakness": [
           "Bow",
           "Thunder"
@@ -114,6 +116,7 @@
           1,
           1
         ],
+        "TagHeight": 160.0,
         "Weakness": [
           "Pierce",
           "Ice"
@@ -156,6 +159,7 @@
           1,
           1
         ],
+        "TagHeight": 205.0,
         "Weakness": [
           "Light",
           "Fire"
@@ -198,6 +202,7 @@
           1,
           1
         ],
+        "TagHeight": 165.0,
         "Weakness": [
           "Fire",
           "Slash"
@@ -218,12 +223,12 @@
         "DisplayName": "고대의 바위 골렘",
         "Behavior": "Boss",
         "MaxHealth": 4000,
-        "ContactDamage": 14,
-        "AttackDamage": 24,
+        "ContactDamage": 22,
+        "AttackDamage": 40,
         "MoveSpeed": 170,
         "AggroRange": 850,
         "AttackRange": 340,
-        "AttackCooldown": 1.5,
+        "AttackCooldown": 1.2,
         "WindupTime": 0.8,
         "ProjectileSpeed": 900,
         "GoldMin": 150,
@@ -240,6 +245,7 @@
           1,
           1
         ],
+        "TagHeight": 450.0,
         "Weakness": [
           "Pierce",
           "Ice"
@@ -285,6 +291,7 @@
           1.45,
           1.0
         ],
+        "TagHeight": 185.0,
         "Weakness": [
           "Bow",
           "Fire"
@@ -327,6 +334,7 @@
           1.7,
           1.0
         ],
+        "TagHeight": 95.0,
         "Weakness": [
           "Thunder",
           "Pierce"
@@ -347,14 +355,14 @@
         "DisplayName": "수정 거미 여왕",
         "Behavior": "Boss",
         "MaxHealth": 5200,
-        "ContactDamage": 14,
-        "AttackDamage": 22,
+        "ContactDamage": 28,
+        "AttackDamage": 46,
         "MoveSpeed": 240,
         "AggroRange": 780,
         "AttackRange": 520,
-        "AttackCooldown": 1.35,
+        "AttackCooldown": 1.05,
         "WindupTime": 0.7,
-        "ProjectileSpeed": 950,
+        "ProjectileSpeed": 1200,
         "GoldMin": 220,
         "GoldMax": 220,
         "Exp": 220,
@@ -369,6 +377,7 @@
           1,
           1
         ],
+        "TagHeight": 380.0,
         "Weakness": [
           "Fire",
           "Bow"
@@ -392,12 +401,12 @@
         "DisplayName": "정예 고블린 도적",
         "Behavior": "Charger",
         "MaxHealth": 260,
-        "ContactDamage": 9,
-        "AttackDamage": 19,
+        "ContactDamage": 14,
+        "AttackDamage": 28,
         "MoveSpeed": 360,
         "AggroRange": 1000,
         "AttackRange": 380,
-        "AttackCooldown": 1.7,
+        "AttackCooldown": 1.4,
         "WindupTime": 0.45,
         "ProjectileSpeed": 1400,
         "GoldMin": 30,
@@ -414,6 +423,7 @@
           0.8,
           1.0
         ],
+        "TagHeight": 202.0,
         "Weakness": [
           "Pierce",
           "Ice",
@@ -435,12 +445,12 @@
         "DisplayName": "정예 해골 궁수",
         "Behavior": "Archer",
         "MaxHealth": 240,
-        "ContactDamage": 8,
-        "AttackDamage": 17,
+        "ContactDamage": 12,
+        "AttackDamage": 25,
         "MoveSpeed": 220,
         "AggroRange": 1300,
         "AttackRange": 950,
-        "AttackCooldown": 1.9,
+        "AttackCooldown": 1.6,
         "WindupTime": 0.6,
         "ProjectileSpeed": 1300,
         "GoldMin": 35,
@@ -457,6 +467,7 @@
           1.3,
           1.0
         ],
+        "TagHeight": 256.0,
         "Weakness": [
           "Light",
           "Fire",

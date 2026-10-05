@@ -671,6 +671,28 @@ def DrawFrostBit(Frame):
 	return C
 
 
+def DrawShockwave(Frame):
+	# 바닥 충격파 고리 (위에서 본 원 — 눕혀 쓴다): 120 도트 원을 그대로(배율 ≈ 1) 쓰도록 크게 그려 확대 계단이 생기지 않게.
+	#   0 작고 굵은 흰 고리 → 3 크고 가는 금빛 고리 (프레임으로 넓어진다 — 스크립트는 크기를 키우지 않는다)
+	S = 120
+	C = FCanvas(S, S)
+	R = (20.0, 34.0, 46.0, 55.0)[Frame]
+	W = (5.0, 4.0, 3.0, 1.8)[Frame]
+	Inner = (WHITE, (255, 246, 210), (255, 226, 150), (246, 196, 96))[Frame]
+	Outer = ((255, 236, 170), (255, 214, 120), (240, 180, 80), (200, 140, 60))[Frame]
+	for Y in range(S):
+		for X in range(S):
+			D = abs(math.hypot(X + 0.5 - S * 0.5, Y + 0.5 - S * 0.5) - R)
+			if D <= W * 0.5:
+				C.Px(X, Y, Inner if D <= W * 0.2 else Outer, 255 if Frame < 3 else 190)
+	# 고리 안쪽에 흩날리는 먼지 점 (방향 고정 — 결정적)
+	for K in range(16):
+		A = math.radians(K * 22.5 + 7)
+		Rr = R * (0.72 + 0.12 * (K % 3))
+		C.Px(S * 0.5 + math.cos(A) * Rr, S * 0.5 + math.sin(A) * Rr, Outer, 200 if Frame < 2 else 120)
+	return C
+
+
 # ================================================================ 쓰기
 def WriteUi(UiFolder):
 	for Name in ELEMENTS:
@@ -716,6 +738,8 @@ def WriteSprites(Folder):
 		Fx.Add(f"Bubble{I}", DrawBubble(I), (0.5, 0.0))
 	for I in range(2):
 		Fx.Add(f"FrostBit{I}", DrawFrostBit(I), (0.5, 0.5))
+	for I in range(4):
+		Fx.Add(f"Shockwave{I}", DrawShockwave(I), (0.5, 0.5))
 	Fx.Save(Folder, "Combat")
 	Book = lambda Name, Slices, Fps, Loop="Loop", Durations=None: WriteFlipbook(Folder, f"Combat_{Name}", "Combat.esprite", Slices, Fps, Loop, Durations)
 	Book("Fireball", [f"Fireball{I}" for I in range(4)], 16.0)
@@ -732,3 +756,4 @@ def WriteSprites(Folder):
 	Book("Flame", [f"Flame{I}" for I in range(3)], 11.0)
 	Book("Bubble", [f"Bubble{I}" for I in range(3)], 6.0)
 	Book("FrostBit", ["FrostBit0", "FrostBit1"], 4.0)
+	Book("Shockwave", [f"Shockwave{I}" for I in range(4)], 0, "Once", [0.05, 0.06, 0.08, 0.12])

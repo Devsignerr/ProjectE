@@ -326,19 +326,27 @@ function AutoPilot:Engage(Target, bBoost)
 	local L = To:Length()
 	local Dir = L > 1 and To * (1.0 / L) or Vector3(0, 1, 0)
 	local Want = PreferredRange[W.Kind] + (Target.bBoss and 90 or 0)
+	-- 사람처럼: 보스 패턴 세 번에 한 번은 욕심내 계속 때리다 맞는다 (자동 조종이 모든 패턴을 완벽히 피하면 난이도 확인이 안 된다 — 결정적)
+	if Target.bBoss then
+		local N = 0
+		for _, C in pairs(self.GM.Report.BossPatterns) do N = N + C end
+		self.bGreedy = N % 3 == 2
+	else
+		self.bGreedy = false
+	end
 	-- 보스가 내리치려 하면 물러난다
-	if Target.bBoss and (Target.State == "SlamWindup" or Target.State == "ChargeWindup") and L < 520 then
+	if not self.bGreedy and Target.bBoss and (Target.State == "SlamWindup" or Target.State == "ChargeWindup") and L < 520 then
 		self.In.Move = Dir * -1
 		if Target.State == "ChargeWindup" or L < 330 then self.In.Dash = P.DashCooldown <= 0 and self.Frame % 2 == 0 end
 		return
 	end
 	-- 수정 거미 여왕: 덮치기 예고면 옆으로 비켜 대시, 수정 가시 경고 원 안이면 밖으로
-	if Target.bBoss and Target.State == "PounceWindup" and Target.Timer < 0.35 then
+	if not self.bGreedy and Target.bBoss and Target.State == "PounceWindup" and Target.Timer < 0.3 then
 		self.In.Move = Vector3(-Dir.Y, Dir.X, 0)
 		self.In.Dash = P.DashCooldown <= 0
 		return
 	end
-	if self:DodgeEruptions() then return end
+	if self:DodgeEruptions() or self:DodgeProjectiles() then return end
 	if L > Want + 50 then
 		self:MoveToward(Target.entity:GetWorldPosition())
 	elseif (W.Kind == "Arrow" or W.Kind == "Bolt") and L < Want - 220 then
@@ -402,9 +410,10 @@ end
 -- 곧 솟을 수정 가시 경고 원 안이면 바깥으로 (이번 프레임 이동을 정했으면 true)
 function AutoPilot:DodgeEruptions()
 	local Pos = self:Pos()
+	if self.bGreedy then return false end
 	for _, R in ipairs(self.GM.Eruptions or {}) do
 		local Away = Flat(Pos - R.Pos)
-		if Away:Length() < R.Radius + 50 then
+		if Away:Length() < R.Radius + 50 and R.Delay < 0.55 then -- 반응 시간: 경고가 뜨고 0.3초쯤 지나서야 움직인다
 			self.In.Move = Away:Length() > 1 and Away:Normalized() or Vector3(1, 0, 0)
 			return true
 		end
@@ -671,7 +680,8 @@ function AutoPilot:RunFullTravel()
 	self:EquipBySwitch("Spear")
 	self:GoTo(GM.BossPos + Vector3(-700, 250, 0), 150, 70, "보스 앞")
 	local Until = self.Time + 240 -- 보스는 브레이크를 노려야 잡힌다 (HD2DCombatGen 보스 수치 근거)
-	local Dash0, Fight0 = P.Stats.Dashes, self.Time
+	local Dash0, Fight0, Potion0 = P.Stats.Dashes, self.Time, self:PotionsUsed()
+	self.LowHp = 1
 	local Swap = self.Time + 10
 	-- 일반 전투 흐름만 (예비 동작을 보고 피하며 계속 공격 — 패턴 3종은 보스의 패턴 순환이 보장한다)
 	while not GM.bBossDead and self.Time < Until do
@@ -683,6 +693,7 @@ function AutoPilot:RunFullTravel()
 				self:MoveToward(GM.BossPos) -- 잠든 보스는 목록에 없다 → 다가가 깨운다
 			end
 			self:Survive()
+			self:TrackLowHp()
 			if self.Time > Swap then
 				Swap = self.Time + 2
 				if Boss then self:SwitchToWeakWeapon(Boss) end -- R로 약점 속성 무기로 (2단계에 약점이 바뀌면 다시 — HD2DAutoCombat.lua)
@@ -692,6 +703,7 @@ function AutoPilot:RunFullTravel()
 	end
 	self:Expect(GM.bBossDead, string.format("보스 처치 (%.0f초)", self.Time - Fight0))
 	self:Expect(P.Stats.Dashes > Dash0, "골렘 패턴 대시 회피 (" .. (P.Stats.Dashes - Dash0) .. ")")
+	self:Note(string.format("골렘전 난이도: 최저 HP %.0f%%, 회복약 %d개, 쓰러짐 %d", self.LowHp * 100, self:PotionsUsed() - Potion0, P.Stats.Deaths))
 	self:CheckCompanion("골렘전")
 	self:Expect(GM.Report.BossBreaks >= 1, "골렘 브레이크 (" .. GM.Report.BossBreaks .. ")")
 	local Patterns = 0
@@ -871,7 +883,8 @@ function AutoPilot:RunCaveRun()
 	self:Expect(GM:IsGateClosed(), "보스 방 입장 → 문 닫힘")
 	self:EquipBySwitch("Spear")
 	local Until = self.Time + 260
-	local Dash0, Fight0 = P.Stats.Dashes, self.Time
+	local Dash0, Fight0, Potion0 = P.Stats.Dashes, self.Time, self:PotionsUsed()
+	self.LowHp = 1
 	-- 일반 전투 흐름만 (관찰 대기 없이 — 여왕은 붙어 있어도 뒤로 뛰어 덮친다)
 	while not GM.bBossDead and self.Time < Until do
 		local Boss = GM:NearestEnemy(self:Pos(), 3000, function(S) return S.bBoss end)
@@ -883,11 +896,13 @@ function AutoPilot:RunCaveRun()
 				self:MoveToward(GM.BossPos) -- 잠든 보스는 목록에 없다 → 다가가 깨운다
 			end
 			self:Survive()
+			self:TrackLowHp()
 		end
 		self:Yield()
 	end
 	self:Expect(GM.bBossDead and GM:IsBossDefeated("Cave"), string.format("수정 거미 여왕 처치 (%.0f초)", self.Time - Fight0))
 	self:Expect(P.Stats.Dashes > Dash0, "여왕 패턴 대시 회피 (" .. (P.Stats.Dashes - Dash0) .. ")")
+	self:Note(string.format("여왕전 난이도: 최저 HP %.0f%%, 회복약 %d개, 쓰러짐 %d", self.LowHp * 100, self:PotionsUsed() - Potion0, P.Stats.Deaths))
 	self:Expect(GM.Report.BossBreaks >= 1, "여왕 브레이크 (" .. GM.Report.BossBreaks .. ")")
 	self:CheckSkills("동굴", 3)
 	self:CheckCompanion("동굴")

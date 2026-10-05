@@ -2,7 +2,7 @@
   "Version": 1,
   "Texture": "Combat.png",
   "TextureWidth": 256,
-  "TextureHeight": 518,
+  "TextureHeight": 760,
   "UnitsPerPixel": 6.0,
   "Filter": "Point",
   "Slices": [
@@ -584,6 +584,50 @@
       "Y": 501,
       "W": 12,
       "H": 12,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Shockwave0",
+      "X": 1,
+      "Y": 518,
+      "W": 120,
+      "H": 120,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Shockwave1",
+      "X": 122,
+      "Y": 518,
+      "W": 120,
+      "H": 120,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Shockwave2",
+      "X": 1,
+      "Y": 639,
+      "W": 120,
+      "H": 120,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Shockwave3",
+      "X": 122,
+      "Y": 639,
+      "W": 120,
+      "H": 120,
       "Pivot": [
         0.5,
         0.5

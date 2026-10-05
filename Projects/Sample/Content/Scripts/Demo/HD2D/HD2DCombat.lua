@@ -131,8 +131,14 @@ function Combat:InitEnemyCombat(S)
 	S.StatusTick = {}
 	S.Mover = S.entity:GetComponent("CharacterMovementComponent")
 	S.BaseSpeed = S.Mover and S.Mover.MaxWalkSpeed or 0
-	local Hp = S.Visual and S.Visual:FindChild("HpBack")
-	S.TagZ = (Hp and Hp:GetPosition().Z or ((S.Foot or -60) + 150)) + 28
+	S.TagZ = (S.Foot or -60) + (S.Row.TagHeight or 150) -- 머리 위 태그 아래 끝 (캡슐 중심 기준 — 적 표 TagHeight)
+	-- 태그가 체력을 보이므로 몸 위 체력바 스프라이트는 숨긴다 (태그와 두 겹으로 머리를 가렸다)
+	if S.MaxShield > 0 and S.HpBack then
+		S.ShowBar = function(Self, bShow)
+			Self.HpBack:GetComponent("SpriteComponent").Visible = false
+			Self.HpFill:GetComponent("SpriteComponent").Visible = false
+		end
+	end
 	if S.Visual then
 		S.Aura = S.Visual:FindChild("Aura")
 		S.AuraSprite = S.Aura and S.Aura:GetComponent("SpriteComponent") or nil
@@ -162,7 +168,7 @@ function Combat:UpdateEnemyCombat(S, Dt)
 	if S.bBroken or S.Status.Stun then self:TickSkippedEnemy(S, Dt) end
 	if S.bBroken then
 		S.BreakTimer = S.BreakTimer - Dt
-		if S.BreakStars and S.BreakStars.Entity then S.BreakStars.Entity:SetPosition(Pos + Vector3(0, 8, S.TagZ - 40)) end
+		if S.BreakStars and S.BreakStars.Entity then S.BreakStars.Entity:SetPosition(Pos + Vector3(0, 8, S.TagZ - 20)) end
 		-- 나는 적은 바닥으로 떨어져 있다
 		if S.Shape and S.Shape.Lift and S.Shape.Lift > 0 and S.BodyBase then
 			local Drop = math.min(1.0, (S.BreakAge or 0) / 0.25)
@@ -173,7 +179,7 @@ function Combat:UpdateEnemyCombat(S, Dt)
 		return true, Dt
 	end
 	if S.Status.Stun then
-		if S.StunStars and S.StunStars.Entity then S.StunStars.Entity:SetPosition(Pos + Vector3(0, 8, S.TagZ - 40)) end
+		if S.StunStars and S.StunStars.Entity then S.StunStars.Entity:SetPosition(Pos + Vector3(0, 8, S.TagZ - 20)) end
 		return true, Dt
 	end
 	if S.Status.Freeze then
@@ -250,7 +256,7 @@ function Combat:StartBreak(S)
 	S.bBroken = true
 	S.BreakTimer = Row.BreakTime or 3.5
 	S.BreakAge = 0
-	S.BreakFlash = 0.3
+	S.BreakFlash = 0.12 -- 금빛 덮기는 짧게·옅게 (적 그림이 늘 보이게)
 	local R = self.Report
 	R.Breaks = R.Breaks + 1
 	if S.bBoss then R.BossBreaks = R.BossBreaks + 1 end
@@ -262,19 +268,23 @@ function Combat:StartBreak(S)
 	if S.Play then S:Play("Idle") end
 	if S.Status.Stun then self:ClearStatus(S, "Stun") end
 	local Pos = S.entity:GetWorldPosition()
-	local Head = Pos + Vector3(0, 16, S.TagZ - 30)
+	local Head = Pos + Vector3(0, 16, S.TagZ - 20)
 	local Ground = Pos + Vector3(0, 0, (S.Foot or -60) + 3)
 	-- 연출: 실드가 깨지며 금빛 폭발 + 바닥 고리 + 기절 별 + 화면 번쩍 + 멈춤 + "BREAK!"
 	self:SpawnSprite({ Sprite = CombatSprite, Flipbook = Book .. "Shatter.eflipbook", Position = Head, Blend = 0, Life = 0.42, Scale = S.bBoss and 1.6 or 1.15 })
-	self:SpawnFx("Burst", Pos + Vector3(0, 20, (S.HitHeight or 60) - 10), { Blend = 2, Scale = S.bBoss and 3.6 or 2.4, Color = { 1, 0.85, 0.4, 1 } })
-	self:SpawnFx("Ring", Ground, { Flat = true, Blend = 2, Scale = 0.5, Grow = S.bBoss and 7.0 or 5.0, Life = 0.4, Fade = true, Color = { 1, 0.85, 0.45, 1 } })
+	-- (몸을 덮는 가산 폭발은 쓰지 않는다 — 적 그림이 늘 보이게. 섬광은 실드 조각·반짝임·바닥 충격파·화면 번쩍으로)
+	self:SpawnFx("Spark", Head + Vector3(0, 6, 0), { Blend = 2, Scale = S.bBoss and 2.4 or 1.8, Color = { 1, 0.9, 0.55, 1 } })
+	-- 바닥 충격파: 크게 그린 고리를 거의 그대로 (확대 계단 없이 — 넓어짐은 플립북 프레임)
+	self:SpawnSprite({ Sprite = CombatSprite, Flipbook = Book .. "Shockwave.eflipbook", Position = Ground, Flat = true, Blend = 2, Life = 0.31,
+	                   Scale = S.bBoss and 0.85 or 0.5, Color = { 1, 0.9, 0.6, 0.95 } })
 	for I = 0, 3 do
 		local A = I / 4 * math.pi * 2 + 0.4
 		self:SpawnFx("Sparkle", Head + Vector3(math.cos(A) * 70, 10, math.sin(A) * 50), { Blend = 2, Scale = 1.2, Life = 0.33 + I * 0.04, Color = { 1, 0.9, 0.5, 1 } })
 	end
-	S.BreakStars = self:SpawnSprite({ Sprite = CombatSprite, Flipbook = Book .. "Stars.eflipbook", Position = Pos + Vector3(0, 8, S.TagZ - 40), Blend = 0,
-	                                  Life = S.BreakTimer, Scale = S.bBoss and 2.4 or 1.6 })
-	self:Hud():ShowBreakBanner(Pos + Vector3(0, 30, (S.HitHeight or 60) - 20), S.bBoss) -- 몸 가운데 (머리 위 태그를 가리지 않게)
+	S.BreakStars = self:SpawnSprite({ Sprite = CombatSprite, Flipbook = Book .. "Stars.eflipbook", Position = Pos + Vector3(0, 8, S.TagZ - 20), Blend = 0,
+	                                  Life = S.BreakTimer, Scale = S.bBoss and 2.0 or 1.3 })
+	-- 글자는 몸 높이에서 오른쪽 옆으로 (머리 위 태그와 겹치지 않게)
+	self:Hud():ShowBreakBanner(Pos + Vector3(0, 30, (S.HitHeight or 60) - 10), S.bBoss, (S.Radius or 50) * (S.bBoss and 0.9 or 1.4) + 40)
 	self:Hud():ScreenFlash(S.bBoss and 0.42 or 0.28, 0.22)
 	Game.HitStop(S.bBoss and 0.2 or 0.11)
 	self:AddShake(S.bBoss and 16 or 10, 0.3)
@@ -295,7 +305,7 @@ function Combat:EndBreak(S, bQuiet)
 	if S.SetState and not bQuiet then S:SetState(S.bBoss and "Recover" or "Idle", 0.35) end
 	if not bQuiet and S.entity:IsValid() then
 		local Pos = S.entity:GetWorldPosition()
-		self:SpawnFx("Sparkle", Pos + Vector3(0, 20, S.TagZ - 40), { Blend = 2, Scale = 1.4, Color = { 0.7, 0.85, 1, 1 } })
+		self:SpawnFx("Sparkle", Pos + Vector3(0, 20, S.TagZ - 20), { Blend = 2, Scale = 1.4, Color = { 0.7, 0.85, 1, 1 } })
 		Audio.PlayOneShot("Asset/Kenney_RPGAudio/equip.wav", Pos, 0.7, 1.25)
 	end
 end
@@ -479,7 +489,7 @@ function Combat:SpawnCompanion()
 	end
 	local At
 	if self.CompanionRecruited then
-		At = Player.entity:GetWorldPosition() + Vector3(-90, 110, 4)
+		At = Player.entity:GetWorldPosition() + Vector3(-130, -35, 4) -- 플레이어 왼쪽 뒤 (HD2DCompanion FollowSpot과 같은 자리)
 	elseif self.CompanionSpot then
 		At = self.CompanionSpot
 	else
@@ -635,9 +645,11 @@ function Combat:OnLateUpdate(Dt)
 					S.AuraSprite.Slice = Slice
 				end
 				S.Aura:SetSpriteFlip(S.Sprite.FlipX == true, false)
-				S.Aura:SetPosition(S.Body:GetPosition() + Vector3(0, -4, -3))
-				local A = 0.42 + 0.22 * math.sin(Now * 4.5 + S.entity.Id)
-				S.AuraSprite.Color = Vector4(1, 0.85, 0.35, A)
+				-- 30cm 뒤 + 16cm 아래: 스프라이트는 카메라 거리로 정렬되므로 조금 크게 그린 윤곽이 앞으로 오지 않게 충분히 뒤로
+				--   (뒤로 간 만큼 화면에서 올라가는 것을 아래로 내려 상쇄 — 피치 28도)
+				S.Aura:SetPosition(S.Body:GetPosition() + Vector3(0, -30, -16))
+				local A = 0.85 + 0.25 * math.sin(Now * 4.5 + S.entity.Id) -- 밝기만 숨 쉬듯 (마스크라 알파는 쓰지 않는다)
+				S.AuraSprite.Color = Vector4(A, A * 0.85, A * 0.35, 1)
 			end
 			local bFlashing = (S.Flash or 0) > 0
 			if S.bBroken then
@@ -645,15 +657,15 @@ function Combat:OnLateUpdate(Dt)
 				local T = S.Tint or Vector4(1, 1, 1, 1)
 				S.Sprite.Color = Vector4(T.X * 0.82, T.Y * 0.8, T.Z * 0.78, T.W)
 				if not bFlashing then
-					local Pulse = 0.12 + 0.1 * math.sin(Now * 9.0)
-					S.Sprite.FlashColor = Vector4(1.0, 0.82, 0.3, math.max(Pulse, math.min(0.9, S.BreakFlash * 2.2)))
+					local Pulse = 0.03 + 0.015 * math.sin(Now * 9.0) -- FlashColor는 선형 공간에서 섞여 작은 값도 밝게 보인다 (0.14 = 금빛 덩어리였다)
+					S.Sprite.FlashColor = Vector4(1.0, 0.82, 0.3, S.BreakFlash > 0 and 0.3 or Pulse)
 				end
 			elseif S.Status and S.Status.Freeze then
 				local T = S.Tint or Vector4(1, 1, 1, 1)
 				S.Sprite.Color = Vector4(T.X * 0.62, T.Y * 0.86, T.Z * 1.35, T.W)
-				if not bFlashing then S.Sprite.FlashColor = Vector4(0.75, 0.92, 1.0, 0.22) end
+				if not bFlashing then S.Sprite.FlashColor = Vector4(0.75, 0.92, 1.0, 0.06) end
 			elseif S.Status and S.Status.Burn and not bFlashing then
-				S.Sprite.FlashColor = Vector4(1.0, 0.5, 0.15, 0.1 + 0.1 * math.sin(Now * 20.0 + S.entity.Id))
+				S.Sprite.FlashColor = Vector4(1.0, 0.5, 0.15, 0.03 + 0.03 * math.sin(Now * 20.0 + S.entity.Id))
 			elseif not bFlashing and S.Sprite.FlashColor.W > 0 and (S.Flash or 0) <= 0 then
 				S.Sprite.FlashColor = Vector4(1, 1, 1, 0)
 			end

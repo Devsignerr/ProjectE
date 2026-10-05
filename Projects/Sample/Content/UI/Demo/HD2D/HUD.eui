@@ -14466,7 +14466,115 @@
                 ]
               }
             ]
+          },
+          {
+            "Type": "ProgressBar",
+            "Name": "TagHp",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Collapsed",
+            "Slot": {
+              "Padding": [
+                0,
+                2,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "MinSize": [
+              64,
+              6
+            ],
+            "Brush": {
+              "Color": [
+                0.05,
+                0.03,
+                0.06,
+                0.85
+              ],
+              "CornerRadius": 1,
+              "BorderWidth": 1,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "FillBrush": {
+              "Color": [
+                0.92,
+                0.3,
+                0.28,
+                1
+              ],
+              "CornerRadius": 1,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "Percent": 1.0,
+            "FillDirection": "LeftToRight"
           }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "ScreenProbe",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Hidden",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": -2
+        },
+        "Brush": {
+          "Color": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
         ]
       },
       {
@@ -14533,22 +14641,22 @@
         "Visibility": "Collapsed",
         "Slot": {
           "AnchorMin": [
-            0.5,
-            0
+            0,
+            1
           ],
           "AnchorMax": [
-            0.5,
-            0
+            0,
+            1
           ],
           "Offsets": [
-            0,
-            92,
+            18,
+            -178,
             0,
             0
           ],
           "Alignment": [
-            0.5,
-            0
+            0,
+            1
           ],
           "AutoSize": true,
           "ZOrder": 6

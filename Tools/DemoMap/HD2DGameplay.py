@@ -204,8 +204,8 @@ ENEMIES = [
 	("Mushroom", {"DisplayName": "독버섯", "Behavior": "Spore", "MaxHealth": 70, "ContactDamage": 6, "AttackDamage": 5, "MoveSpeed": 160, "AggroRange": 750,
 				  "AttackRange": 280, "AttackCooldown": 3.2, "WindupTime": 0.6, "ProjectileSpeed": 0, "GoldMin": 3, "GoldMax": 6, "Exp": 10,
 				  "DropItem": "Ether", "DropChance": 0.15, "Radius": 50, "RespawnTime": 16}),
-	("Golem", {"DisplayName": "고대의 바위 골렘", "Behavior": "Boss", "MaxHealth": 4000, "ContactDamage": 14, "AttackDamage": 24, "MoveSpeed": 170, "AggroRange": 850,
-			   "AttackRange": 340, "AttackCooldown": 1.5, "WindupTime": 0.8, "ProjectileSpeed": 900, "GoldMin": 150, "GoldMax": 150, "Exp": 150,
+	("Golem", {"DisplayName": "고대의 바위 골렘", "Behavior": "Boss", "MaxHealth": 4000, "ContactDamage": 22, "AttackDamage": 40, "MoveSpeed": 170, "AggroRange": 850,
+			   "AttackRange": 340, "AttackCooldown": 1.2, "WindupTime": 0.8, "ProjectileSpeed": 900, "GoldMin": 150, "GoldMax": 150, "Exp": 150,
 			   "DropItem": "Elixir", "DropChance": 1.0, "Radius": 115, "RespawnTime": 0}),
 	# 동굴 유적 (HD2DCave): 변형은 바탕 종류의 그림(Look)에 색(Tint)만 다르다
 	("CaveBat", {"DisplayName": "동굴 흡혈 박쥐", "Behavior": "Flyer", "MaxHealth": 46, "ContactDamage": 8, "AttackDamage": 14, "MoveSpeed": 430, "AggroRange": 1000,
@@ -214,8 +214,8 @@ ENEMIES = [
 	("CrystalSlime", {"DisplayName": "수정 슬라임", "Behavior": "Hopper", "MaxHealth": 90, "ContactDamage": 13, "AttackDamage": 13, "MoveSpeed": 280, "AggroRange": 750,
 					  "AttackRange": 0, "AttackCooldown": 1.0, "WindupTime": 0.0, "ProjectileSpeed": 0, "GoldMin": 4, "GoldMax": 7, "Exp": 14,
 					  "DropItem": "HiPotion", "DropChance": 0.15, "Radius": 50, "RespawnTime": 14, "Look": "Slime", "Tint": [0.55, 1.05, 1.7, 1.0]}),
-	("SpiderQueen", {"DisplayName": "수정 거미 여왕", "Behavior": "Boss", "MaxHealth": 5200, "ContactDamage": 14, "AttackDamage": 22, "MoveSpeed": 240,
-					 "AggroRange": 780, "AttackRange": 520, "AttackCooldown": 1.35, "WindupTime": 0.7, "ProjectileSpeed": 950, "GoldMin": 220, "GoldMax": 220,
+	("SpiderQueen", {"DisplayName": "수정 거미 여왕", "Behavior": "Boss", "MaxHealth": 5200, "ContactDamage": 28, "AttackDamage": 46, "MoveSpeed": 240,
+					 "AggroRange": 780, "AttackRange": 520, "AttackCooldown": 1.05, "WindupTime": 0.7, "ProjectileSpeed": 1200, "GoldMin": 220, "GoldMax": 220,
 					 "Exp": 220, "DropItem": "Elixir", "DropChance": 1.0, "Radius": 125, "RespawnTime": 0}),
 ]
 for _, _Row in ENEMIES:

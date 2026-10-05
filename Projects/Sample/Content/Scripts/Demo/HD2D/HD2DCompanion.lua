@@ -20,6 +20,19 @@ local SpellStatus = { Fire = { "Burn", 0.25 }, Ice = { "Freeze", 0.3 }, Thunder 
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
 
+-- 화면에서 겹쳐 보이는 정도: 카메라가 +Y 위에서 내려다봐 앞뒤(Y) 차이는 화면에서 절반 남짓으로 줄어든다 → Y를 1.8로 나눈 거리
+local function ScreenGap(A, B)
+	local DX, DY = A.X - B.X, (A.Y - B.Y) / 1.8
+	return math.sqrt(DX * DX + DY * DY)
+end
+local MinGap = 120 -- 플레이어와 겹쳐 서지 않는 최소 간격 (cm, ScreenGap)
+
+-- 따라갈 자리: 플레이어 옆 뒤 (화면 가로로 130cm 떨어져, 살짝 안쪽) — 보는 쪽 반대편, 위/아래를 보면 왼쪽
+local function FollowSpot(PP, Aim)
+	local Side = (Aim and math.abs(Aim.X) > 0.3) and (Aim.X > 0 and -1 or 1) or -1
+	return Vector3(PP.X + Side * 130, PP.Y - 35, PP.Z)
+end
+
 function HD2DCompanion:OnStart()
 	self.GM = Scene.Find("HD2DGame"):GetScript()
 	self.Visual = self.entity:FindChild("Visual")
@@ -151,8 +164,14 @@ function HD2DCompanion:OnUpdate(Dt)
 	self:TakeEnemyHits(Pos)
 	if self.DownTimer > 0 then return end
 	-- 시전 중
+	if self.Cast and not self.Cast.bFired and ScreenGap(PP, Pos) < MinGap * 0.6 then
+		self.Cast = nil -- 플레이어가 겹쳐 들어오면 시전을 접고 비켜 선다 (쿨다운은 그대로 — 곧 다시)
+		self.Anim = ""
+	end
 	if self.Cast then
 		self:UpdateCast(Dt)
+	elseif ScreenGap(PP, Pos) < MinGap then
+		self:FollowStep(Dt, Pos, PP, Player, nil) -- 너무 붙었으면 먼저 비켜 선다 (시전은 그 뒤)
 	else
 		local Target = GM:NearestEnemy(PP, 950)
 		if Player.Health < Player.MaxHealth * 0.45 and self.HealCd <= 0 and not Player.bDead then
@@ -171,13 +190,18 @@ end
 
 -- 따라가기: 플레이어 비스듬히 뒤(보는 방향 반대 110cm + 옆 100cm — 겹쳐 서지 않게), 적이 가까우면 물러선다
 function HD2DCompanion:FollowStep(Dt, Pos, PP, Player, Target)
-	local Back = Player.AimDir or Vector3(0, 1, 0)
-	local Goal = PP - Back * 110 + Vector3(-Back.Y, Back.X, 0) * 100
+	local Goal = FollowSpot(PP, Player.AimDir)
 	local To = Flat(Goal - Pos)
 	local Move = nil
 	if Target then
 		local Away = Flat(Pos - Target.entity:GetWorldPosition())
 		if Away:Length() < 260 then Move = Away:Normalized() end
+	end
+	-- 플레이어와 최소 간격: 붙어 있으면 따라갈 자리(뒤쪽 옆) 쪽으로 비켜 선다
+	if ScreenGap(Pos, PP) < MinGap then
+		local Side = Flat(Goal - PP)
+		Side = Side:Length() > 1 and Side:Normalized() or Vector3(-1, 0, 0)
+		Move = ((Move or Vector3(0, 0, 0)) + Side * 1.5):Normalized()
 	end
 	if not Move and To:Length() > 90 then
 		Move = self:PathDir(Pos, Goal, Dt) * math.min(1.0, To:Length() / 220.0 + 0.35)
@@ -339,8 +363,7 @@ end
 
 -- 플레이어 곁으로 (뒤쪽, 지면 위)
 function HD2DCompanion:Teleport(PP)
-	local Back = (self.GM:GetPlayer().AimDir or Vector3(0, 1, 0))
-	local At = PP - Back * 110 + Vector3(-Back.Y, Back.X, 0) * 100 + Vector3(0, 0, 4)
+	local At = FollowSpot(PP, self.GM:GetPlayer().AimDir) + Vector3(0, 0, 4)
 	self.entity:SetPosition(At)
 	self.Path = nil
 	self.GM:SpawnFx("Sparkle", At + Vector3(0, 20, 10), { Blend = 2, Scale = 1.0, Color = { 0.85, 0.7, 1, 1 } })

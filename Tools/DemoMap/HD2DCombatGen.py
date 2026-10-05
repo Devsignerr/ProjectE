@@ -75,6 +75,10 @@ MAGIC_SKILLS = ["Fireball", "IceLance", "Heal"]
 #   한 주기 ≈ 약점 12~16대(6~9초) + 브레이크 5초 ≈ 피해 850~950. 자동 조종(패턴을 거의 다 피하며 쉬지 않고 때림)이 약 50초,
 #   사람은 피하느라 절반쯤만 때리므로 골렘 4000 / 여왕 5200 ≈ 1분 반~3분. (실드 8·체력 2600은 자동 조종 26초 — 너무 쉬웠다)
 #   부스트 BP는 10초에 1, 명중 8번에 1 (예전 7초·5번 — 일반 적을 부스트 연타로 녹였다)
+#   보스·정예 공격(2026-10-05 검수 — 피해 감소 없이도 자동 조종이 한 번도 위기가 없었다): 골렘 내리치기 24 → 40·몸 14 → 22·간격 1.5 → 1.2초,
+#   여왕 22 → 46·몸 14 → 28·간격 1.35 → 1.05초, 수정 가시 4/7곳·반경 130·덮치기 280·거미줄 빠르게 (동굴은 판금 갑옷·수정 부적까지 끼고 와 받는 피해 × 0.5).
+#   자동 조종은 패턴 세 번에 한 번 욕심내 맞고(사람처럼), 수정 가시는 0.3초 늦게 반응한다 — 모든 패턴을 완벽히 피하면 60까지 올려도 최저 HP 65%였다 정예 고블린 19 → 28, 정예 궁수 17 → 25. 7레벨 판금 갑옷(방어 14+, 받는 피해 × 0.55)이면
+#   내리치기 한 대 ≈ HP 300의 7% — 두세 번 못 피하면 절반 아래로 내려가 회복약·치유를 쓰게 된다
 ENEMY_COMBAT = {  # 종류: (약점, 실드, 2단계 약점, 2단계 실드, 브레이크 초, 거는 상태, 확률)
 	"Slime":        (["Slash", "Fire"], 1, [], 0, 3.5, "", 0.0),
 	"Bat":          (["Bow", "Thunder"], 1, [], 0, 3.5, "", 0.0),
@@ -91,11 +95,11 @@ ENEMY_COMBAT = {  # 종류: (약점, 실드, 2단계 약점, 2단계 실드, 브
 
 # ---- 정예 적 (바탕 종류의 강화 변형): 표 행 = 바탕 행 + 덮어쓰기, 캡슐은 몸 배율만큼 크게
 ELITES = {
-	"EliteGoblin": ("Goblin", 1.2, {"DisplayName": "정예 고블린 도적", "MaxHealth": 260, "ContactDamage": 9, "AttackDamage": 19, "MoveSpeed": 360,
-									 "AggroRange": 1000, "AttackCooldown": 1.7, "WindupTime": 0.45, "ProjectileSpeed": 1400, "GoldMin": 30, "GoldMax": 40,
+	"EliteGoblin": ("Goblin", 1.2, {"DisplayName": "정예 고블린 도적", "MaxHealth": 260, "ContactDamage": 14, "AttackDamage": 28, "MoveSpeed": 360,
+									 "AggroRange": 1000, "AttackCooldown": 1.4, "WindupTime": 0.45, "ProjectileSpeed": 1400, "GoldMin": 30, "GoldMax": 40,
 									 "Exp": 45, "DropItem": "HiPotion", "DropChance": 1.0, "Radius": 56, "RespawnTime": 90, "Look": "Goblin",
 									 "Tint": [1.12, 0.86, 0.8, 1.0]}),
-	"EliteArcher": ("Archer", 1.2, {"DisplayName": "정예 해골 궁수", "MaxHealth": 240, "ContactDamage": 8, "AttackDamage": 17, "AttackCooldown": 1.9,
+	"EliteArcher": ("Archer", 1.2, {"DisplayName": "정예 해골 궁수", "MaxHealth": 240, "ContactDamage": 12, "AttackDamage": 25, "AttackCooldown": 1.6,
 									 "WindupTime": 0.6, "ProjectileSpeed": 1300, "GoldMin": 35, "GoldMax": 45, "Exp": 55, "DropItem": "HiPotion",
 									 "DropChance": 1.0, "Radius": 54, "RespawnTime": 0, "Look": "Archer", "Tint": [1.08, 0.95, 1.3, 1.0]}),
 }
@@ -116,6 +120,7 @@ def ExtendEnemies(Enemies, Capsules):
 		R, Half, Lift, BarZ, Mass = Capsules[Base]
 		Capsules[Kind] = (R * Scale, Half * Scale, Lift * Scale, BarZ * Scale + 10.0, Mass * 1.6)
 	for Kind, Row in Enemies:
+		Row["TagHeight"] = Capsules[Kind][3] if Kind in Capsules else 150.0  # 머리 위 태그 아래 끝 (발 위 cm — 체력바 자리, 머리 바로 위)
 		Weak, Shield, Weak2, Shield2, BreakTime, Inflict, Chance = ENEMY_COMBAT.get(Kind, ([], 0, [], 0, 3.5, "", 0.0))
 		Row.update({"Weakness": list(Weak), "Shield": Shield, "Weakness2": list(Weak2), "Shield2": Shield2, "BreakTime": BreakTime,
 					"Elite": Kind in ELITES, "Inflict": Inflict, "InflictChance": Chance, "Guard": GUARD.get(Kind, 1.0)})
@@ -127,14 +132,15 @@ def BodyScale(Kind):
 
 
 def EnemyExtraChildren(Kind, Link, Transform, Sprite, SpriteAsset, Slice, BodyZ):
-	# 정예: 몸 뒤(-Y = 카메라에서 먼 쪽)에 같은 그림을 조금 크게 금빛으로 덮어 윤곽처럼 빛나게 (슬라이스·반전은 HD2DCombat.lua가 몸을 따라 맞춘다)
+	# 정예: 몸 뒤(-Y = 카메라에서 먼 쪽)에 같은 그림을 조금 크게 금빛 단색으로 — 마스크(불투명·깊이 기록)라 몸이 앞을 가려 가장자리만 윤곽으로 보인다
+	#   (반투명이면 몸 위에 덮여 적 전체가 금빛이 됐다). 슬라이스·반전은 HD2DCombat.lua가 몸을 따라 맞춘다
 	if Kind not in ELITES:
 		return []
-	S = ELITES[Kind][1] * 1.13
-	Aura = Sprite(SpriteAsset, Slice, Lit=False, Shadows=False, Blend=0, Billboard=2, Color=(1.0, 0.85, 0.35, 0.6))
-	Aura["FlashColor"] = [1.0, 0.82, 0.3, 1.0]
+	S = ELITES[Kind][1] * 1.08
+	Aura = Sprite(SpriteAsset, Slice, Lit=False, Shadows=False, Blend=3, Billboard=2, Color=(1.0, 0.85, 0.35, 1.0))
+	Aura["FlashColor"] = [1.0, 0.82, 0.3, 1.0]  # 그림 색 대신 금빛으로 덮는다
 	return [{"Name": "Aura", "Parent": 1, "Components": {"SpriteComponent": Aura, "PrefabLinkComponent": Link(8),
-																   "TransformComponent": Transform((0, -4, BodyZ - 3.0), None, (S, S, S))}}]
+																   "TransformComponent": Transform((0, -30, BodyZ - 16.0), None, (S, S, S))}}]
 
 
 # ---- 동료 (Balance 필드 — 수치 근거: 마법 한 대 15 ≈ 1레벨 검 한 대, 2.8초 간격 ≈ 플레이어 화력의 1/8 — 주인공을 대신하지 않고
@@ -218,6 +224,7 @@ def EnemyFields(Field):
 			Field("Weakness2", "Array", [], "보스 2단계 약점 (비면 그대로)", Element="String"),
 			Field("Shield2", "Int", 0, "보스 2단계 실드 (0이면 그대로)"),
 			Field("BreakTime", "Float", 3.5, "브레이크 기절 시간 (초)"),
+			Field("TagHeight", "Float", 150, "머리 위 태그(실드·약점·체력) 아래 끝 높이 (발 위 cm — HD2DGameplay.ENEMY_CAPSULE 체력바 높이)"),
 			Field("Guard", "Float", 1.0, "브레이크가 아닐 때 받는 피해 배율 (보스 0.6 — 실드를 깨야 잡힌다)"),
 			Field("Elite", "Bool", False, "정예 (금빛 윤곽 · 이름표)"),
 			Field("Inflict", "String", "", "몸·공격에 맞으면 거는 상태 이상 (Poison/Burn/Freeze/Stun)"),
@@ -274,6 +281,7 @@ def HudWidgets(G):
 	Out = []
 	# ---- 적 머리 위 태그 템플릿 (복제해 쓴다 — HD2DCombatHud.lua): 이름(정예) / 상태 이상 / 실드(숫자) + 약점 칸
 	# Z = -1: 월드에 붙은 표시라 HUD 창(상태·퀘스트·미니맵·스킬 이름 띠) 밑으로 지나간다
+	# 태그 = 이름(정예) / 상태 이상 / 실드 + 약점 / 체력 막대 — 아래 끝이 머리 바로 위 (적 몸의 체력바 스프라이트는 태그가 있으면 숨긴다)
 	Out.append(W("VerticalBox", "TagTemplate", CanvasSlot((0, 0), 0, 0, 0, 0, (0.5, 1), True, -1), "Collapsed", [
 		Text("TagName", "", 16, BoxSlot((0, 0, 0, 2), HAlign="Center"), G.TEXT_GOLD, "Center", "Collapsed"),
 		W("HorizontalBox", "TagStatus", BoxSlot((0, 0, 0, 2), HAlign="Center"), "Collapsed",
@@ -284,12 +292,16 @@ def HudWidgets(G):
 				Text("TagShieldNum", "0", 19, BoxSlot((0, 0, 0, 3), HAlign="Center", VAlign="Center"), (1, 1, 1, 1), "Center", Outline=2),
 			]),
 		] + [Img(f"TagWeak{K}", f"{Dir}/ElemUnknown.png", 30, BoxSlot((1, 0, 1, 0), VAlign="Center"), "Collapsed") for K in range(5)]),
+		W("ProgressBar", "TagHp", BoxSlot((0, 2, 0, 0), HAlign="Center"), "Collapsed", MinSize=[64, 6],
+		  Brush=Brush((0.05, 0.03, 0.06, 0.85), 1, 1, (0, 0, 0, 1)), FillBrush=Brush((0.92, 0.3, 0.28, 1), 1), Percent=1.0, FillDirection="LeftToRight"),
 	]))
+	# 화면 크기 읽기용 (늘이기 슬롯 — Hidden이라 그리지 않지만 배치는 된다): 태그가 HUD 창과 겹치는지 판정
+	Out.append(W("Border", "ScreenProbe", G.StretchSlot(-2), "Hidden", Brush=Brush((0, 0, 0, 0)), ContentPadding=[0, 0, 0, 0]))
 	# ---- 브레이크 글자 (적 자리에서 커졌다 줄며 사라짐)
 	Out.append(Text("BreakBanner", "BREAK!", 46, CanvasSlot((0, 0), 0, 0, 0, 0, (0.5, 0.5), True, 7), (1.0, 0.86, 0.32, 1), "Center", "Collapsed",
 					Outline=4))
-	# ---- 스킬 이름 띠 (화면 위 가운데)
-	Out.append(W("Border", "SkillNamePanel", CanvasSlot((0.5, 0), 0, 92, 0, 0, (0.5, 0), True, 6), "Collapsed", [
+	# ---- 스킬 이름 띠 (스킬 칸 바로 위 — 화면 가운데 적 태그와 겹치지 않게)
+	Out.append(W("Border", "SkillNamePanel", CanvasSlot((0, 1), 18, -178, 0, 0, (0, 1), True, 6), "Collapsed", [
 		W("HorizontalBox", "SkillNameRow", BoxSlot(), "HitTestInvisible", [
 			Img("SkillNameIcon", f"{Dir}/SkillWhirl.png", 30, BoxSlot((0, 0, 10, 0), VAlign="Center")),
 			Text("SkillNameText", "", 24, BoxSlot(VAlign="Center"), G.TEXT_GOLD),

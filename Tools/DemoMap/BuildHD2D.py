@@ -86,6 +86,10 @@ CAVE_GATE = (330.0, -1985.0)
 CAVE_EXIT_SPAWN = (330.0, -1650.0)
 # 여관(선술집 겸) 문 앞 빈자리 — 저장 지점 등 게임 배치용
 INN_DOOR_SPOT = (-3665.0, -1150.0)
+# 갈매기 항구(HD2DHarbor.escene)로 가는 남쪽 시냇가 오솔길: 다리 동쪽에서 카메라 쪽(+Y) 끝까지 + 이동 트리거·돌아온 자리·표지판
+HARBOR_TRAIL = [(250.0, 170.0), (380.0, 600.0), (430.0, 1000.0), (440.0, 1450.0)]
+HARBOR_GATE = (440.0, 1290.0)
+HARBOR_SPAWN = (420.0, 960.0)
 NOTICE_BOARD = (-2780.0, -800.0)
 EXTRA_FOLIAGE = []  # BuildScene이 채우는 추가 폴리지 (꽃·밀·긴 풀) — Main이 풀과 함께 쓴다
 
@@ -164,7 +168,7 @@ def BuildWeights(X, Y, H):
 	Walk = TerraceMask(X, Y) * Smoothstep(TERRACE_Y - 420.0 + Noise * 60.0, TERRACE_Y - 330.0 + Noise * 60.0, Y) * Smoothstep(-4700.0, -4500.0, X)
 	Plaza = np.maximum(Plaza, Walk)
 	CreekD = SegmentDistance(X, Y, CREEK)
-	PathD = np.minimum(SegmentDistance(X, Y, PATH), SegmentDistance(X, Y, PATH_MILL) + 40.0)
+	PathD = np.minimum.reduce([SegmentDistance(X, Y, PATH), SegmentDistance(X, Y, PATH_MILL) + 40.0, SegmentDistance(X, Y, HARBOR_TRAIL) + 45.0])
 	Path = Smoothstep(150.0 + Noise * 40.0, 95.0 + Noise * 40.0, PathD) * (1.0 - Plaza) * Smoothstep(200.0, 280.0, CreekD)
 	Wet = np.maximum(Smoothstep(1.35, 1.0, EllipseValue(X, Y, POND)) * 0.85, Smoothstep(300.0, 200.0, CreekD))
 	Wet = np.maximum(Wet, Smoothstep(380.0, 250.0, np.hypot(X - FALLS[0], Y - FALLS[1])))
@@ -772,6 +776,10 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 		LanternPost(X, Y)
 	# 들판 나무(전나무)·바위·덤불 (길·연못·야영지·소환 지점은 비움)
 	HD2DGameplay.ReserveSpots(Reserve)
+	# 갈매기 항구로 가는 오솔길·표지판·트리거 자리 (무작위 바위·덤불이 길을 막지 않게)
+	for T in (0.1, 0.3, 0.5, 0.7, 0.9):
+		Reserve(HARBOR_TRAIL[1][0] + (HARBOR_TRAIL[3][0] - HARBOR_TRAIL[1][0]) * T, HARBOR_TRAIL[1][1] + (HARBOR_TRAIL[3][1] - HARBOR_TRAIL[1][1]) * T, 170.0)
+	Reserve(HARBOR_SPAWN[0] + 210.0, HARBOR_SPAWN[1] + 90.0, 80.0)
 	#   카메라 쪽(+Y)에는 큰 나무를 두지 않는다 (피치 28도 — 나무 뒤 10m 넘게 캐릭터를 가림) → 덤불 무리
 	#   동굴 입구(CAVE_GATE) 앞과 성채 앞은 비운다 (나무가 입구·성벽을 가렸다)
 	Trees = [(1900.0, -1750.0, 1.1), (5100.0, -1450.0, 1.2), (5600.0, -300.0, 1.2), (4800.0, -2250.0, 1.4), (3200.0, -1850.0, 1.1)]
@@ -822,6 +830,19 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	S.Add("Spawn_CaveExit", {}, (CAVE_EXIT_SPAWN[0], CAVE_EXIT_SPAWN[1], Height(*CAVE_EXIT_SPAWN)), QuatFromEuler(Yaw=90.0))
 	Reserve(GX, GY + 100.0, 280.0)
 	Reserve(*CAVE_EXIT_SPAWN, 150.0)
+	# ---- 남쪽 시냇가 오솔길 → 갈매기 항구 (이동 트리거 + 돌아온 자리 + 그림 표지판: 닻·아래 화살표)
+	HX_, HY_ = HARBOR_GATE
+	HD2DGameplay.AddTravel(S, Height, "Harbor_Travel", HX_, HY_, "Scenes/Demo/HD2DHarbor.escene", "HartRoad", (220.0, 80.0, 140.0))
+	S.Add("Spawn_Harbor", {}, (HARBOR_SPAWN[0], HARBOR_SPAWN[1], Height(*HARBOR_SPAWN)), QuatFromEuler(Yaw=-90.0))
+	SX_, SY_ = HARBOR_SPAWN[0] + 210.0, HARBOR_SPAWN[1] + 90.0
+	SZ_ = Height(SX_, SY_)
+	E.Box("HarborSign_Pole", (SX_, SY_, SZ_ + 95.0), (12.0, 12.0, 210.0), "EnvTimber")
+	E.Box("HarborSign_Cap", (SX_, SY_, SZ_ + 202.0), (20.0, 20.0, 8.0), "EnvTimber")
+	for Index, (Slice, H_) in enumerate((("SignHarbor", 170.0), ("SignVillage", 130.0))):
+		S.Add(f"HarborSign_Board{Index}", {"SpriteComponent": HD2DGameplay.Sprite("Sprites/HD2D/HarborProps.esprite", Slice, Billboard=0)},
+			  (SX_, SY_ + 9.0, SZ_ + H_))
+	BoxCollider("HarborSign_Collision", (SX_, SY_, SZ_ + 90.0), (12.0, 12.0, 90.0))
+
 	# ---- 게시판 (광장, 계단 서쪽) + 여관 간판 (선술집 겸 여관 — 문 앞 INN_DOOR_SPOT은 비워 둔다)
 	E.NoticeBoard("NoticeBoard", NOTICE_BOARD[0], NOTICE_BOARD[1])
 	E.HangingSign("Inn_Sign", INN_DOOR_SPOT[0] + 150.0, -1600.0 + 280.0, TERRACE_H + 255.0, "Bed")
@@ -915,6 +936,14 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 		Meadow.append((X, Y, Height(X, Y), float(GrassRng.uniform(0, 360)), float(GrassRng.uniform(0.8, 1.2)), float(N[0]), float(N[1]), float(N[2])))
 	EXTRA_FOLIAGE.append((Env.MEADOW_TYPE, Meadow))
 	EXTRA_FOLIAGE.extend(((Env.TREE_TYPE, TreeFoliage["Tree"]), (Env.TREE_AUTUMN_TYPE, TreeFoliage["TreeAutumn"]), (Env.PINE_TYPE, TreeFoliage["Pine"])))
+
+	# 창 유리: 불 켤 수 있는 창(Lit/Dim 유리)을 NightWin_<n>으로 — 낮밤(HD2DWorld.lua)이 해 지면 켜고 낮엔 어두운 유리로 바꾼다
+	WinIndex = 0
+	for Entity in S.Entities:
+		Mesh = Entity["Components"].get("StaticMeshComponent")
+		if Mesh and Mesh["MaterialAsset"] in (Env.Mat("EnvWindowLit"), Env.Mat("EnvWindowDim")):
+			Entity["Name"] = f"NightWin_{WinIndex}"
+			WinIndex += 1
 
 	# ---- 게임: 관리자·HUD(HD2DGameplay) + 카메라 + 플레이어
 	HD2DGameplay.AddGame(S, Height, PATH, AutoPlay, Title=None if AutoPlay else Start == PLAYER_START)  # 타이틀은 기본 씬에만 (시점 변형 제외)

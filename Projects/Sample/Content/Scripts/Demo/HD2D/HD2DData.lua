@@ -38,6 +38,17 @@ function HD2DData.Npc(Id) return ByName("Npcs.etable")[Id] end
 function HD2DData.Quest(Stage) return ByName("Quests.etable")["Stage" .. tostring(Stage)] end
 function HD2DData.SubQuest(Id) return ByName("SubQuests.etable")[Id] end
 
+function HD2DData.Region(Map) return ByName("Regions.etable")[Map] end
+
+-- 낮밤 설정 (DayNight.edata) / 시각 열쇠 (DayNightKeys.etable — 파일 순서 = 시각 순)
+function HD2DData.DayNight()
+	return Memo("DayNight", function() return Data.Load(Root .. "DayNight.edata") end)
+end
+
+function HD2DData.DayNightKeys()
+	return Memo("DayNightKeys", function() return Data.GetRows(Root .. "DayNightKeys.etable") end)
+end
+
 -- 메인 퀘스트 마지막 단계 번호 (Quests.etable의 Stage<n> 중 가장 큰 n — 엔딩 단계)
 function HD2DData.FinalQuestStage()
 	return Memo("FinalStage", function()
@@ -64,11 +75,11 @@ function HD2DData.Balance()
 end
 
 -- 표시 순서: 무기 / 방어구 / 장신구 (장비 탭) · 소모품 / 재료 (도구 탭) · 서브 퀘스트 (퀘스트 탭)
-HD2DData.WeaponOrder = { "Sword", "Spear", "Bow", "Staff", "CrystalSword" }
-HD2DData.ArmorOrder = { "LeatherVest", "ChainMail", "KnightPlate" }
-HD2DData.AccessoryOrder = { "LuckyRing", "SwiftCharm", "LifeAmulet", "CrystalCharm" }
-HD2DData.ConsumableOrder = { "Potion", "HiPotion", "Ether", "Elixir" }
-HD2DData.MaterialOrder = { "Jelly", "LostCat" }
-HD2DData.SubQuestOrder = { "Cat", "Smith", "Scarecrow" }
+HD2DData.WeaponOrder = { "Sword", "Spear", "Bow", "Staff", "CrystalSword", "Harpoon" }
+HD2DData.ArmorOrder = { "LeatherVest", "ChainMail", "KnightPlate", "SailorCoat" }
+HD2DData.AccessoryOrder = { "LuckyRing", "SwiftCharm", "LifeAmulet", "CrystalCharm", "PearlRing", "CompassCharm" }
+HD2DData.ConsumableOrder = { "Potion", "HiPotion", "Ether", "Elixir", "GrilledFish" }
+HD2DData.MaterialOrder = { "Jelly", "LostCat", "LighthouseLens" }
+HD2DData.SubQuestOrder = { "Cat", "Smith", "Scarecrow", "Lighthouse", "Pirates", "Captain" }
 
 return HD2DData

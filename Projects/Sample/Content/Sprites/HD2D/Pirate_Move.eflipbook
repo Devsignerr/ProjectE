@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "HarborEnemies.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "PirateMove0"
+    },
+    {
+      "Slice": "PirateMove1"
+    },
+    {
+      "Slice": "PirateMove2"
+    },
+    {
+      "Slice": "PirateMove3"
+    }
+  ]
+}

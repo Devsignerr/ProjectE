@@ -30,6 +30,7 @@ NPCS = [  # (Id, X, Y) — Id = Npcs.etable 행
 	("Girl", 1100.0, 520.0),  # 야영지 천막(870, 730) 오른쪽 위 — 천막 콜라이더에 막히지 않게
 	("Smith", -3420.0, 180.0),
 	("Farmer", 4300.0, -130.0),
+	("VillageInnkeeper", -3665.0, -1150.0),  # 선술집 겸 여관 문 앞 (BuildHD2D.INN_DOOR_SPOT — 잠자기)
 ]
 CHESTS = [  # (X, Y, 내용 "아이템*개수+...", 골드는 Gold*n)
 	(-3250.0, -450.0, "Spear*1+Potion*1"),
@@ -64,6 +65,8 @@ SHOT_SCENES = {
 	"Shot_Combat":    ((3000.0, 650.0), "Combat"),
 	"Shot_Boost":     ((2500.0, 500.0), "Boost"),
 	"Shot_Boss":      ((4250.0, 520.0), "Boss"),
+	"Shot_Day":       ((-2050.0, 250.0), "VillageDay"),     # 낮밤 (HD2DHarborPilot): 한낮 / 밤 등불
+	"Shot_Night":     ((-2050.0, 250.0), "VillageNight"),
 }
 
 
@@ -94,6 +97,8 @@ ENEMY_CAPSULE = {  # 종류: (반지름, 반높이, 몸 스프라이트 높이(�
 	"SpiderQueen":  (90.0, 45.0, 0.0, 380.0, 500.0),
 }
 BOSS_SCRIPTS = {"Golem": "Scripts/Demo/HD2D/HD2DBoss.lua", "SpiderQueen": "Scripts/Demo/HD2D/HD2DSpiderQueen.lua"}
+ENEMY_SPRITES = {}  # 종류 → (아틀라스, 슬라이스, 대기 플립북) — 기본(Enemies.esprite) 밖 그림 (HD2DWorldData가 채운다)
+ENEMY_SHADOWS = {}  # 그림 종류 → 그림자 배율
 
 
 def _WriteJson(Path, Doc):
@@ -266,6 +271,11 @@ SUB_QUESTS = [
 				   "AfterLines": ["올해 밀은 풍년이겠어. 다 자네 덕일세."]}),
 ]
 
+import sys  # noqa: E402
+import HD2DWorldData  # noqa: E402 — 4차 세계 확장(항구·낮밤) 행을 기존 행 뒤에 덧붙인다
+HD2DWorldData.ExtendTables(sys.modules[__name__])
+
+
 def _Quest(Title, Objective, Lines=(), WaitLines=(), KillGoal=0, AdvanceOnTalk=False, BossGoal="", NewGoal=False, RewardGold=0, RewardItem="",
 		   Ending=False):
 	return {"Title": Title, "Objective": Objective, "KillGoal": KillGoal, "Lines": list(Lines), "WaitLines": list(WaitLines), "AdvanceOnTalk": AdvanceOnTalk,
@@ -389,11 +399,16 @@ def WriteData(Content):
 	_Struct(Content, "Npc", "HD2D 마을 사람 (Npcs.etable, 행 이름 = 마을 사람 id)", [
 		_Field("DisplayName", "String", "마을 사람", "대화 창 이름"),
 		_Field("Flipbook", "String", "", "대기 플립북"),
-		_Field("Role", "Enum", "Talk", "대화만 / 대화 뒤 상점 / 촌장(퀘스트 단계 대사) / 서브 퀘스트 의뢰인(SubQuest)",
-			   Values=["Talk", "Shop", "Elder", "Quest"]),
+		_Field("Role", "Enum", "Talk", "대화만 / 대화 뒤 상점 / 촌장(퀘스트 단계 대사) / 서브 퀘스트 의뢰인(SubQuest) / 여관(잠자기 — 아침으로 + 회복)",
+			   Values=["Talk", "Shop", "Elder", "Quest", "Inn"]),
 		_Field("Lines", "Array", [], "대사 (촌장은 Quests.etable 단계 대사, 의뢰인은 SubQuests.etable 대사)", Element="String"),
 		_Field("Portrait", "String", "", "대화 창 초상화 (UI 텍스처)"),
 		_Field("SubQuest", "String", "", "의뢰하는 서브 퀘스트 (SubQuests.etable 행)"),
+		_Field("ShopStock", "Array", [], "상점 진열 (비면 Balance.ShopStock)", Element="String"),
+		_Field("ShopTitle", "String", "", "상점 창 제목 (비면 기본)"),
+		_Field("ShopLines", "Array", [], "상점 주인 말 (비면 Balance.ShopLines)", Element="String"),
+		_Field("NightLines", "Array", [], "밤 대사 (대화·상점 주인 — 상점은 밤에 닫는다)", Element="String"),
+		_Field("NightOnly", "Bool", False, "밤에만 나타난다 (HD2DWorld.lua)"),
 	])
 	_Table(Content, "Npcs", "Npc", NPC_ROWS)
 
@@ -414,8 +429,8 @@ def WriteData(Content):
 	_Struct(Content, "SubQuest", "HD2D 서브 퀘스트 (SubQuests.etable, 행 이름 = 서브 퀘스트 id — 의뢰인 = Npcs.etable SubQuest)", [
 		_Field("Title", "String", "", "퀘스트 이름 (퀘스트 탭)"),
 		_Field("Giver", "String", "", "의뢰인 (Npcs.etable 행)"),
-		_Field("Kind", "Enum", "Find", "찾기(Target 아이템 1개 — 맵의 소품을 조사) / 모으기(Target 아이템 Count개) / 사냥(구역 안 처치 Count번)",
-			   Values=["Find", "Collect", "Hunt"]),
+		_Field("Kind", "Enum", "Find", "찾기(Target 아이템 1개 — 맵의 소품을 조사) / 모으기(Target 아이템 Count개) / 사냥(구역 안 처치 Count번) / 보스(Target 맵의 보스 처치)",
+			   Values=["Find", "Collect", "Hunt", "Boss"]),
 		_Field("Target", "String", "", "아이템 id (찾기·모으기)"),
 		_Field("Count", "Int", 1, "필요 수"),
 		_Field("AreaX", "Float", 0, "사냥 구역 가운데 X (cm)"),
@@ -467,6 +482,7 @@ def WriteData(Content):
 		_Field("EndingPages", "Array", [], "엔딩·크레딧 쪽 (제목|본문, 본문 줄바꿈 \\n)", Element="String"),
 	])
 	_WriteJson(os.path.join(Content, *DATA.split("/"), "Balance.edata"), {"Version": 1, "Struct": f"{DATA}/Balance.estruct", "Values": BALANCE})
+	HD2DWorldData.WriteData(Content, _Struct, _Table, _Field, _WriteJson, lambda Name: os.path.join(Content, *DATA.split("/"), Name))
 
 
 # ================================================================ 게임 UI (.eui)
@@ -729,6 +745,7 @@ def WriteUi(Content):
 		Text("EndingHint", "E · J 넘기기", 17, CanvasSlot((0.5, 1), 0, -30, 0, 0, (0.5, 1), True, 2), TEXT_DIM, "Center"),
 	]))
 
+	C.extend(HD2DWorldData.HudWidgets(sys.modules[__name__]))
 	Root = Widget("Canvas", "Root", None, "SelfHitTestInvisible", C)
 	_WriteJson(os.path.join(Content, *UI_DIR.split("/"), "HUD.eui"),
 			   {"Version": 2, "DesignSize": [1280, 720], "ScaleMode": "MatchHeight", "Root": Root, "Animations": []})
@@ -798,6 +815,7 @@ def WritePrefabs(Content, CameraDistance, PlayMin, PlayMax):
 	Sprites = {"Slime": ("Sprites/HD2D/Slime.esprite", "Idle0", "Sprites/HD2D/Slime_Idle.eflipbook"),
 			   "Golem": ("Sprites/HD2D/Golem.esprite", "Dormant0", "Sprites/HD2D/Golem_Dormant.eflipbook"),
 			   "SpiderQueen": ("Sprites/HD2D/SpiderQueen.esprite", "Dormant0", "Sprites/HD2D/SpiderQueen_Dormant.eflipbook")}
+	Sprites.update(ENEMY_SPRITES)
 	Rows = dict(ENEMIES)
 	for Kind, (Radius, Half, Lift, BarZ, Mass) in ENEMY_CAPSULE.items():
 		Look = Rows[Kind]["Look"] or Kind  # 동굴 변형은 바탕 종류의 그림을 색만 바꿔 쓴다
@@ -805,7 +823,7 @@ def WritePrefabs(Content, CameraDistance, PlayMin, PlayMax):
 		EFoot = -(Radius + Half)
 		Speed = Rows[Kind]["MoveSpeed"]
 		Script = BOSS_SCRIPTS.get(Kind, "Scripts/Demo/HD2D/HD2DEnemy.lua")
-		ShadowScale = {"Golem": 3.4, "SpiderQueen": 3.8, "Bat": 0.6}.get(Look, 0.8)
+		ShadowScale = dict({"Golem": 3.4, "SpiderQueen": 3.8, "Bat": 0.6}, **ENEMY_SHADOWS).get(Look, 0.8)
 		Extra = []
 		if Kind == "SpiderQueen":
 			# 등의 수정빛 (어두운 동굴에서 보스가 묻히지 않게 — 몸과 둘레 바닥을 푸르게 비춘다)
@@ -993,6 +1011,8 @@ def WriteNavBakeScene(Scene, Height, PlayMin, PlayMax, Path, Cell=100.0, WaterBe
 
 
 def WriteAll(Content, CameraDistance, PlayMin, PlayMax):
+	import HD2DWorldArt  # 4차 세계 확장 도트 아트 (항구 주민·적·보스·소품·아이콘·초상화 — 어느 맵 생성기로 돌려도 같은 결과)
+	HD2DWorldArt.WriteWorldArt(Content)
 	WriteData(Content)
 	WriteUi(Content)
 	WritePrefabs(Content, CameraDistance, PlayMin, PlayMax)

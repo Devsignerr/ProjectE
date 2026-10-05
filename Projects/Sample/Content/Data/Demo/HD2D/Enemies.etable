@@ -271,6 +271,156 @@
           1
         ]
       }
+    },
+    {
+      "Name": "Crab",
+      "Values": {
+        "DisplayName": "바위 게",
+        "Behavior": "Charger",
+        "MaxHealth": 52,
+        "ContactDamage": 9,
+        "AttackDamage": 14,
+        "MoveSpeed": 250,
+        "AggroRange": 800,
+        "AttackRange": 360,
+        "AttackCooldown": 2.1,
+        "WindupTime": 0.55,
+        "ProjectileSpeed": 1100,
+        "GoldMin": 4,
+        "GoldMax": 7,
+        "Exp": 12,
+        "DropItem": "GrilledFish",
+        "DropChance": 0.25,
+        "Radius": 52,
+        "RespawnTime": 16,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "Name": "Pirate",
+      "Values": {
+        "DisplayName": "해적 졸개",
+        "Behavior": "Charger",
+        "MaxHealth": 64,
+        "ContactDamage": 7,
+        "AttackDamage": 16,
+        "MoveSpeed": 320,
+        "AggroRange": 1000,
+        "AttackRange": 400,
+        "AttackCooldown": 1.9,
+        "WindupTime": 0.45,
+        "ProjectileSpeed": 1350,
+        "GoldMin": 6,
+        "GoldMax": 11,
+        "Exp": 16,
+        "DropItem": "HiPotion",
+        "DropChance": 0.12,
+        "Radius": 48,
+        "RespawnTime": 20,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "Name": "Seagull",
+      "Values": {
+        "DisplayName": "사나운 갈매기",
+        "Behavior": "Flyer",
+        "MaxHealth": 26,
+        "ContactDamage": 6,
+        "AttackDamage": 12,
+        "MoveSpeed": 420,
+        "AggroRange": 1050,
+        "AttackRange": 470,
+        "AttackCooldown": 2.0,
+        "WindupTime": 0.4,
+        "ProjectileSpeed": 1300,
+        "GoldMin": 2,
+        "GoldMax": 5,
+        "Exp": 9,
+        "DropItem": "Ether",
+        "DropChance": 0.12,
+        "Radius": 50,
+        "RespawnTime": 14,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "Name": "Ghost",
+      "Values": {
+        "DisplayName": "떠도는 망령",
+        "Behavior": "Flyer",
+        "MaxHealth": 70,
+        "ContactDamage": 10,
+        "AttackDamage": 16,
+        "MoveSpeed": 300,
+        "AggroRange": 1100,
+        "AttackRange": 520,
+        "AttackCooldown": 2.2,
+        "WindupTime": 0.6,
+        "ProjectileSpeed": 1100,
+        "GoldMin": 8,
+        "GoldMax": 14,
+        "Exp": 22,
+        "DropItem": "Ether",
+        "DropChance": 0.3,
+        "Radius": 52,
+        "RespawnTime": 0,
+        "Look": "",
+        "Tint": [
+          1.15,
+          1.25,
+          1.5,
+          1
+        ]
+      }
+    },
+    {
+      "Name": "PirateCaptain",
+      "Values": {
+        "DisplayName": "해적 선장 바렌",
+        "Behavior": "Boss",
+        "MaxHealth": 1300,
+        "ContactDamage": 14,
+        "AttackDamage": 20,
+        "MoveSpeed": 270,
+        "AggroRange": 820,
+        "AttackRange": 480,
+        "AttackCooldown": 1.4,
+        "WindupTime": 0.65,
+        "ProjectileSpeed": 1400,
+        "GoldMin": 200,
+        "GoldMax": 200,
+        "Exp": 200,
+        "DropItem": "Elixir",
+        "DropChance": 1.0,
+        "Radius": 105,
+        "RespawnTime": 0,
+        "Look": "",
+        "Tint": [
+          1,
+          1,
+          1,
+          1
+        ]
+      }
     }
   ]
 }

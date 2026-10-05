@@ -1,0 +1,128 @@
+{
+  "Version": 1,
+  "Name": "DayNightKey",
+  "Description": "HD2D 낮밤 화면 열쇠 (DayNightKeys.etable — 시각 순, 사이는 선형 보간)",
+  "Fields": [
+    {
+      "Name": "Hour",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "시각"
+    },
+    {
+      "Name": "SkyScale",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "하늘빛(환경광) 배율 — 씬 값에 곱함"
+    },
+    {
+      "Name": "SunScale",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "방향광(해·달) 세기 배율"
+    },
+    {
+      "Name": "Temperature",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "색 보정 색온도"
+    },
+    {
+      "Name": "Tint",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "색 보정 틴트"
+    },
+    {
+      "Name": "Saturation",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "채도"
+    },
+    {
+      "Name": "Contrast",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "대비"
+    },
+    {
+      "Name": "Lift",
+      "Type": "Array",
+      "Default": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Description": "어두운 부분 올림 RGB",
+      "Element": "Float"
+    },
+    {
+      "Name": "Gamma",
+      "Type": "Array",
+      "Default": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Description": "중간 톤 RGB",
+      "Element": "Float"
+    },
+    {
+      "Name": "Gain",
+      "Type": "Array",
+      "Default": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Description": "밝은 부분 이득 RGB",
+      "Element": "Float"
+    },
+    {
+      "Name": "Vignette",
+      "Type": "Float",
+      "Default": 0.45,
+      "Description": "비네트 세기"
+    },
+    {
+      "Name": "Fog",
+      "Type": "Array",
+      "Default": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "Description": "높이 안개 색",
+      "Element": "Float"
+    },
+    {
+      "Name": "Inscatter",
+      "Type": "Array",
+      "Default": [
+        0.9,
+        0.8,
+        0.6
+      ],
+      "Description": "방향광 안개 산란 색",
+      "Element": "Float"
+    },
+    {
+      "Name": "Exposure",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "이득 전체 배율 (밤을 너무 어둡지 않게)"
+    },
+    {
+      "Name": "Moon",
+      "Type": "Float",
+      "Default": 0.3,
+      "Description": "달빛 세기 (대기 MoonIntensity — 해가 지면 방향광이 달로 바뀐다)"
+    },
+    {
+      "Name": "LampScale",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "등불 세기 배율 (주변이 어두운 밤에 조금 더 세게)"
+    }
+  ]
+}

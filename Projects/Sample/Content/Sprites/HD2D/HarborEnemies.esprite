@@ -1,0 +1,417 @@
+{
+  "Version": 1,
+  "Texture": "HarborEnemies.png",
+  "TextureWidth": 256,
+  "TextureHeight": 150,
+  "UnitsPerPixel": 6.0,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "CrabIdle0",
+      "X": 1,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "CrabIdle1",
+      "X": 30,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "CrabMove0",
+      "X": 59,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "CrabMove1",
+      "X": 88,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "CrabMove2",
+      "X": 117,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "CrabMove3",
+      "X": 146,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "CrabWindup0",
+      "X": 175,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "CrabAttack0",
+      "X": 204,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "CrabAttack1",
+      "X": 1,
+      "Y": 22,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "PirateIdle0",
+      "X": 30,
+      "Y": 22,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "PirateIdle1",
+      "X": 63,
+      "Y": 22,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "PirateMove0",
+      "X": 96,
+      "Y": 22,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "PirateMove1",
+      "X": 129,
+      "Y": 22,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "PirateMove2",
+      "X": 162,
+      "Y": 22,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "PirateMove3",
+      "X": 195,
+      "Y": 22,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "PirateWindup0",
+      "X": 1,
+      "Y": 55,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "PirateAttack0",
+      "X": 34,
+      "Y": 55,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "PirateAttack1",
+      "X": 67,
+      "Y": 55,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "SeagullIdle0",
+      "X": 100,
+      "Y": 55,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SeagullIdle1",
+      "X": 131,
+      "Y": 55,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SeagullIdle2",
+      "X": 162,
+      "Y": 55,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SeagullIdle3",
+      "X": 193,
+      "Y": 55,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SeagullMove0",
+      "X": 224,
+      "Y": 55,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SeagullMove1",
+      "X": 1,
+      "Y": 88,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SeagullMove2",
+      "X": 32,
+      "Y": 88,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SeagullMove3",
+      "X": 63,
+      "Y": 88,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SeagullWindup0",
+      "X": 94,
+      "Y": 88,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SeagullAttack0",
+      "X": 125,
+      "Y": 88,
+      "W": 30,
+      "H": 22,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GhostIdle0",
+      "X": 156,
+      "Y": 88,
+      "W": 26,
+      "H": 30,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GhostIdle1",
+      "X": 183,
+      "Y": 88,
+      "W": 26,
+      "H": 30,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GhostIdle2",
+      "X": 210,
+      "Y": 88,
+      "W": 26,
+      "H": 30,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GhostMove0",
+      "X": 1,
+      "Y": 119,
+      "W": 26,
+      "H": 30,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GhostMove1",
+      "X": 28,
+      "Y": 119,
+      "W": 26,
+      "H": 30,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GhostMove2",
+      "X": 55,
+      "Y": 119,
+      "W": 26,
+      "H": 30,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GhostWindup0",
+      "X": 82,
+      "Y": 119,
+      "W": 26,
+      "H": 30,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GhostWindup1",
+      "X": 109,
+      "Y": 119,
+      "W": 26,
+      "H": 30,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GhostAttack0",
+      "X": 136,
+      "Y": 119,
+      "W": 26,
+      "H": 30,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    }
+  ]
+}

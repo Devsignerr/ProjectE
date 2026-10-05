@@ -380,6 +380,10 @@ private:
 	bool                 bConsoleDepthOfField     = true;
 	// 하늘광 환경맵이 바뀌면 FAssetCache로 읽어 IBL을 다시 만든다 (Phase 33-7)
 	void                 UpdateEnvironment(FScene& Scene);
+	// 색 보정 LUT (씬 FColorGradingComponent — 값이 바뀔 때만 다시 굽는다) + 비네트 → PostProcessor.SetLook
+	void                 UpdateLook(FScene& Scene);
+	FTextureHandle       GradingLut;
+	uint64               GradingLutHash = 0;
 	std::string          AppliedEnvironmentMap;
 	float                AppliedEnvironmentRotation = 0.0f;
 	// 씬의 반사 캡처마다 큐브 면 6개를 그려 프리필터 → 아틀라스 + .ecapture 저장 예약 (Render 안에서, 프레임 명령 목록에 기록)

@@ -36,6 +36,14 @@ namespace
 		float  AutoExposureMaxEV = 6.0f;
 		float  Sharpness         = 0.0f; // TAA 샤프닝 (0 = 끔)
 		float  HdrPeakRatio      = 0.0f; // HDR 출력 하이라이트 상한 (0 = SDR)
+		// 색 보정·비네트 (FPostProcessLook)
+		uint32 bColorGrading      = 0;
+		float  VignetteIntensity  = 0.0f;
+		float  VignetteSize       = 0.45f;
+		float  VignetteSmoothness = 0.55f;
+		float  VignetteColor[3]   = {};
+		float  VignetteRoundness  = 1.0f;
+		float  VignetteAspect     = 1.0f;
 	};
 	static_assert(sizeof(FTonemapConstants) <= PostRootConstantCount * 4 && sizeof(FTonemapConstants) % 4 == 0);
 
@@ -640,10 +648,20 @@ void FPostProcessor::AddPasses(FRenderGraph& Graph, const FPostProcessGraphInput
 	Constants.AutoExposureMaxEV = FMath::Max(Settings.AutoExposureMinEV, Settings.AutoExposureMaxEV);
 	Constants.Sharpness         = FMath::Clamp(Sharpness, 0.0f, 1.0f);
 	Constants.HdrPeakRatio      = HdrPeakRatio;
+	Constants.bColorGrading      = Look.bColorGrading && Look.GradingLut.IsValid() ? 1u : 0u;
+	Constants.VignetteIntensity  = FMath::Clamp(Look.VignetteIntensity, 0.0f, 1.0f);
+	Constants.VignetteSize       = Look.VignetteSize;
+	Constants.VignetteSmoothness = FMath::Max(Look.VignetteSmoothness, 1.0e-4f);
+	Constants.VignetteColor[0]   = Look.VignetteColor.X;
+	Constants.VignetteColor[1]   = Look.VignetteColor.Y;
+	Constants.VignetteColor[2]   = Look.VignetteColor.Z;
+	Constants.VignetteRoundness  = FMath::Clamp(Look.VignetteRoundness, 0.0f, 1.0f);
+	Constants.VignetteAspect     = static_cast<float>(Width) / static_cast<float>(FMath::Max(Height, 1u));
 
 	// 블룸이 없으면 t1에 씬을 바인딩해 둔다 (강도 0이라 샘플링되지 않음)
 	const FD3D12DescriptorHandle BloomSource = Constants.BloomIntensity > 0.0f ? BloomTargets[0]->GetSrv() : SceneColor.Srv;
 	const FD3D12DescriptorHandle SceneSrv    = SceneColor.Srv;
+	const FD3D12DescriptorHandle LutSrv      = Constants.bColorGrading != 0 ? Look.GradingLut : SceneColor.Srv; // t2 (안 쓰면 씬 — 읽지 않음)
 	const FRenderOutput          Target      = Output.Output;
 	ID3D12PipelineState* const   Pipeline    = TonemapPipeline->Get();
 
@@ -654,7 +672,7 @@ void FPostProcessor::AddPasses(FRenderGraph& Graph, const FPostProcessGraphInput
 		Pass.Read(BloomRef, ERGAccess::SrvPixel);
 	}
 	DeclareOutput(Pass, Output);
-	Pass.Execute([this, Constants, BloomSource, SceneSrv, Target, Pipeline](FRGContext& Context) {
+	Pass.Execute([this, Constants, BloomSource, SceneSrv, LutSrv, Target, Pipeline](FRGContext& Context) {
 		ID3D12GraphicsCommandList* CommandList = Context.CommandList;
 		CommandList->OMSetRenderTargets(1, &Target.Rtv, FALSE, nullptr);
 		SetFullscreenViewport(CommandList, Target.Width, Target.Height);
@@ -665,6 +683,7 @@ void FPostProcessor::AddPasses(FRenderGraph& Graph, const FPostProcessGraphInput
 		CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source2, BloomSource.Gpu);
 		CommandList->SetGraphicsRootDescriptorTable(PostRoot_Histogram, HistogramUav.Gpu);
 		CommandList->SetGraphicsRootDescriptorTable(PostRoot_Luminance, LuminanceUav.Gpu);
+		CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source3, LutSrv.Gpu);
 		DrawFullscreen(CommandList);
 	});
 }

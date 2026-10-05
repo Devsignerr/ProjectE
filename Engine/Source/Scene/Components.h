@@ -197,6 +197,33 @@ struct FDepthOfFieldComponent
 	float BokehHighlightThreshold  = 1.0f;  // 강조가 시작되는 HDR 밝기 (최대 채널)
 };
 
+// 색 보정 (씬 전역 — 처음 찾은 활성 하나, 2026-10-05 HD-2D). 톤매핑 직후 SDR 값에 LUT로 (식·순서는 Renderer/ColorGradingMath.h).
+//   모든 값이 기본(항등)이고 LUT가 없으면 아무것도 하지 않는다 (예전 화면 그대로)
+struct FColorGradingComponent
+{
+	bool        bEnabled    = true;
+	float       Temperature = 0.0f; // -1 차갑게 ~ 1 따뜻하게 (밝기 보존)
+	float       Tint        = 0.0f; // -1 초록 ~ 1 자홍
+	float       Saturation  = 1.0f;
+	float       Contrast    = 1.0f; // sRGB 인코딩 공간 0.5 중심
+	FVector3    Lift        = FVector3::ZeroVector; // 어두운 쪽 올림 (채널별)
+	FVector3    Gamma       = FVector3::OneVector;  // 중간톤 (1보다 크면 밝게)
+	FVector3    Gain        = FVector3::OneVector;  // 밝은 쪽 배율
+	std::string LookupTable;                         // Content 기준 LUT 띠 이미지 (가로 = N², 세로 = N — 256x16, 1024x32 등). 비우면 없음
+	float       LookupTableIntensity = 1.0f;
+};
+
+// 비네트 (씬 전역 — 처음 찾은 활성 하나): 화면 가장자리를 Color 쪽으로 (식은 ColorGradingMath::ComputeVignetteMask)
+struct FVignetteComponent
+{
+	bool     bEnabled   = true;
+	float    Intensity  = 0.35f; // 0 = 없음, 1 = 가장자리가 Color
+	float    Size       = 0.45f; // 시작 반경 (가운데 0 ~ 모서리 1)
+	float    Smoothness = 0.55f; // 시작에서 최대까지 폭
+	float    Roundness  = 1.0f;  // 1 = 화면에서 원, 0 = 화면 모양 타원
+	FVector3 Color      = FVector3::ZeroVector; // sRGB
+};
+
 enum class EDepthOfFieldMode : int32
 {
 	Depth            = 0,

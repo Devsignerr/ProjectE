@@ -92,7 +92,7 @@
 - TAAU/동적 해상도: 씬 컬러를 다루는 패스는 내부 해상도(`RenderSceneColor`의 Width/Height), TAAU 이후는 출력 해상도. 머티리얼 텍스처 샘플은 `MaterialMipBias`, 오버레이 깊이는 `GetOverlayDepthDsv`
 - 화면 품질 파이프라인: 새 메시 경로는 메인과 같은 VS로 사전 패스에 반드시 그리고, `ApplyDecals`/`EvaluateImageBasedLighting`을 같은 자리에서. 새 화면 공간 패스는 `FScreenPassRootSignature`
 - 시간 안정성: 픽셀·프레임마다 흔드는 효과보다 결정적 필터 우선(SSR 확률 반사 금지), 지터 없는 오버레이는 음의 깊이 바이어스. 안정성 검증 방법(32프레임 표준편차 지도). TAA 깜빡임 감지(TSR식 뒤집힘 빈도, `r.TAA.FlickerReduction`) — 통계는 정지 화소에서만 쌓는다
-- 포스트 프로세싱: 효과는 `FPostProcessor` 안에서, CPU/GPU 공용 식은 `PostProcessMath.h`와 함께. 프로젝트 기본 후처리는 설정 Rendering(`ApplyProjectPostProcessDefaults`). 피사계 심도는 씬 `DepthOfFieldComponent`(TAA 뒤·블룸 앞, 편집 카메라는 `PreviewInEditor`일 때만)
+- 포스트 프로세싱: 효과는 `FPostProcessor` 안에서, CPU/GPU 공용 식은 `PostProcessMath.h`와 함께. 프로젝트 기본 후처리는 설정 Rendering(`ApplyProjectPostProcessDefaults`). 피사계 심도는 씬 `DepthOfFieldComponent`(TAA 뒤·블룸 앞, 편집 카메라는 `PreviewInEditor`일 때만, 틸트시프트·다각형 보케 포함), 색 보정·비네트는 씬 `ColorGradingComponent`(LUT 굽기)·`VignetteComponent`(톤매핑 직후)
 - 픽셀 아트: `PixelArtMath.h`와 셰이더를 함께, 물체 도트 스냅은 렌더 동안만. 픽셀 아트에서 화면 고정 노이즈·반해상도 효과 금지
 - 텍스처 밉 스트리밍: 머티리얼 밖 텍스처는 공개 `LoadTexture`(고정), 텍스처 SRV/디스크립터를 프레임 넘겨 캐시 금지, 스트리밍 켬 화면 = 끔 화면 비트 동일
 - 리소스 수거: 씬 밖에서 경로 핸들을 오래 드는 새 코드는 `FResourceManager::AddRootProvider`, 새 씬 컨테이너는 `FResourceRoots::AddScene`

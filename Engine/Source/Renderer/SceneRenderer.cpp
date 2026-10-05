@@ -4,10 +4,15 @@
 #include "Core/Jobs/ParallelFor.h"
 #include "Core/Paths.h"
 #include "Core/Settings/ProjectSettings.h"
+#include "Core/FileSystem.h"
 #include "Core/StringConv.h"
 #include "Renderer/AssetCache.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/Camera.h"
+#include "Renderer/ColorGradingMath.h"
+#include "Renderer/Image.h"
+#include "Renderer/LightMath.h"
+#include "Renderer/ShadowCacheMath.h"
 #include "Renderer/LodMath.h"
 #include "Renderer/Material.h"
 #include "Renderer/MaterialRender.h"
@@ -729,6 +734,12 @@ void FSceneRenderer::Shutdown()
 	MotionHistory.clear();
 	bHasPrevView = false;
 	PostProcessor.Shutdown();
+	if (GradingLut.IsValid())
+	{
+		Resources->DestroyTexture(GradingLut);
+		GradingLut     = FTextureHandle{};
+		GradingLutHash = 0;
+	}
 	ShadowRenderer.Shutdown();
 	IblRenderer.SetLightingOverride(nullptr);
 	SkyAtmosphere.Shutdown();
@@ -889,6 +900,98 @@ namespace
 	}
 } // namespace
 
+void FSceneRenderer::UpdateLook(FScene& Scene)
+{
+	const FColorGradingComponent* Grading  = nullptr;
+	const FVignetteComponent*     Vignette = nullptr;
+	Scene.GetRegistry().View<FColorGradingComponent>().Each([&](FEntity, FColorGradingComponent& Component) {
+		if (Grading == nullptr && Component.bEnabled)
+		{
+			Grading = &Component;
+		}
+	});
+	Scene.GetRegistry().View<FVignetteComponent>().Each([&](FEntity, FVignetteComponent& Component) {
+		if (Vignette == nullptr && Component.bEnabled)
+		{
+			Vignette = &Component;
+		}
+	});
+
+	FPostProcessLook Look;
+	if (Grading != nullptr && !bWireframe)
+	{
+		FColorGradingParams Params;
+		Params.Temperature  = Grading->Temperature;
+		Params.Tint         = Grading->Tint;
+		Params.Saturation   = Grading->Saturation;
+		Params.Contrast     = Grading->Contrast;
+		Params.Lift         = Grading->Lift;
+		Params.Gamma        = Grading->Gamma;
+		Params.Gain         = Grading->Gain;
+		Params.LutIntensity = Grading->LookupTableIntensity;
+		if (!ColorGradingMath::IsIdentity(Params) || !Grading->LookupTable.empty())
+		{
+			// 값·LUT 경로·파일 시각이 바뀔 때만 다시 굽는다 (32³ CPU 계산 + 1024x32 업로드)
+			const std::filesystem::path LutPath = Grading->LookupTable.empty() ? std::filesystem::path() : FPaths::GetProjectContentDirectory() / Grading->LookupTable;
+			uint64 Hash = ShadowCacheMath::HashSeed;
+			Hash        = ShadowCacheMath::HashValue(Hash, Params.Temperature);
+			Hash        = ShadowCacheMath::HashValue(Hash, Params.Tint);
+			Hash        = ShadowCacheMath::HashValue(Hash, Params.Saturation);
+			Hash        = ShadowCacheMath::HashValue(Hash, Params.Contrast);
+			Hash        = ShadowCacheMath::HashValue(Hash, Params.Lift);
+			Hash        = ShadowCacheMath::HashValue(Hash, Params.Gamma);
+			Hash        = ShadowCacheMath::HashValue(Hash, Params.Gain);
+			Hash        = ShadowCacheMath::HashValue(Hash, Params.LutIntensity);
+			Hash        = ShadowCacheMath::HashBytes(Hash, Grading->LookupTable.data(), Grading->LookupTable.size());
+			if (!LutPath.empty())
+			{
+				if (const auto Time = FFileSystem::GetLastWriteTime(LutPath))
+				{
+					Hash = ShadowCacheMath::HashValue(Hash, Time->time_since_epoch().count());
+				}
+			}
+			Hash = Hash == 0 ? 1 : Hash;
+			if (Hash != GradingLutHash || !GradingLut.IsValid())
+			{
+				FImage UserLut;
+				if (!LutPath.empty())
+				{
+					std::vector<uint8> Bytes;
+					if (!FFileSystem::ReadFile(LutPath, Bytes) || !FImageLoader::LoadFromMemory(Bytes.data(), Bytes.size(), UserLut, Grading->LookupTable.c_str()) ||
+					    !ColorGradingMath::IsStripLut(UserLut))
+					{
+						E_LOG(LogRenderer, Warning, "색 보정 LUT를 읽을 수 없거나 띠 형식(가로 = 세로²)이 아닙니다: {}", Grading->LookupTable);
+						UserLut = FImage{};
+					}
+				}
+				std::vector<uint16> Pixels;
+				ColorGradingMath::BakeLut(Params, UserLut.IsValid() ? &UserLut : nullptr, Pixels);
+				if (GradingLut.IsValid())
+				{
+					Resources->DestroyTexture(GradingLut);
+				}
+				GradingLut     = Resources->CreateTexture(ColorGradingMath::LutWidth, ColorGradingMath::LutHeight, DXGI_FORMAT_R16G16B16A16_UNORM, Pixels.data(), 8,
+				                                          L"ColorGradingLut");
+				GradingLutHash = Hash;
+			}
+			if (const FD3D12Texture* Texture = Resources->GetTexture(GradingLut); Texture != nullptr && Texture->IsReady())
+			{
+				Look.bColorGrading = true;
+				Look.GradingLut    = Texture->GetSrv();
+			}
+		}
+	}
+	if (Vignette != nullptr && !bWireframe)
+	{
+		Look.VignetteIntensity  = Vignette->Intensity;
+		Look.VignetteSize       = Vignette->Size;
+		Look.VignetteSmoothness = Vignette->Smoothness;
+		Look.VignetteRoundness  = Vignette->Roundness;
+		Look.VignetteColor      = LightMath::SrgbToLinear(Vignette->Color);
+	}
+	PostProcessor.SetLook(Look);
+}
+
 void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output)
 {
 	BeginRender(Scene, Camera, Output);
@@ -937,6 +1040,7 @@ void FSceneRenderer::BeginRender(FScene& Scene, const FCamera& Camera, const FRe
 	// HDR 디스플레이 출력 (Phase 49): 출력이 RHI의 HDR 씬 타깃이면 톤매핑을 HDR 곡선으로 (선형, 1 = 종이 흰색)
 	const bool bHdrOutput = Rhi->IsHdrOutputActive() && Output.Resource != nullptr && Output.Resource == Rhi->GetHdrSceneResource();
 	PostProcessor.SetHdrPeakRatio(bHdrOutput ? Rhi->GetHdrMaxNits() / FMath::Max(Rhi->GetHdrPaperWhiteNits(), 1.0f) : 0.0f);
+	UpdateLook(Scene);
 
 	// 하늘 환경맵 (하늘광 EnvironmentMap/회전이 바뀌면 IBL 다시 생성)
 	UpdateEnvironment(Scene);

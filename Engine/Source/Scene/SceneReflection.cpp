@@ -151,6 +151,29 @@ void RegisterSceneTypes()
 		.Tooltip("강조가 시작되는 HDR 밝기 (노출 전 최대 채널)")
 		.AsComponent();
 
+	Registry.RegisterType<FColorGradingComponent>("ColorGradingComponent", "색 보정")
+		.Property(&FColorGradingComponent::bEnabled, "Enabled", "사용")
+		.Property(&FColorGradingComponent::Temperature, "Temperature", "색온도").Range(-1.0f, 1.0f, 0.005f).Tooltip("- 차갑게 / + 따뜻하게 (밝기 유지)")
+		.Property(&FColorGradingComponent::Tint, "Tint", "틴트").Range(-1.0f, 1.0f, 0.005f).Tooltip("- 초록 / + 자홍")
+		.Property(&FColorGradingComponent::Saturation, "Saturation", "채도").Range(0.0f, 3.0f, 0.005f)
+		.Property(&FColorGradingComponent::Contrast, "Contrast", "대비").Range(0.0f, 3.0f, 0.005f)
+		.Property(&FColorGradingComponent::Lift, "Lift", "Lift (어두운 쪽)").Tooltip("채널별 어두운 쪽 올림 (0 = 그대로)")
+		.Property(&FColorGradingComponent::Gamma, "Gamma", "Gamma (중간톤)").Tooltip("채널별 중간톤 (1 = 그대로, 크면 밝게)")
+		.Property(&FColorGradingComponent::Gain, "Gain", "Gain (밝은 쪽)").Tooltip("채널별 배율 (1 = 그대로)")
+		.Property(&FColorGradingComponent::LookupTable, "LookupTable", "LUT 이미지").AssetFilter(".png;.tga;.bmp;.jpg")
+		.Tooltip("색 조회 띠 (가로 = N², 세로 = N — 256x16, 1024x32). 보정 뒤에 적용")
+		.Property(&FColorGradingComponent::LookupTableIntensity, "LookupTableIntensity", "LUT 세기").Range(0.0f, 1.0f, 0.01f)
+		.AsComponent();
+
+	Registry.RegisterType<FVignetteComponent>("VignetteComponent", "비네트")
+		.Property(&FVignetteComponent::bEnabled, "Enabled", "사용")
+		.Property(&FVignetteComponent::Intensity, "Intensity", "세기").Range(0.0f, 1.0f, 0.005f)
+		.Property(&FVignetteComponent::Size, "Size", "크기").Range(0.0f, 1.5f, 0.005f).Tooltip("어두워지기 시작하는 반경 (가운데 0 ~ 모서리 1)")
+		.Property(&FVignetteComponent::Smoothness, "Smoothness", "부드러움").Range(0.01f, 2.0f, 0.005f)
+		.Property(&FVignetteComponent::Roundness, "Roundness", "둥글기").Range(0.0f, 1.0f, 0.01f).Tooltip("1 = 원, 0 = 화면 모양 타원")
+		.Property(&FVignetteComponent::Color, "Color", "색", PF_Color)
+		.AsComponent();
+
 	// 스크립트 Properties 오버라이드는 인스펙터가 스크립트 선언을 읽어 전용 UI로 편집한다
 	Registry.RegisterType<FScriptComponent>("ScriptComponent", "스크립트")
 		.Property(&FScriptComponent::ScriptAsset, "ScriptAsset", "스크립트").AssetFilter(".lua")

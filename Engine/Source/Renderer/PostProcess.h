@@ -104,6 +104,18 @@ struct FDepthOfFieldParams
 	static constexpr float MaxBlur = 0.04f; // 보케 반경 상한 (화면 높이 4% — 반해상도 43탭 원반의 표본 간격 한계)
 };
 
+// 톤매핑 뒤 화면 모양 (FSceneRenderer가 씬 FColorGradingComponent·FVignetteComponent로 매 프레임 SetLook). 기본 = 없음 (예전 화면)
+struct FPostProcessLook
+{
+	bool                   bColorGrading = false;
+	FD3D12DescriptorHandle GradingLut;              // 1024x32 RGBA16 UNORM 띠 (ColorGradingMath::BakeLut)
+	float                  VignetteIntensity  = 0.0f;
+	float                  VignetteSize       = 0.45f;
+	float                  VignetteSmoothness = 0.55f;
+	float                  VignetteRoundness  = 1.0f;
+	FVector3               VignetteColor      = FVector3::ZeroVector; // 선형
+};
+
 // 포스트 패스 입력: 그래프 참조 + 셰이더가 읽을 SRV
 struct FPostProcessGraphInput
 {
@@ -157,6 +169,8 @@ public:
 
 	// HDR 출력 (Phase 49): 이번 프레임 톤매핑을 HDR로 (최대 밝기 / 종이 흰색, 0 = SDR). 씬 렌더러가 출력이 RHI HDR 씬 타깃일 때 프레임마다 설정
 	void SetHdrPeakRatio(float Ratio) { HdrPeakRatio = Ratio; }
+	// 색 보정 LUT + 비네트 (다음 AddPasses들에 적용 — 씬 렌더러가 매 프레임)
+	void SetLook(const FPostProcessLook& InLook) { Look = InLook; }
 
 private:
 	enum class EPipeline : uint8
@@ -196,6 +210,7 @@ private:
 	FD3D12RHI*      Rhi           = nullptr;
 	FShaderLibrary* ShaderLibrary = nullptr;
 	float           HdrPeakRatio  = 0.0f;
+	FPostProcessLook Look;
 
 	FD3D12RootSignature                                   RootSignature; // 모든 포스트 패스 공용 (그래픽스/컴퓨트)
 	FD3D12PipelineState                                   Pipelines[static_cast<size_t>(EPipeline::Count)];

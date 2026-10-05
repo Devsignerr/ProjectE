@@ -14,10 +14,19 @@ cbuffer TonemapConstants : register(b0)
 	float  AutoExposureMaxEV;
 	float  Sharpness;         // TAA 흐림 보정 (0 = 끔): 4이웃 언샤프 마스크, 톤매핑 공간 대비로 제한
 	float  HdrPeakRatio;      // HDR 출력 (Phase 49): 최대 밝기 / 종이 흰색 (0 = SDR — 기존 출력 그대로)
+	// 색 보정·비네트 (Renderer/ColorGradingMath.h — 톤매핑 직후 SDR [0, 1], HDR 하이라이트 펼치기 전)
+	uint   bColorGrading;      // t2 = 1024x32 LUT 띠 (sRGB 인코딩 인덱스·값)
+	float  VignetteIntensity;  // 0 = 없음
+	float  VignetteSize;
+	float  VignetteSmoothness;
+	float3 VignetteColor;      // 선형
+	float  VignetteRoundness;
+	float  VignetteAspect;     // 너비 / 높이
 };
 
 Texture2D<float4>         SceneColor       : register(t0);
 Texture2D<float4>         BloomColor       : register(t1);
+Texture2D<float4>         GradingLut       : register(t2);
 RWStructuredBuffer<float> AdaptedLuminance : register(u1);
 SamplerState              LinearSampler    : register(s0);
 SamplerState              PointSampler     : register(s1);
@@ -36,6 +45,39 @@ float3 TonemapAcesApprox(float3 X)
 float3 TonemapReinhard(float3 X)
 {
 	return X / (1.0f + X);
+}
+
+float SrgbEncodeChannel(float C)
+{
+	return C <= 0.0031308f ? C * 12.92f : 1.055f * pow(C, 1.0f / 2.4f) - 0.055f;
+}
+
+float SrgbDecodeChannel(float C)
+{
+	return C <= 0.04045f ? C / 12.92f : pow((C + 0.055f) / 1.055f, 2.4f);
+}
+
+// 색 보정 LUT (ColorGradingMath::BakeLut 띠): 인코딩 색 → 칸 좌표, 파랑 두 칸을 쌍선형으로 읽어 보간
+float3 ApplyColorGrading(float3 Linear)
+{
+	const float  Size    = 32.0f;
+	const float3 Encoded = float3(SrgbEncodeChannel(saturate(Linear.r)), SrgbEncodeChannel(saturate(Linear.g)), SrgbEncodeChannel(saturate(Linear.b)));
+	const float3 Cell    = Encoded * (Size - 1.0f);
+	const float  Slice   = min(floor(Cell.b), Size - 2.0f);
+	const float  Blend   = Cell.b - Slice;
+	const float2 UV0     = float2((Cell.r + 0.5f + Slice * Size) / (Size * Size), (Cell.g + 0.5f) / Size);
+	const float2 UV1     = UV0 + float2(1.0f / Size, 0.0f);
+	const float3 Graded  = lerp(GradingLut.SampleLevel(LinearSampler, UV0, 0.0f).rgb, GradingLut.SampleLevel(LinearSampler, UV1, 0.0f).rgb, Blend);
+	return float3(SrgbDecodeChannel(Graded.r), SrgbDecodeChannel(Graded.g), SrgbDecodeChannel(Graded.b));
+}
+
+// ColorGradingMath::ComputeVignetteMask와 같은 식
+float VignetteMask(float2 UV)
+{
+	const float  ScaleX = 1.0f + (VignetteAspect - 1.0f) * VignetteRoundness;
+	const float2 P      = (UV - 0.5f) * 2.0f * float2(ScaleX, 1.0f);
+	const float  R      = length(P) / sqrt(ScaleX * ScaleX + 1.0f);
+	return smoothstep(VignetteSize, VignetteSize + VignetteSmoothness, R);
 }
 
 FFullscreenVSOutput VSMain(uint VertexId : SV_VertexID)
@@ -84,6 +126,14 @@ float4 PSMain(FFullscreenVSOutput Input) : SV_Target
 	else
 	{
 		Ldr = saturate(Hdr);
+	}
+	if (bColorGrading != 0)
+	{
+		Ldr = ApplyColorGrading(Ldr);
+	}
+	if (VignetteIntensity > 0.0f)
+	{
+		Ldr = lerp(Ldr, VignetteColor, VignetteMask(Input.UV) * VignetteIntensity);
 	}
 	if (HdrPeakRatio > 1.0f && TonemapOperator != 0)
 	{

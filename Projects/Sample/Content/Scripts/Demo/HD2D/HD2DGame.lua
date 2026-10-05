@@ -30,6 +30,7 @@ local HD2DGame = {
 		Path     = "",  -- "x,y;..." 마을 → 들판 길 (내비메시가 없을 때 자동 조종이 따라 걷는다)
 		NightEnemies = "", -- 밤에만 나오는 적 "종류,x,y,z;..." (HD2DWorld.lua)
 		Gulls    = "",  -- 장식 갈매기 "x,y,z,반지름;..." (HD2DWorld.lua)
+		CameraMaxY = 0.0, -- 0이 아니면 플레이어 카메라 초점 범위 앞(+Y) 끝을 이 값으로 (항구 — 잔교·방파제 끝까지 따라가게, HD2DWorld.lua)
 		BossChestAtSpawn = false, -- 보스 보상 상자를 쓰러진 자리 대신 보스 처음 자리에 (항구 — 물가에서 쓰러지면 닿지 못했다)
 		AutoPlay = "",  -- "" | Full | TitleShot | Inventory | Equip | Shop | Dialog | Combat | Boost | Boss (HD2DAutoPilot.lua)
 		Title    = false, -- 시작할 때 타이틀 화면 (맵 이동으로 온 경우는 건너뜀)

@@ -122,7 +122,13 @@
       "Name": "LampScale",
       "Type": "Float",
       "Default": 1.0,
-      "Description": "등불 세기 배율 (주변이 어두운 밤에 조금 더 세게)"
+      "Description": "등불 세기 배율 (주변이 어두운 밤에 조금 더 세게 — 반경도 함께 넓힌다)"
+    },
+    {
+      "Name": "FogLocal",
+      "Type": "Float",
+      "Default": 0.45,
+      "Description": "볼류메트릭 안개의 점광원·스포트 산란 배율 (밤 등불 무리·등대 빛줄기)"
     }
   ]
 }

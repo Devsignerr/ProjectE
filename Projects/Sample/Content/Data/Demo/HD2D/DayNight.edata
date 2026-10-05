@@ -3,7 +3,7 @@
   "Struct": "Data/Demo/HD2D/DayNight.estruct",
   "Values": {
     "DayMinutes": 10.0,
-    "StartHour": 16.4,
+    "StartHour": 9.0,
     "SleepHour": 7.0,
     "InnPrice": 20,
     "NightStart": 19.2,

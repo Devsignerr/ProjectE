@@ -68,7 +68,7 @@ function World:InitWorld(bSession)
 				local L = E:GetComponent("PointLightComponent") or E:GetComponent("SpotLightComponent")
 				if L then
 					local S = E:GetScript()
-					self.NightLights[#self.NightLights + 1] = { Light = L, Script = S, Base = (S and S.Properties.BaseIntensity) or L.Intensity }
+					self.NightLights[#self.NightLights + 1] = { Light = L, Script = S, Base = (S and S.Properties.BaseIntensity) or L.Intensity, Radius = L.Radius }
 				end
 			end
 		end
@@ -92,6 +92,7 @@ function World:InitWorld(bSession)
 		local Beam = Scene.Find("Lighthouse_Beam")
 		self.Lighthouse.BeamEntity = Beam
 		self.Lighthouse.Beam = Beam and Beam:GetComponent("SpotLightComponent") or nil
+		self.Lighthouse.Cone = Scene.Find("Lighthouse_BeamCone")
 		FindPattern("Lighthouse_Glass_#", self.Lighthouse.Glass)
 		local Core = Scene.Find("Lighthouse_Core")
 		if Core then self.Lighthouse.Glass[#self.Lighthouse.Glass + 1] = Core end
@@ -208,6 +209,7 @@ function World:ApplyDayNight(bForce)
 			end
 			if self.Vignette then self.Vignette.Intensity = K.Vignette end
 			if self.Atmosphere then self.Atmosphere.MoonIntensity = K.Moon end
+			if self.Fog then self.Fog.VolumetricLocalLightScale = K.FogLocal end
 			self.LampScale = K.LampScale
 			if self.Fog then
 				self.Fog.Color = Vector3(K.Fog[1], K.Fog[2], K.Fog[3])
@@ -221,6 +223,7 @@ function World:ApplyDayNight(bForce)
 			for _, L in ipairs(self.NightLights) do
 				if L.Script then L.Script.Properties.BaseIntensity = L.Base * Level end
 				L.Light.Intensity = L.Base * Level
+				L.Light.Radius = L.Radius * (0.8 + 0.4 * Level) -- 밤에는 빛 웅덩이를 넓게 (켬 2.0이면 1.6배)
 			end
 			local bLit = Lamp > 0.5
 			if bForce or bLit ~= self.bWindowsLit then
@@ -252,7 +255,14 @@ function World:ApplyLighthouse(Lamp)
 		end
 	end
 	if LH.Lamp then LH.Lamp.Intensity = bOn and 26.0 * Lamp or 0.0 end
-	if LH.Beam then LH.Beam.Intensity = bOn and 900.0 * Lamp or 0.0 end
+	if LH.Beam then LH.Beam.Intensity = bOn and 1600.0 * Lamp or 0.0 end
+	if LH.Cone then
+		local S = bOn and math.max(0.001, Lamp) or 0.001 -- 끄면 아주 작게 (0 배율은 역행렬이 없다)
+		if S ~= LH.ConeScale then
+			LH.ConeScale = S
+			LH.Cone:SetScale(Vector3(S, S, S))
+		end
+	end
 end
 
 -- ================================================================ 갱신 (관리자 OnUpdate — 게임 시간 Dt)
@@ -262,6 +272,16 @@ function World:UpdateWorld(Dt)
 	if self.bShowRegion then
 		self.bShowRegion = false
 		self:ShowRegion()
+	end
+	if not self.bCameraBounds then
+		local Player = self:GetPlayer()
+		if Player and Player.bStarted then
+			self.bCameraBounds = true
+			if (self.Properties.CameraMaxY or 0) ~= 0 then
+				Player.Properties.MaxY = self.Properties.CameraMaxY
+				Player:SnapCamera()
+			end
+		end
 	end
 	self:UpdateRegionBanner(UDt)
 	local DN = D.DayNight()

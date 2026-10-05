@@ -413,6 +413,26 @@ def WriteMeshes():
 	M.Cylinder(Wood, (0.0, -50.0, 405.0), (0.0, 50.0, 405.0), 3.5, 6, 60.0)
 	M.Save(H_KIT, "HarborFlagPole", CONTENT)
 
+	# 등대 빛줄기 (원뿔 — 로컬 +Z가 빛 방향, 씬에서 Pitch -90으로 눕혀 Lighthouse_Beam에 붙인다): 반투명 + 발광, 끝으로 갈수록 옅어지는 띠 텍스처
+	Size = (8, 128)
+	V = (np.arange(Size[1]) + 0.5) / Size[1]
+	Fade = np.clip(1.0 - V, 0.0, 1.0) ** 1.6 * np.clip(V / 0.04, 0.0, 1.0)
+	Rgba = np.zeros((Size[1], Size[0], 4), dtype=np.uint8)
+	Rgba[..., 0], Rgba[..., 1], Rgba[..., 2] = 255, 236, 196
+	Rgba[..., 3] = (Fade * 255.0)[:, None].astype(np.uint8)
+	from PIL import Image as _Image
+	_Image.fromarray(Rgba, "RGBA").save(os.path.join(CONTENT, *H_KIT.split("/"), "HarborBeam.png"))
+	Glow = Rgba.copy()
+	for K in range(3):
+		Glow[..., K] = (Glow[..., K].astype(np.float32) * Fade[:, None]).astype(np.uint8)
+	Glow[..., 3] = 255
+	_Image.fromarray(Glow, "RGBA").save(os.path.join(CONTENT, *H_KIT.split("/"), "HarborBeamGlow.png"))
+	M = MK.FMeshBuilder()
+	Beam = M.Material(MK.FMaterialDef("HarborBeam", None, (1.0, 0.92, 0.75), 1.0, Texture="HarborBeam.png", Blend=True, DoubleSided=True, Alpha=0.1,
+									  Emissive=(0.7, 0.6, 0.42), EmissiveTexture="HarborBeamGlow.png"))
+	M.Frustum(Beam, (0, 0, 0), 26.0, 300.0, 2800.0, 18, 2800.0, Caps=(False, False))
+	M.Save(H_KIT, "HarborBeam", CONTENT)
+
 	# 둥근 돌 단 (방파제 끝 — 등대 받침): 젖은 아랫단 + 윗단
 	M = MK.FMeshBuilder()
 	Stone = M.Material(MK.FMaterialDef("HarborJettyStone", "modular_fort_01/textures/modular_fort_01_wall", (0.86, 0.84, 0.8), 1.0))
@@ -754,7 +774,8 @@ def BuildScene(Height, Start=Layout.PLAYER_START, Overview=None, AutoPlay="", bG
 		Harbor = HD2DGameplay.FMapLayout(
 			"Harbor", Npcs=Layout.NPCS, Chests=Layout.CHESTS, Props=Layout.PROPS, Enemies=Layout.ENEMIES, Boss=Layout.BOSS, BossKind="PirateCaptain",
 			BossReward=Layout.BOSS_REWARD, Respawn=True,
-			Extra={"BossChestAtSpawn": True,  # 보상 상자 = 보스 처음 자리 (물가에서 쓰러져도 닿는 곳)
+			Extra={"CameraMaxY": 1150.0,  # 잔교·방파제 끝(Y 1400)에서도 카메라가 따라가 등대가 화면 가운데에 또렷이 (기본 +700이면 앞에 흐리게 걸렸다)
+				   "BossChestAtSpawn": True,  # 보상 상자 = 보스 처음 자리 (물가에서 쓰러져도 닿는 곳)
 				   "Gulls": "-2100,-1900,760,520;700,-2050,820,600;-3600,420,430,320;2900,150,620,520",  # 지붕 너머·모래톱·절벽 위 (카메라 앞은 비운다 — 흐린 덩어리로 가렸다)
 				   "NightEnemies": ";".join(f"{K},{X:.0f},{Y:.0f},{Height(X, Y) + HD2DGameplay.ENEMY_CAPSULE[K][0] + HD2DGameplay.ENEMY_CAPSULE[K][1] + 4.0:.0f}"
 											for K, X, Y in Layout.NIGHT_ENEMIES)})
@@ -961,14 +982,15 @@ def BuildHarborFront(C):
 	for Side in (-1, 1):
 		C.BoxCollider(f"Pier_Rail{Side}", (PX + Side * (PW * 0.5 + 12.0), Mid + 30.0, 60.0), (12.0, (PEnd - QY) * 0.5 - 20.0, 90.0))
 	C.BoxCollider("Pier_End", (PX, PEnd + 16.0, 60.0), (PW * 0.5 + 24.0, 12.0, 90.0))
-	LanternPost(C, "Pier_Lantern", PX + PW * 0.5 - 30.0, PEnd - 70.0, Z=0.0)
-	for Index, (Id, DX, DY, Yaw, Sc) in enumerate((("wooden_crate_02", -95.0, 520.0, 12.0, 1.0), ("wine_barrel_01", 100.0, 420.0, 0.0, 0.95),
-												   ("wicker_basket_01", 70.0, 850.0, 20.0, 1.0), ("wooden_bucket_01", -90.0, 900.0, 0.0, 1.0))):
-		C.PH_(f"Pier_{Id}_{Index}", Id, PX + DX, QY + DY, Yaw, Sc, Z=0.0, Collide=Id != "wooden_bucket_01")
-	C.SpriteProp("Pier_FishCrate", "FishPileA", (PX - 95.0, QY + 520.0, 57.0), Flat=True, Scale=0.85)
-	C.Kit("Pier_Boat0", "HarborRowboatBlue", PX + PW * 0.5 + 120.0, QY + 520.0, 92.0, 1.0, Z=SEA - 30.0)
-	C.Kit("Pier_Boat1", "HarborRowboatRed", PX - PW * 0.5 - 120.0, QY + 760.0, 86.0, 1.0, Z=SEA - 30.0)
-	C.Kit("Pier_Boat2", "HarborRowboatWood", PX + PW * 0.5 + 140.0, QY + 860.0, 97.0, 0.95, Z=SEA - 30.0)
+	# 잔교 위 짐·나룻배는 잔교 끝쪽(Y ≥ 1080)에만: 어시장 거리(Y ≈ 0)에서 보면 화면 아래 밖 — 가까이 두면 카메라 앞에 흐린 덩어리로 걸렸다
+	LanternPost(C, "Pier_Lantern", PX - PW * 0.5 + 30.0, PEnd - 30.0, Z=0.0)
+	for Index, (Id, DX, Y, Yaw, Sc) in enumerate((("wooden_crate_02", -100.0, 1090.0, 12.0, 1.0), ("wine_barrel_01", 100.0, 1110.0, 0.0, 0.95),
+												  ("wooden_bucket_01", 130.0, 1170.0, 0.0, 1.0))):
+		C.PH_(f"Pier_{Id}_{Index}", Id, PX + DX, Y, Yaw, Sc, Z=0.0, Collide=Id != "wooden_bucket_01")
+	C.SpriteProp("Pier_FishCrate", "FishPileA", (PX - 100.0, 1090.0, 57.0), Flat=True, Scale=0.85)
+	C.Kit("Pier_Boat0", "HarborRowboatBlue", PX + PW * 0.5 + 120.0, 1200.0, 92.0, 1.0, Z=SEA - 30.0)
+	C.Kit("Pier_Boat1", "HarborRowboatRed", PX - PW * 0.5 - 120.0, 1320.0, 86.0, 1.0, Z=SEA - 30.0)
+	C.Kit("Pier_Boat2", "HarborRowboatWood", PX + PW * 0.5 + 140.0, 1520.0, 97.0, 0.95, Z=SEA - 30.0)
 	C.PH_("Harbor_Ship", "dutch_ship_medium", -380.0, 1760.0, 90.0, 0.3, Z=SEA + 4.0)
 	C.PH_("Harbor_Buoy0", "ocean_buoy", -2500.0, 1150.0, 0.0, 0.55, Z=SEA - 10.0)
 	C.PH_("Harbor_Buoy1", "ocean_buoy", 520.0, 1250.0, 30.0, 0.5, Z=SEA - 10.0)
@@ -992,8 +1014,10 @@ def BuildHarborFront(C):
 			  (LX + math.cos(A) * 84.0, LY + math.sin(A) * 84.0, GZ), QuatFromEuler(Yaw=math.degrees(A)), (0.03, 0.66, 0.84))
 	S.Add("Lighthouse_Core", {"StaticMeshComponent": {"MeshAsset": "primitive:sphere", "MaterialAsset": HMat("LampOff")}}, (LX, LY, GZ), None, (0.5, 0.5, 0.6))
 	C.Point("Lighthouse_Lamp", (LX, LY, GZ), (1.0, 0.78, 0.45), 0.0, 1600.0)
-	S.Add("Lighthouse_Beam", {"SpotLightComponent": {"Color": [1.0, 0.88, 0.62], "Intensity": 0.0, "Radius": 5200.0, "InnerConeAngle": 4.0,
-													  "OuterConeAngle": 9.0, "CastShadows": False, "SpecularScale": 0.3}}, (LX, LY, GZ), QuatFromEuler(Pitch=-4.0, Yaw=0.0))
+	Beam = S.Add("Lighthouse_Beam", {"SpotLightComponent": {"Color": [1.0, 0.88, 0.62], "Intensity": 0.0, "Radius": 5200.0, "InnerConeAngle": 5.0,
+															 "OuterConeAngle": 11.0, "CastShadows": False, "SpecularScale": 0.3}}, (LX, LY, GZ), QuatFromEuler(Pitch=-4.0, Yaw=0.0))
+	# 빛줄기 원뿔 (등대 불이 켜졌을 때만 — HD2DWorld가 배율 0/1로 켜고 끈다)
+	S.Add("Lighthouse_BeamCone", {"ModelComponent": {"AssetPath": KitPath("HarborBeam")}}, (40.0, 0.0, 0.0), QuatFromEuler(Pitch=-90.0), (0.001, 0.001, 0.001), Beam)
 	# 걷는 바닥 (방파제 판 + 둥근 단 — 지형은 바다 밑이라 상자로 받친다)
 	C.BoxCollider("Jetty_Deck", (JX, (QY + JY1) * 0.5, -12.0), (JW * 0.5, (JY1 - QY) * 0.5 + 10.0, 16.0))
 	for K in range(3):
@@ -1008,11 +1032,12 @@ def BuildHarborFront(C):
 	for Index, (X, Y) in enumerate(((JX + JW * 0.5 - 24.0, 820.0), (JX - JW * 0.5 + 12.0, 1000.0))):  # 서쪽 걷는 길은 비운다
 		C.Kit(f"Jetty_Bollard{Index}", "HarborBollard", X, Y, 0.0, 0.9, Z=5.0)
 		C.BoxCollider(f"Jetty_Bollard{Index}_Collision", (X, Y, 30.0), (15.0, 15.0, 30.0))
-	E.Box("Jetty_BuoyPost", (JX + JW * 0.5 - 30.0, 430.0, 70.0), (12.0, 12.0, 150.0), "EnvTimber")
-	C.PH_("Jetty_Lifebuoy", "lifebuoy", JX + JW * 0.5 - 22.0, 440.0, 90.0, 1.3, Z=95.0)
-	C.PH_("Jetty_Cannon", "cannon_01", LX - 300.0, LY + 120.0, 70.0, 0.85, Z=10.0, Collide=True)
-	LanternPost(C, "Jetty_Lantern", JX + JW * 0.5 - 30.0, 680.0, Z=0.0)  # 동쪽 가장자리 (서쪽 걷는 길을 막지 않게)
-	C.PH_("Jetty_Rope", "wooden_barrels_01", JX + 150.0, 520.0, 100.0, 0.5, Z=0.0, Collide=True)
+	# 방파제 위 소품은 끝쪽(Y ≥ 1250)·동쪽 가장자리에만 (거리에서 보면 화면 밖, 서쪽 걷는 길은 비움)
+	E.Box("Jetty_BuoyPost", (JX + JW * 0.5 - 30.0, 1290.0, 70.0), (12.0, 12.0, 150.0), "EnvTimber")
+	C.PH_("Jetty_Lifebuoy", "lifebuoy", JX + JW * 0.5 - 22.0, 1300.0, 90.0, 1.3, Z=95.0)
+	C.PH_("Jetty_Cannon", "cannon_01", LX - 200.0, LY + 120.0, 70.0, 0.85, Z=10.0, Collide=True)
+	LanternPost(C, "Jetty_Lantern", JX - JW * 0.5 + 30.0, 1330.0, Z=0.0)
+	C.PH_("Jetty_Rope", "wooden_barrels_01", JX + 170.0, 1000.0, 100.0, 0.5, Z=0.0, Collide=True)
 
 	# ---- 어시장 광장: 생선 노점 셋 + 바닥 생선 상자 + 닻 기념비 + 벤치
 	FishStall(C, "Market_Stall0", -2420.0, -390.0, "EnvAwningBlue", ("FishPileA", "FishPileC", "FishPileB"))
@@ -1173,7 +1198,7 @@ AUTO_SCENES = {
 	"AutoPlay":    (Layout.PLAYER_START, "Harbor"),        # 도착 → 퀘스트·적·보스·상점·낮밤·여관 → 메인 맵 이동
 	"Shot_Day":    ((-1900.0, 0.0), "HarborDay"),          # 어시장 한낮
 	"Shot_Night":  ((-1900.0, 0.0), "HarborNight"),        # 어시장 밤 (등불·창 불빛)
-	"Shot_Lighthouse": ((900.0, 700.0), "HarborLighthouse"),  # 방파제 등대 (밤 — 불 켜짐)
+	"Shot_Lighthouse": ((960.0, 1180.0), "HarborLighthouse"),  # 방파제 등대 (밤 — 불 켜짐)
 	"Shot_Combat": ((2500.0, -150.0), "HarborCombat"),     # 절벽 길 전투 (성능 측정)
 	"Shot_Boss":   ((4100.0, 100.0), "HarborBoss"),        # 해적 선장
 }

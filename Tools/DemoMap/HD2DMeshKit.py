@@ -23,9 +23,11 @@ def _NToGltf(N):
 class FMaterialDef:
 	# Stem: Poly Haven 묶음 이름 (예: "weathered_planks") — 없으면 단색. Tint = 기본색 배율, Emissive = 발광(선형), Mask = 알파 테스트(텍스처 알파)
 	def __init__(self, Name, Stem=None, Tint=(1.0, 1.0, 1.0), Rough=1.0, Metal=0.0, Emissive=(0.0, 0.0, 0.0), Texture=None, Mask=False, DoubleSided=False,
-				 NormalScale=1.0):
+				 NormalScale=1.0, Blend=False, EmissiveTexture=None, Alpha=1.0):
+		# Blend = 반투명(glTF BLEND), EmissiveTexture = 발광 텍스처(이 glTF 폴더 기준), Alpha = 기본색 알파
 		self.Name, self.Stem, self.Tint, self.Rough, self.Metal = Name, Stem, Tint, Rough, Metal
 		self.Emissive, self.Texture, self.Mask, self.DoubleSided, self.NormalScale = Emissive, Texture, Mask, DoubleSided, NormalScale
+		self.Blend, self.EmissiveTexture, self.Alpha = Blend, EmissiveTexture, Alpha
 
 
 class FMeshBuilder:
@@ -197,7 +199,7 @@ class FMeshBuilder:
 		MatIndex = {}
 		for MatName in self.Parts:
 			Def = self.Materials[MatName]
-			Pbr = {"baseColorFactor": [Def.Tint[0], Def.Tint[1], Def.Tint[2], 1.0], "metallicFactor": Def.Metal, "roughnessFactor": Def.Rough}
+			Pbr = {"baseColorFactor": [Def.Tint[0], Def.Tint[1], Def.Tint[2], Def.Alpha], "metallicFactor": Def.Metal, "roughnessFactor": Def.Rough}
 			M = {"name": Def.Name, "pbrMetallicRoughness": Pbr, "doubleSided": Def.DoubleSided}
 			if Def.Stem:
 				# "묶음" → 묶음/묶음_diff_2k.jpg, "폴더/…/줄기" → 그 경로 그대로 (예: modular_fort_01/textures/modular_fort_01_wall)
@@ -211,6 +213,10 @@ class FMeshBuilder:
 				Pbr["baseColorTexture"] = {"index": Image_(Def.Texture)}
 			if any(V > 0.0 for V in Def.Emissive):
 				M["emissiveFactor"] = list(Def.Emissive)
+			if Def.EmissiveTexture:
+				M["emissiveTexture"] = {"index": Image_(Def.EmissiveTexture)}
+			if Def.Blend:
+				M["alphaMode"] = "BLEND"
 			if Def.Mask:
 				M["alphaMode"] = "MASK"
 				M["alphaCutoff"] = 0.35

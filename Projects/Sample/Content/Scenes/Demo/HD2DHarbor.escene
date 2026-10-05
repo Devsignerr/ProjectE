@@ -345,7 +345,7 @@
         "TransformComponent": {
           "Position": [
             500.0,
-            1450.0,
+            1850.0,
             300.0
           ],
           "Rotation": [
@@ -369,14 +369,14 @@
         "BoxColliderComponent": {
           "HalfExtents": [
             100.0,
-            1850.0,
+            2050.0,
             900.0
           ]
         },
         "TransformComponent": {
           "Position": [
             -4500.0,
-            -300.0,
+            -100.0,
             300.0
           ],
           "Rotation": [
@@ -400,14 +400,14 @@
         "BoxColliderComponent": {
           "HalfExtents": [
             100.0,
-            1850.0,
+            2050.0,
             900.0
           ]
         },
         "TransformComponent": {
           "Position": [
             5500.0,
-            -300.0,
+            -100.0,
             300.0
           ],
           "Rotation": [
@@ -23291,14 +23291,14 @@
         "BoxColliderComponent": {
           "HalfExtents": [
             150.0,
-            495.0,
+            570.0,
             16.0
           ]
         },
         "TransformComponent": {
           "Position": [
             -1700.0,
-            775.0,
+            850.0,
             -16.0
           ],
           "Rotation": [
@@ -23322,14 +23322,14 @@
         "BoxColliderComponent": {
           "HalfExtents": [
             12.0,
-            455.0,
+            530.0,
             90.0
           ]
         },
         "TransformComponent": {
           "Position": [
             -1862.0,
-            805.0,
+            880.0,
             60.0
           ],
           "Rotation": [
@@ -23353,14 +23353,14 @@
         "BoxColliderComponent": {
           "HalfExtents": [
             12.0,
-            455.0,
+            530.0,
             90.0
           ]
         },
         "TransformComponent": {
           "Position": [
             -1538.0,
-            805.0,
+            880.0,
             60.0
           ],
           "Rotation": [
@@ -23391,7 +23391,7 @@
         "TransformComponent": {
           "Position": [
             -1700.0,
-            1266.0,
+            1416.0,
             60.0
           ],
           "Rotation": [
@@ -23418,8 +23418,8 @@
         },
         "TransformComponent": {
           "Position": [
-            -1580.0,
-            1180.0,
+            -1820.0,
+            1370.0,
             110.0
           ],
           "Rotation": [
@@ -23446,8 +23446,8 @@
         },
         "TransformComponent": {
           "Position": [
-            -1580.0,
-            1180.0,
+            -1820.0,
+            1370.0,
             232.0
           ],
           "Rotation": [
@@ -23473,8 +23473,8 @@
         },
         "TransformComponent": {
           "Position": [
-            -1580.0,
-            1180.0,
+            -1820.0,
+            1370.0,
             235.0
           ],
           "Rotation": [
@@ -23512,8 +23512,8 @@
         },
         "TransformComponent": {
           "Position": [
-            -1580.0,
-            1180.0,
+            -1820.0,
+            1370.0,
             275.0
           ],
           "Rotation": [
@@ -23543,8 +23543,8 @@
         },
         "TransformComponent": {
           "Position": [
-            -1580.0,
-            1180.0,
+            -1820.0,
+            1370.0,
             100.0
           ],
           "Rotation": [
@@ -23570,8 +23570,8 @@
         },
         "TransformComponent": {
           "Position": [
-            -1795.0,
-            820.0,
+            -1800.0,
+            1090.0,
             0.0
           ],
           "Rotation": [
@@ -23601,8 +23601,8 @@
         },
         "TransformComponent": {
           "Position": [
-            -1794.9826434528388,
-            820.003689247987,
+            -1799.9826434528388,
+            1090.003689247987,
             22.215362638235092
           ],
           "Rotation": [
@@ -23629,7 +23629,7 @@
         "TransformComponent": {
           "Position": [
             -1600.0,
-            720.0,
+            1110.0,
             0.0
           ],
           "Rotation": [
@@ -23660,7 +23660,7 @@
         "TransformComponent": {
           "Position": [
             -1600.6711677461863,
-            720.000144392252,
+            1110.000144392252,
             41.45000569522381
           ],
           "Rotation": [
@@ -23682,70 +23682,12 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/wicker_basket_01/wicker_basket_01.gltf"
-        },
-        "TransformComponent": {
-          "Position": [
-            -1630.0,
-            1150.0,
-            0.0
-          ],
-          "Rotation": [
-            0.0,
-            -0.0,
-            0.17364817766693033,
-            0.984807753012208
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      },
-      "Name": "Pier_wicker_basket_01_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            12.538146041333675,
-            16.287031210958958,
-            60.0
-          ]
-        },
-        "TransformComponent": {
-          "Position": [
-            -1629.9498419764948,
-            1149.9895087867415,
-            5.77948116697371
-          ],
-          "Rotation": [
-            0.0,
-            -0.0,
-            0.17364817766693033,
-            0.984807753012208
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      },
-      "Name": "Pier_wicker_basket_01_2_Collision",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "ModelComponent": {
           "AssetPath": "Asset/PolyHaven/wooden_bucket_01/wooden_bucket_01.gltf"
         },
         "TransformComponent": {
           "Position": [
-            -1790.0,
-            1200.0,
+            -1570.0,
+            1170.0,
             0.0
           ],
           "Rotation": [
@@ -23761,7 +23703,7 @@
           ]
         }
       },
-      "Name": "Pier_wooden_bucket_01_3",
+      "Name": "Pier_wooden_bucket_01_2",
       "Parent": -1
     },
     {
@@ -23793,8 +23735,8 @@
         },
         "TransformComponent": {
           "Position": [
-            -1795.0,
-            820.0,
+            -1800.0,
+            1090.0,
             57.0
           ],
           "Rotation": [
@@ -23821,7 +23763,7 @@
         "TransformComponent": {
           "Position": [
             -1430.0,
-            820.0,
+            1200.0,
             -100.0
           ],
           "Rotation": [
@@ -23848,7 +23790,7 @@
         "TransformComponent": {
           "Position": [
             -1970.0,
-            1060.0,
+            1320.0,
             -100.0
           ],
           "Rotation": [
@@ -23875,7 +23817,7 @@
         "TransformComponent": {
           "Position": [
             -1410.0,
-            1160.0,
+            1520.0,
             -100.0
           ],
           "Rotation": [
@@ -23984,7 +23926,7 @@
         "TransformComponent": {
           "Position": [
             1080.0,
-            690.0,
+            930.0,
             -230.0
           ],
           "Rotation": [
@@ -23995,7 +23937,7 @@
           ],
           "Scale": [
             4.8,
-            7.8,
+            12.6,
             4.0
           ]
         }
@@ -24012,7 +23954,7 @@
         "TransformComponent": {
           "Position": [
             1080.0,
-            690.0,
+            930.0,
             -28.0
           ],
           "Rotation": [
@@ -24023,7 +23965,7 @@
           ],
           "Scale": [
             4.82,
-            7.8,
+            12.6,
             0.48
           ]
         }
@@ -24040,7 +23982,7 @@
         "TransformComponent": {
           "Position": [
             1080.0,
-            670.0,
+            910.0,
             -2.0
           ],
           "Rotation": [
@@ -24051,7 +23993,7 @@
           ],
           "Scale": [
             4.94,
-            8.2,
+            13.0,
             0.14
           ]
         }
@@ -24067,7 +24009,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1120.0,
+            1600.0,
             10.0
           ],
           "Rotation": [
@@ -24094,7 +24036,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1120.0,
+            1600.0,
             10.0
           ],
           "Rotation": [
@@ -24125,7 +24067,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1120.0,
+            1600.0,
             200.0
           ],
           "Rotation": [
@@ -24153,7 +24095,7 @@
         "TransformComponent": {
           "Position": [
             1294.0,
-            1120.0,
+            1600.0,
             429.0
           ],
           "Rotation": [
@@ -24181,7 +24123,7 @@
         "TransformComponent": {
           "Position": [
             1269.39696961967,
-            1179.39696961967,
+            1659.39696961967,
             429.0
           ],
           "Rotation": [
@@ -24209,7 +24151,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1204.0,
+            1684.0,
             429.0
           ],
           "Rotation": [
@@ -24237,7 +24179,7 @@
         "TransformComponent": {
           "Position": [
             1150.60303038033,
-            1179.39696961967,
+            1659.39696961967,
             429.0
           ],
           "Rotation": [
@@ -24265,7 +24207,7 @@
         "TransformComponent": {
           "Position": [
             1126.0,
-            1120.0,
+            1600.0,
             429.0
           ],
           "Rotation": [
@@ -24293,7 +24235,7 @@
         "TransformComponent": {
           "Position": [
             1150.60303038033,
-            1060.60303038033,
+            1540.60303038033,
             429.0
           ],
           "Rotation": [
@@ -24321,7 +24263,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1036.0,
+            1516.0,
             429.0
           ],
           "Rotation": [
@@ -24349,7 +24291,7 @@
         "TransformComponent": {
           "Position": [
             1269.39696961967,
-            1060.60303038033,
+            1540.60303038033,
             429.0
           ],
           "Rotation": [
@@ -24377,7 +24319,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1120.0,
+            1600.0,
             429.0
           ],
           "Rotation": [
@@ -24411,7 +24353,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1120.0,
+            1600.0,
             429.0
           ],
           "Rotation": [
@@ -24440,15 +24382,15 @@
           ],
           "Intensity": 0.0,
           "Radius": 5200.0,
-          "InnerConeAngle": 4.0,
-          "OuterConeAngle": 9.0,
+          "InnerConeAngle": 5.0,
+          "OuterConeAngle": 11.0,
           "CastShadows": false,
           "SpecularScale": 0.3
         },
         "TransformComponent": {
           "Position": [
             1210.0,
-            1120.0,
+            1600.0,
             429.0
           ],
           "Rotation": [
@@ -24469,17 +24411,44 @@
     },
     {
       "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/DemoKits/HD2D/Harbor/HarborBeam.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.7071067811865476,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Lighthouse_BeamCone",
+      "Parent": 848
+    },
+    {
+      "Components": {
         "BoxColliderComponent": {
           "HalfExtents": [
             240.0,
-            400.0,
+            640.0,
             16.0
           ]
         },
         "TransformComponent": {
           "Position": [
             1080.0,
-            690.0,
+            930.0,
             -12.0
           ],
           "Rotation": [
@@ -24510,7 +24479,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1120.0,
+            1600.0,
             -6.0
           ],
           "Rotation": [
@@ -24541,7 +24510,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1120.0,
+            1600.0,
             -6.0
           ],
           "Rotation": [
@@ -24572,7 +24541,7 @@
         "TransformComponent": {
           "Position": [
             1210.0,
-            1120.0,
+            1600.0,
             -6.0
           ],
           "Rotation": [
@@ -24596,14 +24565,14 @@
         "BoxColliderComponent": {
           "HalfExtents": [
             12.0,
-            390.0,
+            630.0,
             90.0
           ]
         },
         "TransformComponent": {
           "Position": [
             828.0,
-            710.0,
+            950.0,
             60.0
           ],
           "Rotation": [
@@ -24627,14 +24596,14 @@
         "BoxColliderComponent": {
           "HalfExtents": [
             12.0,
-            285.0,
+            525.0,
             90.0
           ]
         },
         "TransformComponent": {
           "Position": [
             1332.0,
-            605.0,
+            845.0,
             60.0
           ],
           "Rotation": [
@@ -24665,7 +24634,7 @@
         "TransformComponent": {
           "Position": [
             1360.0,
-            860.1923788646684,
+            1340.1923788646684,
             60.0
           ],
           "Rotation": [
@@ -24696,7 +24665,7 @@
         "TransformComponent": {
           "Position": [
             1434.5532244513304,
-            921.0632025277614,
+            1401.0632025277614,
             60.0
           ],
           "Rotation": [
@@ -24727,7 +24696,7 @@
         "TransformComponent": {
           "Position": [
             1485.9938330976472,
-            1002.4100170419774,
+            1482.4100170419774,
             60.0
           ],
           "Rotation": [
@@ -24758,7 +24727,7 @@
         "TransformComponent": {
           "Position": [
             1509.027192440263,
-            1095.8600293849822,
+            1575.8600293849822,
             60.0
           ],
           "Rotation": [
@@ -24789,7 +24758,7 @@
         "TransformComponent": {
           "Position": [
             1501.2825452278157,
-            1191.7946992862674,
+            1671.7946992862674,
             60.0
           ],
           "Rotation": [
@@ -24820,7 +24789,7 @@
         "TransformComponent": {
           "Position": [
             1463.5570256631386,
-            1280.3397478383404,
+            1760.3397478383404,
             60.0
           ],
           "Rotation": [
@@ -24851,7 +24820,7 @@
         "TransformComponent": {
           "Position": [
             1399.733612678613,
-            1352.3814885482964,
+            1832.3814885482964,
             60.0
           ],
           "Rotation": [
@@ -24882,7 +24851,7 @@
         "TransformComponent": {
           "Position": [
             1316.3814661127608,
-            1400.5048728056245,
+            1880.5048728056245,
             60.0
           ],
           "Rotation": [
@@ -24913,7 +24882,7 @@
         "TransformComponent": {
           "Position": [
             1222.0797820328246,
-            1419.756699451471,
+            1899.756699451471,
             60.0
           ],
           "Rotation": [
@@ -24944,7 +24913,7 @@
         "TransformComponent": {
           "Position": [
             1126.5347608250643,
-            1408.1554334894117,
+            1888.1554334894117,
             60.0
           ],
           "Rotation": [
@@ -24975,7 +24944,7 @@
         "TransformComponent": {
           "Position": [
             1039.5805759806533,
-            1366.8951597680968,
+            1846.8951597680968,
             60.0
           ],
           "Rotation": [
@@ -25006,7 +24975,7 @@
         "TransformComponent": {
           "Position": [
             970.1671709789497,
-            1300.2226792713936,
+            1780.2226792713936,
             60.0
           ],
           "Rotation": [
@@ -25037,7 +25006,7 @@
         "TransformComponent": {
           "Position": [
             925.4390674158564,
-            1215.0003981404418,
+            1695.0003981404418,
             60.0
           ],
           "Rotation": [
@@ -25068,7 +25037,7 @@
         "TransformComponent": {
           "Position": [
             910.0,
-            1120.0,
+            1600.0,
             60.0
           ],
           "Rotation": [
@@ -25212,7 +25181,7 @@
         "TransformComponent": {
           "Position": [
             1290.0,
-            430.0,
+            1290.0,
             70.0
           ],
           "Rotation": [
@@ -25239,7 +25208,7 @@
         "TransformComponent": {
           "Position": [
             1298.0,
-            440.0,
+            1300.0,
             95.0
           ],
           "Rotation": [
@@ -25265,8 +25234,8 @@
         },
         "TransformComponent": {
           "Position": [
-            910.0,
-            1240.0,
+            1010.0,
+            1720.0,
             10.0
           ],
           "Rotation": [
@@ -25296,8 +25265,8 @@
         },
         "TransformComponent": {
           "Position": [
-            909.78328719234,
-            1197.5271669013082,
+            1009.78328719234,
+            1677.5271669013082,
             46.50508891791105
           ],
           "Rotation": [
@@ -25324,8 +25293,8 @@
         },
         "TransformComponent": {
           "Position": [
-            1290.0,
-            680.0,
+            870.0,
+            1330.0,
             110.0
           ],
           "Rotation": [
@@ -25352,8 +25321,8 @@
         },
         "TransformComponent": {
           "Position": [
-            1290.0,
-            680.0,
+            870.0,
+            1330.0,
             232.0
           ],
           "Rotation": [
@@ -25379,8 +25348,8 @@
         },
         "TransformComponent": {
           "Position": [
-            1290.0,
-            680.0,
+            870.0,
+            1330.0,
             235.0
           ],
           "Rotation": [
@@ -25418,8 +25387,8 @@
         },
         "TransformComponent": {
           "Position": [
-            1290.0,
-            680.0,
+            870.0,
+            1330.0,
             275.0
           ],
           "Rotation": [
@@ -25449,8 +25418,8 @@
         },
         "TransformComponent": {
           "Position": [
-            1290.0,
-            680.0,
+            870.0,
+            1330.0,
             100.0
           ],
           "Rotation": [
@@ -25476,8 +25445,8 @@
         },
         "TransformComponent": {
           "Position": [
-            1230.0,
-            520.0,
+            1250.0,
+            1000.0,
             0.0
           ],
           "Rotation": [
@@ -25507,8 +25476,8 @@
         },
         "TransformComponent": {
           "Position": [
-            1233.2561949867438,
-            533.7917229160093,
+            1253.2561949867438,
+            1013.7917229160093,
             21.922448370605707
           ],
           "Rotation": [
@@ -25577,7 +25546,7 @@
         }
       },
       "Name": "Market_Stall0_Post-11",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25605,7 +25574,7 @@
         }
       },
       "Name": "Market_Stall0_Post-1-1",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25633,7 +25602,7 @@
         }
       },
       "Name": "Market_Stall0_Post11",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25661,7 +25630,7 @@
         }
       },
       "Name": "Market_Stall0_Post1-1",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25689,7 +25658,7 @@
         }
       },
       "Name": "Market_Stall0_Counter",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25717,7 +25686,7 @@
         }
       },
       "Name": "Market_Stall0_CounterTop",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25745,7 +25714,7 @@
         }
       },
       "Name": "Market_Stall0_Back",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25773,7 +25742,7 @@
         }
       },
       "Name": "Market_Stall0_Awning",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25801,7 +25770,7 @@
         }
       },
       "Name": "Market_Stall0_Valance",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25829,7 +25798,7 @@
         }
       },
       "Name": "Market_Stall0_Crate0",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25906,7 +25875,7 @@
         }
       },
       "Name": "Market_Stall0_Crate1",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -25983,7 +25952,7 @@
         }
       },
       "Name": "Market_Stall0_Crate2",
-      "Parent": 886
+      "Parent": 885
     },
     {
       "Components": {
@@ -26164,7 +26133,7 @@
         }
       },
       "Name": "Market_Stall1_Post-11",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26192,7 +26161,7 @@
         }
       },
       "Name": "Market_Stall1_Post-1-1",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26220,7 +26189,7 @@
         }
       },
       "Name": "Market_Stall1_Post11",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26248,7 +26217,7 @@
         }
       },
       "Name": "Market_Stall1_Post1-1",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26276,7 +26245,7 @@
         }
       },
       "Name": "Market_Stall1_Counter",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26304,7 +26273,7 @@
         }
       },
       "Name": "Market_Stall1_CounterTop",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26332,7 +26301,7 @@
         }
       },
       "Name": "Market_Stall1_Back",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26360,7 +26329,7 @@
         }
       },
       "Name": "Market_Stall1_Awning",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26388,7 +26357,7 @@
         }
       },
       "Name": "Market_Stall1_Valance",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26416,7 +26385,7 @@
         }
       },
       "Name": "Market_Stall1_Crate0",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26493,7 +26462,7 @@
         }
       },
       "Name": "Market_Stall1_Crate1",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26570,7 +26539,7 @@
         }
       },
       "Name": "Market_Stall1_Crate2",
-      "Parent": 904
+      "Parent": 903
     },
     {
       "Components": {
@@ -26751,7 +26720,7 @@
         }
       },
       "Name": "Market_Stall2_Post-11",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -26779,7 +26748,7 @@
         }
       },
       "Name": "Market_Stall2_Post-1-1",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -26807,7 +26776,7 @@
         }
       },
       "Name": "Market_Stall2_Post11",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -26835,7 +26804,7 @@
         }
       },
       "Name": "Market_Stall2_Post1-1",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -26863,7 +26832,7 @@
         }
       },
       "Name": "Market_Stall2_Counter",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -26891,7 +26860,7 @@
         }
       },
       "Name": "Market_Stall2_CounterTop",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -26919,7 +26888,7 @@
         }
       },
       "Name": "Market_Stall2_Back",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -26947,7 +26916,7 @@
         }
       },
       "Name": "Market_Stall2_Awning",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -26975,7 +26944,7 @@
         }
       },
       "Name": "Market_Stall2_Valance",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -27003,7 +26972,7 @@
         }
       },
       "Name": "Market_Stall2_Crate0",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -27080,7 +27049,7 @@
         }
       },
       "Name": "Market_Stall2_Crate1",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -27157,7 +27126,7 @@
         }
       },
       "Name": "Market_Stall2_Crate2",
-      "Parent": 922
+      "Parent": 921
     },
     {
       "Components": {
@@ -32522,7 +32491,7 @@
         }
       },
       "Name": "Pirate_TentA_Cloth_GableScale",
-      "Parent": 1117
+      "Parent": 1116
     },
     {
       "Components": {
@@ -32550,7 +32519,7 @@
         }
       },
       "Name": "Pirate_TentA_Cloth_Gable",
-      "Parent": 1118
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32578,7 +32547,7 @@
         }
       },
       "Name": "Pirate_TentA_Cloth_Roof-1",
-      "Parent": 1117
+      "Parent": 1116
     },
     {
       "Components": {
@@ -32606,7 +32575,7 @@
         }
       },
       "Name": "Pirate_TentA_Cloth_Roof1",
-      "Parent": 1117
+      "Parent": 1116
     },
     {
       "Components": {
@@ -32634,7 +32603,7 @@
         }
       },
       "Name": "Pirate_TentA_Opening",
-      "Parent": 1117
+      "Parent": 1116
     },
     {
       "Components": {
@@ -32662,7 +32631,7 @@
         }
       },
       "Name": "Pirate_TentA_Flap-1",
-      "Parent": 1117
+      "Parent": 1116
     },
     {
       "Components": {
@@ -32690,7 +32659,7 @@
         }
       },
       "Name": "Pirate_TentA_Flap1",
-      "Parent": 1117
+      "Parent": 1116
     },
     {
       "Components": {
@@ -32718,7 +32687,7 @@
         }
       },
       "Name": "Pirate_TentA_Pole-1",
-      "Parent": 1117
+      "Parent": 1116
     },
     {
       "Components": {
@@ -32746,7 +32715,7 @@
         }
       },
       "Name": "Pirate_TentA_Pole1",
-      "Parent": 1117
+      "Parent": 1116
     },
     {
       "Components": {
@@ -32774,7 +32743,7 @@
         }
       },
       "Name": "Pirate_TentA_RidgePole",
-      "Parent": 1117
+      "Parent": 1116
     },
     {
       "Components": {
@@ -32853,7 +32822,7 @@
         }
       },
       "Name": "Pirate_TentB_Cloth_GableScale",
-      "Parent": 1129
+      "Parent": 1128
     },
     {
       "Components": {
@@ -32881,7 +32850,7 @@
         }
       },
       "Name": "Pirate_TentB_Cloth_Gable",
-      "Parent": 1130
+      "Parent": 1129
     },
     {
       "Components": {
@@ -32909,7 +32878,7 @@
         }
       },
       "Name": "Pirate_TentB_Cloth_Roof-1",
-      "Parent": 1129
+      "Parent": 1128
     },
     {
       "Components": {
@@ -32937,7 +32906,7 @@
         }
       },
       "Name": "Pirate_TentB_Cloth_Roof1",
-      "Parent": 1129
+      "Parent": 1128
     },
     {
       "Components": {
@@ -32965,7 +32934,7 @@
         }
       },
       "Name": "Pirate_TentB_Opening",
-      "Parent": 1129
+      "Parent": 1128
     },
     {
       "Components": {
@@ -32993,7 +32962,7 @@
         }
       },
       "Name": "Pirate_TentB_Flap-1",
-      "Parent": 1129
+      "Parent": 1128
     },
     {
       "Components": {
@@ -33021,7 +32990,7 @@
         }
       },
       "Name": "Pirate_TentB_Flap1",
-      "Parent": 1129
+      "Parent": 1128
     },
     {
       "Components": {
@@ -33049,7 +33018,7 @@
         }
       },
       "Name": "Pirate_TentB_Pole-1",
-      "Parent": 1129
+      "Parent": 1128
     },
     {
       "Components": {
@@ -33077,7 +33046,7 @@
         }
       },
       "Name": "Pirate_TentB_Pole1",
-      "Parent": 1129
+      "Parent": 1128
     },
     {
       "Components": {
@@ -33105,7 +33074,7 @@
         }
       },
       "Name": "Pirate_TentB_RidgePole",
-      "Parent": 1129
+      "Parent": 1128
     },
     {
       "Components": {
@@ -34889,7 +34858,7 @@
         }
       },
       "Name": "Cove_Tent_Cloth_GableScale",
-      "Parent": 1197
+      "Parent": 1196
     },
     {
       "Components": {
@@ -34917,7 +34886,7 @@
         }
       },
       "Name": "Cove_Tent_Cloth_Gable",
-      "Parent": 1198
+      "Parent": 1197
     },
     {
       "Components": {
@@ -34945,7 +34914,7 @@
         }
       },
       "Name": "Cove_Tent_Cloth_Roof-1",
-      "Parent": 1197
+      "Parent": 1196
     },
     {
       "Components": {
@@ -34973,7 +34942,7 @@
         }
       },
       "Name": "Cove_Tent_Cloth_Roof1",
-      "Parent": 1197
+      "Parent": 1196
     },
     {
       "Components": {
@@ -35001,7 +34970,7 @@
         }
       },
       "Name": "Cove_Tent_Opening",
-      "Parent": 1197
+      "Parent": 1196
     },
     {
       "Components": {
@@ -35029,7 +34998,7 @@
         }
       },
       "Name": "Cove_Tent_Flap-1",
-      "Parent": 1197
+      "Parent": 1196
     },
     {
       "Components": {
@@ -35057,7 +35026,7 @@
         }
       },
       "Name": "Cove_Tent_Flap1",
-      "Parent": 1197
+      "Parent": 1196
     },
     {
       "Components": {
@@ -35085,7 +35054,7 @@
         }
       },
       "Name": "Cove_Tent_Pole-1",
-      "Parent": 1197
+      "Parent": 1196
     },
     {
       "Components": {
@@ -35113,7 +35082,7 @@
         }
       },
       "Name": "Cove_Tent_Pole1",
-      "Parent": 1197
+      "Parent": 1196
     },
     {
       "Components": {
@@ -35141,7 +35110,7 @@
         }
       },
       "Name": "Cove_Tent_RidgePole",
-      "Parent": 1197
+      "Parent": 1196
     },
     {
       "Components": {
@@ -35585,7 +35554,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/HD2D/HD2DGame.lua",
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"Map\": \"Harbor\", \"Enemies\": \"Crab,1750,120,141;Crab,1950,-330,199;Crab,1620,-420,100;Seagull,2450,80,256;Seagull,3150,-150,253;Pirate,2650,-330,284;Pirate,3000,-80,282;Pirate,3300,-420,283\", \"Npcs\": \"Keeper,860,760,93;HarborMaster,-820,-720,85;Fisher,-1600,980,85;Fishmonger,-2050,-170,85;Innkeeper,-2050,-760,85;Sailor,-250,120,85;GhostSailor,-1700,1080,85\", \"Chests\": \"-3950,420,35,GrilledFish*2+Gold*40;3250,-860,302,HiPotion*2+Gold*90\", \"Props\": \"SavePoint,-2700,-520,45;Lens,2700,-560,255\", \"Boss\": \"4600,30,139\", \"Path\": \"-3450,-1250;-3050,-620;-1700,-560;-300,-420;1300,-60;2200,-160;3350,-140;4300,60\", \"AutoPlay\": \"\", \"Title\": false, \"BossKind\": \"PirateCaptain\", \"BossLift\": 124.0, \"BossReward\": \"Elixir*1+HiPotion*2+Gold*260\", \"BossChestAtSpawn\": true, \"Gulls\": \"-2100,-1900,760,520;700,-2050,820,600;-3600,420,430,320;2900,150,620,520\", \"NightEnemies\": \"Ghost,2350,-120,258;Ghost,2900,160,262;Ghost,3600,-150,183\"}"
+          "PropertyOverrides": "{\"Map\": \"Harbor\", \"Enemies\": \"Crab,1750,120,141;Crab,1950,-330,199;Crab,1620,-420,100;Seagull,2450,80,256;Seagull,3150,-150,253;Pirate,2650,-330,284;Pirate,3000,-80,282;Pirate,3300,-420,283\", \"Npcs\": \"Keeper,1250,1150,93;HarborMaster,-820,-720,85;Fisher,-1620,1260,85;Fishmonger,-2050,-170,85;Innkeeper,-2050,-760,85;Sailor,-250,120,85;GhostSailor,-1780,1200,85\", \"Chests\": \"-3950,420,35,GrilledFish*2+Gold*40;3250,-860,302,HiPotion*2+Gold*90\", \"Props\": \"SavePoint,-2700,-520,45;Lens,2700,-560,255\", \"Boss\": \"4600,30,139\", \"Path\": \"-3450,-1250;-3050,-620;-1700,-560;-300,-420;1300,-60;2200,-160;3350,-140;4300,60\", \"AutoPlay\": \"\", \"Title\": false, \"BossKind\": \"PirateCaptain\", \"BossLift\": 124.0, \"BossReward\": \"Elixir*1+HiPotion*2+Gold*260\", \"CameraMaxY\": 1150.0, \"BossChestAtSpawn\": true, \"Gulls\": \"-2100,-1900,760,520;700,-2050,820,600;-3600,420,430,320;2900,150,620,520\", \"NightEnemies\": \"Ghost,2350,-120,258;Ghost,2900,160,262;Ghost,3600,-150,183\"}"
         },
         "TransformComponent": {
           "Position": [
@@ -35657,7 +35626,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/HD2D/HD2DMetaHud.lua",
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"Map\": \"Harbor\", \"MapImage\": \"UI/Demo/HD2D/Maps/Harbor.png\", \"MapBounds\": \"-4500,-2050,5500,1450\", \"MapTitle\": \"갈매기 항구와 해안 절벽 길\", \"Landmarks\": \"갈매기 여관,-2050,-1300,Place;어시장,-2000,-60,Place;항만 사무소,-820,-1300,Place;등대,1210,1120,Place;해적 야영지,2850,-700,Place;해적 후미,4600,200,Place;하르트 마을로,-3650,-1730,Exit\"}"
+          "PropertyOverrides": "{\"Map\": \"Harbor\", \"MapImage\": \"UI/Demo/HD2D/Maps/Harbor.png\", \"MapBounds\": \"-4500,-2050,5500,1850\", \"MapTitle\": \"갈매기 항구와 해안 절벽 길\", \"Landmarks\": \"갈매기 여관,-2050,-1300,Place;어시장,-2000,-60,Place;항만 사무소,-820,-1300,Place;등대,1210,1600,Place;해적 야영지,2850,-700,Place;해적 후미,4600,200,Place;하르트 마을로,-3650,-1730,Exit\"}"
         },
         "TransformComponent": {
           "Position": [
@@ -35845,7 +35814,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 1229
+          "Root": 1228
         },
         "TransformComponent": {
           "Position": [

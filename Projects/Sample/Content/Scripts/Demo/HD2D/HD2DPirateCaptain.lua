@@ -154,10 +154,10 @@ function HD2DPirateCaptain:OnUpdate(Dt)
 	elseif self.State == "Charge" then
 		self.AfterTimer = self.AfterTimer - Dt
 		if self.AfterTimer <= 0 then
-			self.AfterTimer = 0.05
+			self.AfterTimer = 0.08
 			local Slice, Atlas = self.Body:GetSpriteSlice()
 			if Slice then
-				self.GM:SpawnAfterimage(Atlas, Slice, self.Body:GetWorldPosition() + Vector3(0, -3, 0), self.FlipX, { 1.0, 0.55, 0.45, 0.5 }, 0.28)
+				self.GM:SpawnAfterimage(Atlas, Slice, self.Body:GetWorldPosition() + Vector3(0, -6, 0), self.FlipX, { 0.9, 0.35, 0.3, 0.32 }, 0.2)
 				self.GM.Report.Afterimages = self.GM.Report.Afterimages + 1
 			end
 		end
@@ -236,7 +236,8 @@ function HD2DPirateCaptain:OnUpdate(Dt)
 	end
 	if self.Flash > 0 then
 		self.Flash = self.Flash - Dt
-		self.Sprite.FlashColor = Vector4(1, 1, 1, self.Flash > 0 and math.min(0.85, self.Flash * 9) or 0)
+		-- 피격 번쩍임은 짧고 반만 (자주 맞아도 몸이 하얗게 묻히지 않게 — 맞았다는 신호만)
+		self.Sprite.FlashColor = Vector4(1, 0.95, 0.85, self.Flash > 0 and math.min(0.5, self.Flash * 9) or 0)
 	end
 	if self.State ~= "ChargeWindup" then self.Sprite.Color = self:BaseColor() end
 end
@@ -282,7 +283,7 @@ end
 function HD2DPirateCaptain:TakeHit(Damage, Dir, Knockback)
 	if self.bDead or self.bDormant then return false end
 	self.Health = self.Health - Damage
-	self.Flash = 0.09
+	self.Flash = 0.06
 	if self.State ~= "Charge" then self.entity:AddKnockback(Dir * (Knockback or 0) * 0.08, 0.06) end
 	self.GM:Hud():ShowBoss(self.Row.DisplayName, self.Health / self.Row.MaxHealth)
 	if self.Phase == 1 and self.Health <= self.Row.MaxHealth * 0.5 then

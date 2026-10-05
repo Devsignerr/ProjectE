@@ -210,7 +210,7 @@ function AutoPilot:GoTo(Target, Radius, Timeout, Label)
 	local Until = self.Time + (Timeout or 50)
 	local Nav0 = self.NavRoutes or 0
 	local Route = self:Route(self:Pos(), Target)
-	if self.Scenario == "Cave" and Label then
+	if (self.Scenario == "Cave" or self.Scenario == "Harbor") and Label then
 		local From = self:Pos()
 		self:Note(string.format("길 %s: %d점 (%s, 출발 %.0f, %.0f, %.0f)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path", From.X, From.Y, From.Z))
 	end

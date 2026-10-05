@@ -1051,34 +1051,39 @@ def DrawCaptain(Pose, Frame):
 	Step = (3, 0, -3, 0)[Frame % 4] if Pose == "Walk" else (5 if Pose == "Slash" else 0)
 	Lean = {"Slash": 3, "Raise": -2, "Throw": -2, "Aim": 1}.get(Pose, 0)
 	Sleep = Pose == "Dormant"
+	Swoosh = []  # 칼 궤적 (외곽선 뒤에 빈 칸에만)
 	Pants, PantsD = (62, 58, 74), (40, 36, 50)
 	BootD, BootM, BootL = (26, 20, 22), (44, 34, 34), (80, 64, 60)
 	# ---- 다리 + 장화 (뒤 다리 먼저, 어둡게)
 	HipX = 30 + Lean
-	for (DX, Col, Dark) in ((-3 - Step, PantsD, True), (3 + Step, Pants, False)):
+	for (DX, Col, Dark) in ((-4 - Step, PantsD, True), (4 + Step, Pants, False)):
 		KneeX = HipX + DX
-		_Limb(C, (HipX + DX * 0.3, 44), (KneeX, 54), 3.0, PantsD, Col)
-		C.Rect(KneeX - 3, 54, KneeX + 3, 61, BootD if Dark else BootM)
-		C.Rect(KneeX - 3, 62, KneeX + 5, 63, BootD if Dark else BootM)
-		C.Rect(KneeX - 4, 53, KneeX + 4, 55, BootM if Dark else BootL)   # 접은 장화 목
+		_Limb(C, (HipX + DX * 0.3, 43), (KneeX, 52), 3.2, PantsD, Col)
+		C.Rect(KneeX - 3, 52, KneeX + 3, 61, BootD if Dark else BootM)
+		C.Rect(KneeX - 3, 62, KneeX + 6, 63, BootD if Dark else BootM)      # 발끝은 앞(오른쪽)으로
+		C.Rect(KneeX - 4, 51, KneeX + 4, 53, BootM if Dark else BootL)   # 접은 장화 목
+		if not Dark:
+			C.Rect(KneeX - 2, 54, KneeX - 2, 60, BootL)                  # 장화 광택
 		if not Dark:
 			C.Px(KneeX - 2, 57, BootL)
 	# ---- 외투: 어깨(넓음) → 허리(조임) → 자락(퍼짐, 뒤로 조금 날림)
 	Y0 = 25 + B
 	X0 = 21 + Lean
 	Flutter = (0, 1, 0, -1)[Frame % 4] if Pose == "Walk" else 0
-	Poly(C, [(X0 - 1, Y0), (X0 + 19, Y0), (X0 + 17, Y0 + 13), (X0 + 22, 53), (X0 - 6 - Flutter, 53), (X0 + 1, Y0 + 13)], COAT)
-	Poly(C, [(X0 - 1, Y0), (X0 + 4, Y0), (X0 + 4, Y0 + 13), (X0 - 2 - Flutter, 53), (X0 - 6 - Flutter, 53), (X0 + 1, Y0 + 13)], COAT_L)
+	Hem = 49
+	Poly(C, [(X0 - 1, Y0), (X0 + 19, Y0), (X0 + 17, Y0 + 13), (X0 + 22, Hem), (X0 - 6 - Flutter, Hem), (X0 + 1, Y0 + 13)], COAT)
+	Poly(C, [(X0 - 1, Y0), (X0 + 4, Y0), (X0 + 4, Y0 + 13), (X0 - 2 - Flutter, Hem), (X0 - 6 - Flutter, Hem), (X0 + 1, Y0 + 13)], COAT_L)
 	C.Line(X0 + 19, Y0, X0 + 17, Y0 + 13, COAT_D)
-	C.Line(X0 + 17, Y0 + 13, X0 + 22, 53, COAT_D)
-	C.Line(X0 + 16, Y0 + 13, X0 + 21, 53, COAT_D)
+	C.Line(X0 + 17, Y0 + 13, X0 + 22, Hem, COAT_D)
+	C.Line(X0 + 16, Y0 + 13, X0 + 21, Hem, COAT_D)
+	C.Line(X0 + 8, Y0 + 16, X0 + 9, Hem - 1, COAT_D)                 # 자락 주름
 	# 앞여밈: 검은 조끼 + 흰 셔츠 주름 + 금 테 + 단추
 	C.Rect(X0 + 12, Y0 + 1, X0 + 17, Y0 + 15, (38, 32, 44))
 	C.Rect(X0 + 14, Y0 + 1, X0 + 17, Y0 + 6, (240, 238, 232))
 	C.Px(X0 + 15, Y0 + 3, (200, 196, 190))
 	C.Line(X0 + 12, Y0 + 1, X0 + 12, Y0 + 13, GOLD)
-	C.Line(X0 + 12, Y0 + 13, X0 + 15, 53, GOLD)
-	C.Line(X0 - 6 - Flutter, 53, X0 + 22, 53, GOLD)
+	C.Line(X0 + 12, Y0 + 13, X0 + 15, Hem, GOLD)
+	C.Line(X0 - 6 - Flutter, Hem, X0 + 22, Hem, GOLD)
 	for Y in (Y0 + 4, Y0 + 8, Y0 + 12):
 		C.Px(X0 + 10, Y, GOLD_L)
 	# 허리띠 (금 버클) + 뒤 허리 권총
@@ -1148,7 +1153,7 @@ def DrawCaptain(Pose, Frame):
 		if Pose == "Raise":
 			Hand = (FX - 3, FY - 15)
 		elif Pose == "Slash":
-			Hand = (FX + 12, FY + 3 + Frame * 5)
+			Hand = (FX + 10, FY + 1) if Frame == 0 else (FX + 11, FY + 8)
 		elif Pose == "Aim":
 			Hand = (FX + 13, FY + 1)
 		else:
@@ -1159,11 +1164,17 @@ def DrawCaptain(Pose, Frame):
 		if Pose == "Raise":
 			_Cutlass(C, Hand[0] - 1, Hand[1] - 2, Hand[0] - 15, Hand[1] - 6, -1.2, 2)
 		elif Pose == "Slash":
-			_Cutlass(C, Hand[0] + 3, Hand[1], 63, Hand[1] - 3 + Frame * 10, 1.2, 2)
-			if Frame == 0:
-				for K in range(14):
-					C.Px(Hand[0] + 3 + K, Hand[1] - 12 + (K * K) // 20, (255, 255, 255))
-					C.Px(Hand[0] + 2 + K, Hand[1] - 10 + (K * K) // 20, (255, 226, 196))
+			# 궤적 초승달 (손을 중심으로 반지름 17~19 — 0: 위에서 앞으로, 1: 앞에서 아래로, 옅게)
+			#   외곽선 없이 빈 칸에만 (몸·칼을 덮지 않게) — 외곽선 뒤에 그린다
+			A0, A1 = (-105.0, -25.0) if Frame == 0 else (-20.0, 60.0)
+			for K in range(28):
+				if Frame == 1 and K < 10:
+					continue
+				A = math.radians(A0 + (A1 - A0) * K / 27.0)
+				for R, Col in ((20.0, (255, 226, 190, 200)), (18.5, (255, 255, 255, 255)), (17.0, (255, 250, 236, 150))):
+					Swoosh.append((Hand[0] + math.cos(A) * R, Hand[1] + math.sin(A) * R, Col))
+			Tip = (Hand[0] + 12, Hand[1] - 11) if Frame == 0 else (Hand[0] + 15, Hand[1] + 7)
+			_Cutlass(C, Hand[0] + 2, Hand[1], Tip[0], Tip[1], 1.2, 2)
 		elif Pose == "Aim":
 			_Pistol(C, Hand[0] + 2, Hand[1])
 		else:
@@ -1172,6 +1183,10 @@ def DrawCaptain(Pose, Frame):
 	C.Px(FX - 2, FY + 1, GOLD_D)
 	C.Px(FX + 2, FY + 1, GOLD_D)
 	C.Outline((24, 16, 22))
+	for X, Y, Col in Swoosh:
+		XI, YI = int(round(X)), int(round(Y))
+		if 0 <= XI < C.W and 0 <= YI < C.H and C.P[YI, XI, 3] == 0:
+			C.P[YI, XI] = Col
 	return C
 
 

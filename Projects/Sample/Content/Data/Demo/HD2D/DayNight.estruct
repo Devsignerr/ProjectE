@@ -12,8 +12,8 @@
     {
       "Name": "StartHour",
       "Type": "Float",
-      "Default": 16.4,
-      "Description": "새 게임 시작 시각"
+      "Default": 9.0,
+      "Description": "새 게임 시작 시각 (첫인상은 낮)"
     },
     {
       "Name": "SleepHour",

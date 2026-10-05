@@ -6,82 +6,84 @@
       "Name": "K00",
       "Values": {
         "Hour": 0.0,
-        "SkyScale": 3.2,
+        "SkyScale": 2.4,
         "SunScale": 1.0,
-        "Temperature": -0.22,
-        "Tint": 0.03,
-        "Saturation": 1.05,
-        "Contrast": 1.04,
+        "Temperature": -0.32,
+        "Tint": 0.0,
+        "Saturation": 1.16,
+        "Contrast": 1.16,
         "Lift": [
           0.0,
           0.012,
-          0.035
+          0.042
         ],
         "Gamma": [
-          0.97,
+          0.95,
           1.0,
-          1.04
+          1.08
         ],
         "Gain": [
-          1.0,
+          0.94,
           1.04,
-          1.14
+          1.22
         ],
-        "Vignette": 0.55,
+        "Vignette": 0.5,
         "Fog": [
+          0.03,
           0.05,
-          0.07,
-          0.13
+          0.11
         ],
         "Inscatter": [
-          0.14,
-          0.18,
-          0.3
+          0.25,
+          0.32,
+          0.55
         ],
-        "Exposure": 1.4,
-        "Moon": 0.55,
-        "LampScale": 1.6
+        "Exposure": 1.5,
+        "Moon": 1.1,
+        "LampScale": 2.0,
+        "FogLocal": 1.8
       }
     },
     {
       "Name": "K01",
       "Values": {
         "Hour": 4.8,
-        "SkyScale": 3.2,
+        "SkyScale": 2.4,
         "SunScale": 1.0,
-        "Temperature": -0.22,
-        "Tint": 0.03,
-        "Saturation": 1.05,
-        "Contrast": 1.04,
+        "Temperature": -0.32,
+        "Tint": 0.0,
+        "Saturation": 1.16,
+        "Contrast": 1.16,
         "Lift": [
           0.0,
           0.012,
-          0.035
+          0.042
         ],
         "Gamma": [
-          0.97,
+          0.95,
           1.0,
-          1.04
+          1.08
         ],
         "Gain": [
-          1.0,
+          0.94,
           1.04,
-          1.14
+          1.22
         ],
-        "Vignette": 0.55,
+        "Vignette": 0.5,
         "Fog": [
+          0.03,
           0.05,
-          0.07,
-          0.13
+          0.11
         ],
         "Inscatter": [
-          0.14,
-          0.18,
-          0.3
+          0.25,
+          0.32,
+          0.55
         ],
-        "Exposure": 1.4,
-        "Moon": 0.55,
-        "LampScale": 1.6
+        "Exposure": 1.5,
+        "Moon": 1.1,
+        "LampScale": 2.0,
+        "FogLocal": 1.8
       }
     },
     {
@@ -122,7 +124,8 @@
         ],
         "Exposure": 1.1,
         "Moon": 0.4,
-        "LampScale": 1.2
+        "LampScale": 1.2,
+        "FogLocal": 0.8
       }
     },
     {
@@ -163,7 +166,8 @@
         ],
         "Exposure": 1.0,
         "Moon": 0.3,
-        "LampScale": 1.0
+        "LampScale": 1.0,
+        "FogLocal": 0.45
       }
     },
     {
@@ -204,7 +208,8 @@
         ],
         "Exposure": 1.0,
         "Moon": 0.3,
-        "LampScale": 1.0
+        "LampScale": 1.0,
+        "FogLocal": 0.45
       }
     },
     {
@@ -245,7 +250,8 @@
         ],
         "Exposure": 1.0,
         "Moon": 0.3,
-        "LampScale": 1.0
+        "LampScale": 1.0,
+        "FogLocal": 0.45
       }
     },
     {
@@ -286,7 +292,8 @@
         ],
         "Exposure": 1.0,
         "Moon": 0.3,
-        "LampScale": 1.0
+        "LampScale": 1.0,
+        "FogLocal": 0.5
       }
     },
     {
@@ -297,8 +304,8 @@
         "SunScale": 1.0,
         "Temperature": 0.08,
         "Tint": 0.08,
-        "Saturation": 1.08,
-        "Contrast": 1.07,
+        "Saturation": 1.1,
+        "Contrast": 1.08,
         "Lift": [
           0.01,
           0.0,
@@ -326,49 +333,51 @@
           0.45
         ],
         "Exposure": 1.12,
-        "Moon": 0.4,
-        "LampScale": 1.25
+        "Moon": 0.5,
+        "LampScale": 1.4,
+        "FogLocal": 1.0
       }
     },
     {
       "Name": "K08",
       "Values": {
         "Hour": 19.6,
-        "SkyScale": 3.2,
+        "SkyScale": 2.4,
         "SunScale": 1.0,
-        "Temperature": -0.22,
-        "Tint": 0.03,
-        "Saturation": 1.05,
-        "Contrast": 1.04,
+        "Temperature": -0.32,
+        "Tint": 0.0,
+        "Saturation": 1.16,
+        "Contrast": 1.16,
         "Lift": [
           0.0,
           0.012,
-          0.035
+          0.042
         ],
         "Gamma": [
-          0.97,
+          0.95,
           1.0,
-          1.04
+          1.08
         ],
         "Gain": [
-          1.0,
+          0.94,
           1.04,
-          1.14
+          1.22
         ],
-        "Vignette": 0.55,
+        "Vignette": 0.5,
         "Fog": [
+          0.03,
           0.05,
-          0.07,
-          0.13
+          0.11
         ],
         "Inscatter": [
-          0.14,
-          0.18,
-          0.3
+          0.25,
+          0.32,
+          0.55
         ],
-        "Exposure": 1.4,
-        "Moon": 0.55,
-        "LampScale": 1.6
+        "Exposure": 1.5,
+        "Moon": 1.1,
+        "LampScale": 2.0,
+        "FogLocal": 1.8
       }
     }
   ]

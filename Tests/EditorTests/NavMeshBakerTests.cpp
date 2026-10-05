@@ -1,5 +1,6 @@
 #include "Core/Testing/TestFramework.h"
 #include "Editor/NavMeshBaker.h"
+#include "Scene/Terrain.h"
 
 namespace
 {
@@ -46,4 +47,27 @@ E_TEST(NavMeshBaker_AppendMeshTransformsAndKeepsFacing)
 	E_EXPECT_EQ(Input.Indices.size(), 12u);
 	E_EXPECT_TRUE(Input.Indices[6] >= 4u && Input.Indices[7] >= 4u && Input.Indices[8] >= 4u);
 	E_EXPECT_TRUE(AllFacingUp(Input));
+}
+
+// 지형 높이장 → 격자 삼각형 (정점 = 해상도², 셀마다 둘, 위를 향함, 높이 = 프레임 변환과 같음)
+E_TEST(NavMeshBaker_AppendTerrainGrid)
+{
+	FTerrainData Data;
+	Data.Initialize(5);
+	Data.Heights[2 * 5 + 3] = 40000; // 솟은 점 하나 (경사 면도 위를 향해야 한다)
+	FTerrainComponent Component;
+	Component.Size        = FVector2(400.0f, 400.0f);
+	Component.HeightRange = 1000.0f;
+	const FTerrainFrame Frame = FTerrainFrame::Make(FVector3(100.0f, 0.0f, 50.0f), Component, 5);
+
+	FNavMeshBuildInput Input;
+	Input.Vertices.push_back(FVector3()); // 기존 정점 뒤에 붙는지
+	FNavMeshBaker::AppendTerrain(Data, Frame, Input);
+	E_EXPECT_EQ(Input.Vertices.size(), 26u);
+	E_EXPECT_EQ(Input.Indices.size(), 4u * 4u * 6u);
+	E_EXPECT_TRUE(AllFacingUp(Input));
+	const FVector3 Peak = Input.Vertices[1 + 2 * 5 + 3];
+	E_EXPECT_NEAR(Peak.Z, Frame.HeightToWorldZ(40000.0f), 1.0e-3f);
+	E_EXPECT_NEAR(Input.Vertices[1].Z, 50.0f, 0.02f); // 평평한 곳 ≈ 위치 Z (32768 = 범위 가운데에서 반 단계 위)
+	E_EXPECT_NEAR(Input.Vertices[1].X, 100.0f - 200.0f, 1.0e-3f);
 }

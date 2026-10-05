@@ -6,6 +6,7 @@
 #include "Renderer/StaticMesh.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
+#include "Scene/Terrain.h"
 
 namespace
 {
@@ -40,6 +41,16 @@ FNavMeshBuildInput FNavMeshBaker::CollectInput(FScene& Scene, FResourceManager& 
 			AppendMesh(Mesh->GetCpuPositions(), Mesh->GetCpuIndices(), Transform.WorldMatrix, Input);
 			++MeshCount;
 		});
+	std::vector<FTerrainInstance> Terrains;
+	GatherTerrains(Scene, Terrains);
+	for (const FTerrainInstance& Terrain : Terrains)
+	{
+		if (Terrain.Component->bCollision && !IsMovingObject(Scene, Terrain.Entity))
+		{
+			AppendTerrain(*Terrain.Data, Terrain.Frame, Input);
+			++MeshCount;
+		}
+	}
 	if (OutMeshCount != nullptr)
 	{
 		*OutMeshCount = MeshCount;
@@ -62,6 +73,44 @@ void FNavMeshBaker::AppendMesh(const std::vector<FVector3>& Positions, const std
 		Input.Indices.push_back(Base + Indices[Index]);
 		Input.Indices.push_back(Base + Indices[Index + (bFlip ? 2 : 1)]);
 		Input.Indices.push_back(Base + Indices[Index + (bFlip ? 1 : 2)]);
+	}
+}
+
+void FNavMeshBaker::AppendTerrain(const FTerrainData& Data, const FTerrainFrame& Frame, FNavMeshBuildInput& Input)
+{
+	if (!Data.IsValid())
+	{
+		return;
+	}
+	const int32  Resolution = static_cast<int32>(Data.Resolution);
+	const uint32 Base       = static_cast<uint32>(Input.Vertices.size());
+	Input.Vertices.reserve(Input.Vertices.size() + static_cast<size_t>(Resolution) * Resolution);
+	for (int32 Y = 0; Y < Resolution; ++Y)
+	{
+		for (int32 X = 0; X < Resolution; ++X)
+		{
+			Input.Vertices.push_back(Frame.GridToWorld(static_cast<float>(X), static_cast<float>(Y), static_cast<float>(Data.GetHeight(X, Y))));
+		}
+	}
+	// 격자 +X = 월드 +X, +Y = 월드 +Y (CellSize 양수) → (00, 10, 11)·(00, 11, 01)이 위를 향한다 (Cross(P1 - P0, P2 - P0).Z > 0)
+	const bool bFlip = Frame.CellSize.X * Frame.CellSize.Y < 0.0f;
+	Input.Indices.reserve(Input.Indices.size() + static_cast<size_t>(Resolution - 1) * (Resolution - 1) * 6);
+	for (int32 Y = 0; Y + 1 < Resolution; ++Y)
+	{
+		for (int32 X = 0; X + 1 < Resolution; ++X)
+		{
+			const uint32 V00 = Base + static_cast<uint32>(Y * Resolution + X);
+			const uint32 V10 = V00 + 1;
+			const uint32 V01 = V00 + static_cast<uint32>(Resolution);
+			const uint32 V11 = V01 + 1;
+			const uint32 Tris[6] = { V00, V10, V11, V00, V11, V01 };
+			for (int32 T = 0; T < 6; T += 3)
+			{
+				Input.Indices.push_back(Tris[T]);
+				Input.Indices.push_back(Tris[T + (bFlip ? 2 : 1)]);
+				Input.Indices.push_back(Tris[T + (bFlip ? 1 : 2)]);
+			}
+		}
 	}
 }
 

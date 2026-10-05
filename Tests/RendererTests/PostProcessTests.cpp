@@ -162,3 +162,20 @@ E_TEST(PostProcess_DepthOfFieldTiltShift)
 	E_EXPECT_NEAR(FPostProcessMath::CombineCircleOfConfusion(2, 0.01f, -0.02f), -0.02f, 1.0e-6f);
 	E_EXPECT_NEAR(FPostProcessMath::CombineCircleOfConfusion(2, 0.03f, -0.02f), 0.03f, 1.0e-6f);
 }
+
+// 보케 조리개 다각형: 원 = 1, 꼭짓점 방향 1, 변 가운데 cos(π/N), 주기 2π/N, 회전 / 하이라이트 가중치
+E_TEST(PostProcess_DepthOfFieldBokehShape)
+{
+	E_EXPECT_NEAR(FPostProcessMath::BokehPolygonRadius(0.7f, 0.0f, 0.0f), 1.0f, 1.0e-6f);
+	const float Hex = 6.0f;
+	E_EXPECT_NEAR(FPostProcessMath::BokehPolygonRadius(0.0f, Hex, 0.0f), 1.0f, 1.0e-5f);                       // 꼭짓점
+	E_EXPECT_NEAR(FPostProcessMath::BokehPolygonRadius(FMath::Pi / 6.0f, Hex, 0.0f), FMath::Cos(FMath::Pi / 6.0f), 1.0e-5f); // 변 가운데
+	E_EXPECT_NEAR(FPostProcessMath::BokehPolygonRadius(0.3f, Hex, 0.0f), FPostProcessMath::BokehPolygonRadius(0.3f + FMath::Pi / 3.0f, Hex, 0.0f),
+	              1.0e-5f);                                                                                       // 주기
+	E_EXPECT_NEAR(FPostProcessMath::BokehPolygonRadius(0.5f, Hex, 0.5f), 1.0f, 1.0e-5f);                       // 회전한 꼭짓점
+	E_EXPECT_NEAR(FPostProcessMath::BokehPolygonRadius(-0.2f, 5.0f, 0.0f), FPostProcessMath::BokehPolygonRadius(-0.2f + 6.2831853f, 5.0f, 0.0f),
+	              1.0e-5f);                                                                                       // 음수 각
+	E_EXPECT_NEAR(FPostProcessMath::BokehHighlightWeight(0.5f, 4.0f, 1.0f), 1.0f, 1.0e-6f);
+	E_EXPECT_NEAR(FPostProcessMath::BokehHighlightWeight(3.0f, 4.0f, 1.0f), 9.0f, 1.0e-6f);
+	E_EXPECT_NEAR(FPostProcessMath::BokehHighlightWeight(30.0f, 0.0f, 1.0f), 1.0f, 1.0e-6f); // 끔
+}

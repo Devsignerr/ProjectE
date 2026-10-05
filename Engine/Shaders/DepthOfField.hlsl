@@ -5,7 +5,9 @@
 //   착란원(CoC) = 화면 높이 비율, 음수 근경 / 양수 원경. 식은 Renderer/PostProcessMath.h ComputeCircleOfConfusion과 같아야 한다
 //   틸트시프트(Mode 1·2): 화면 위치로 CoC (ComputeTiltShiftCoc — 기운 초점 띠 아래 = 근경, 위 = 원경), Mode 2는 깊이 CoC와 절댓값 큰 쪽
 //   PSPrefilter : 전체 해상도 색(t0) + 깊이(t1) 4탭 → 반해상도 (Karis 가중 평균 색, 절댓값이 큰 CoC). 초점이 맞은 색은 어둡게(근경 번짐 차단)
-//   PSBokeh     : 반해상도 원반 43탭 모으기. 원경 = 가운데·표본 CoC 중 작은 쪽이 거리를 덮는 표본, 근경 = 표본 자신의 CoC가 덮는 표본 (근경이 앞을 덮음)
+//   PSBokeh     : 반해상도 원반 71탭 모으기. 원경 = 가운데·표본 CoC 중 작은 쪽이 거리를 덮는 표본, 근경 = 표본 자신의 CoC가 덮는 표본 (근경이 앞을 덮음)
+//                 조리개 날(BladeCount >= 3)이면 표본 위치를 정다각형 안으로 옮기고 덮임 판정은 원래 고리 거리(다각형 노름)로 — 빛망울이 다각형.
+//                 하이라이트 강조(HighlightBoost > 0)면 밝은 표본 가중치 1 + 세기 × (밝기 - 문턱) — 등불·불티가 또렷한 빛망울로 남는다
 //   PSPostfilter: 반해상도 4탭 텐트 (원반 표본 사이 틈 메움)
 //   PSCombine   : 전체 해상도 색(t0) + 보케(t1, 선형 확대) + 깊이(t2) → 원경 알파(가운데 CoC)와 근경 알파(보케 a)로 섞는다
 
@@ -29,7 +31,10 @@ cbuffer DepthOfFieldConstants : register(b0)
 	float  TiltTransition;  // 최대 흐림까지 (화면 높이 비율)
 	float2 TiltNormal;      // 띠 법선 (-sin, cos) — 아래쪽이 +
 	float  Aspect;          // 너비 / 높이
-	float4 Padding1;
+	float  BladeCount;      // 보케 조리개 날 수 (3 미만 = 원)
+	float  BladeRotation;   // 라디안
+	float  HighlightBoost;  // 밝은 점 강조 세기 (0 = 끔)
+	float  HighlightThreshold;
 };
 
 Texture2D<float4> Source       : register(t0);
@@ -122,11 +127,13 @@ float4 PSPrefilter(FFullscreenVSOutput Input) : SV_Target
 	const float Coc2 = CocAt(UV2);
 	const float Coc3 = CocAt(UV3);
 
-	// 밝은 점 반짝임 억제 (Karis 가중)
-	const float W0 = 1.0f / (MaxComponent(C0) + 1.0f);
-	const float W1 = 1.0f / (MaxComponent(C1) + 1.0f);
-	const float W2 = 1.0f / (MaxComponent(C2) + 1.0f);
-	const float W3 = 1.0f / (MaxComponent(C3) + 1.0f);
+	// 밝은 점 반짝임 억제 (Karis 가중). 하이라이트 강조를 켜면 일반 평균 — Karis가 작은 광원 에너지를 미리 깎아 빛망울이 남지 않는다
+	//   (입력은 TAA 뒤라 시간 반짝임은 이미 안정됨)
+	const float Karis = HighlightBoost > 0.0f ? 0.0f : 1.0f;
+	const float W0 = 1.0f / (MaxComponent(C0) * Karis + 1.0f);
+	const float W1 = 1.0f / (MaxComponent(C1) * Karis + 1.0f);
+	const float W2 = 1.0f / (MaxComponent(C2) * Karis + 1.0f);
+	const float W3 = 1.0f / (MaxComponent(C3) * Karis + 1.0f);
 	float3 Color = (C0 * W0 + C1 * W1 + C2 * W2 + C3 * W3) / (W0 + W1 + W2 + W3);
 
 	// 절댓값이 큰 CoC (근경이 원경보다 크면 근경)
@@ -140,9 +147,28 @@ float4 PSPrefilter(FFullscreenVSOutput Input) : SV_Target
 	return float4(Color, Coc);
 }
 
-// ---- 2) 원반 보케 모으기 (반해상도): 고리 4개 = 1 + 7 + 14 + 21 = 43탭
-static const uint  BokehRings   = 4;
-static const float BokehSamples = 43.0f;
+// FPostProcessMath::BokehPolygonRadius와 같은 식
+float BokehPolygonRadius(float Angle)
+{
+	if (BladeCount < 3.0f)
+	{
+		return 1.0f;
+	}
+	const float Sector  = 6.28318530718f / BladeCount;
+	const float Local   = Angle - BladeRotation;
+	const float Wrapped = Local - Sector * floor(Local / Sector);
+	return cos(Sector * 0.5f) / cos(Wrapped - Sector * 0.5f);
+}
+
+// FPostProcessMath::BokehHighlightWeight와 같은 식
+float BokehHighlightWeight(float3 Color)
+{
+	return 1.0f + HighlightBoost * max(MaxComponent(Color) - HighlightThreshold, 0.0f);
+}
+
+// ---- 2) 원반 보케 모으기 (반해상도): 고리 5개 = 1 + 7 + 14 + 21 + 28 = 71탭 (43탭은 다각형 빛망울의 한 변에 표본 3~4개라 가장자리가 울퉁불퉁)
+static const uint  BokehRings   = 5;
+static const float BokehSamples = 71.0f;
 
 float4 PSBokeh(FFullscreenVSOutput Input) : SV_Target
 {
@@ -150,6 +176,7 @@ float4 PSBokeh(FFullscreenVSOutput Input) : SV_Target
 	const float  Margin = SourceTexelSize.y * 2.0f;
 	float4 Background = 0.0f;
 	float4 Foreground = 0.0f;
+	float  ForegroundHighlight = 0.0f; // 근경 색 정규화용 (Foreground.a는 덮인 표본 수 그대로)
 
 	[unroll]
 	for (uint Ring = 0; Ring < BokehRings; ++Ring)
@@ -160,9 +187,11 @@ float4 PSBokeh(FFullscreenVSOutput Input) : SV_Target
 		for (uint Index = 0; Index < Count; ++Index)
 		{
 			const float  Angle = (float(Index) + (Ring & 1u) * 0.5f) * (6.28318530718f / float(Count));
-			const float2 Disp  = float2(cos(Angle), sin(Angle)) * (Radius * MaxCoc);
-			const float  Dist  = length(Disp);
+			// 거리(덮임 판정) = 고리 반경 그대로 (다각형 노름), 표본 위치만 다각형 가장자리 비율로 당긴다
+			const float  Dist  = Radius * MaxCoc;
+			const float2 Disp  = float2(cos(Angle), sin(Angle)) * (Dist * BokehPolygonRadius(Angle));
 			const float4 Tap   = Source.SampleLevel(LinearSampler, Input.UV + Disp * float2(RcpAspect, 1.0f), 0.0f);
+			const float  Highlight = BokehHighlightWeight(Tap.rgb);
 
 			// 원경: 가운데와 표본 중 작은 원경 CoC가 이 거리를 덮어야 한다 (선명한 앞 물체 위로 원경이 번지지 않게)
 			const float BackgroundCoc = max(min(Center.a, Tap.a), 0.0f);
@@ -171,12 +200,14 @@ float4 PSBokeh(FFullscreenVSOutput Input) : SV_Target
 			float ForegroundW = saturate((-Tap.a - Dist + Margin) / Margin);
 			ForegroundW *= step(SourceTexelSize.y, -Tap.a);
 
-			Background += float4(Tap.rgb, 1.0f) * BackgroundW;
-			Foreground += float4(Tap.rgb, 1.0f) * ForegroundW;
+			// 강조는 색 합에만 (a = 덮인 표본 수 — 근경 알파 정규화에 쓰므로 그대로), 색은 강조 가중 합 / 강조 가중치 합
+			Background += float4(Tap.rgb * Highlight, Highlight) * BackgroundW;
+			Foreground += float4(Tap.rgb * Highlight, 1.0f) * ForegroundW;
+			ForegroundHighlight += Highlight * ForegroundW;
 		}
 	}
 	Background.rgb /= Background.a + (Background.a == 0.0f ? 1.0f : 0.0f);
-	Foreground.rgb /= Foreground.a + (Foreground.a == 0.0f ? 1.0f : 0.0f);
+	Foreground.rgb /= ForegroundHighlight + (ForegroundHighlight == 0.0f ? 1.0f : 0.0f);
 
 	// 근경 알파 = 덮은 표본 비율 (원반 넓이 정규화), 원경은 합성에서 전체 해상도 CoC로 정한다
 	const float Alpha = saturate(Foreground.a * 3.14159265f / BokehSamples);

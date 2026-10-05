@@ -190,6 +190,11 @@ struct FDepthOfFieldComponent
 	float TiltShiftBand       = 0.12f; // 선명한 띠 반폭 (화면 높이 비율)
 	float TiltShiftTransition = 0.3f;  // 띠 밖에서 최대 흐림까지 (화면 높이 비율)
 	float TiltShiftAngle      = 0.0f;  // 도 (+ = 시계 방향)
+	// ---- 보케 (식은 PostProcessMath.h BokehPolygonRadius/BokehHighlightWeight)
+	int32 BokehBladeCount          = 0;     // 조리개 날 수 (0 = 원, 3~12 = 다각형)
+	float BokehRotation            = 0.0f;  // 도
+	float BokehHighlightBoost      = 0.0f;  // 밝은 점 강조 (0 = 끔 — 예전 화면)
+	float BokehHighlightThreshold  = 1.0f;  // 강조가 시작되는 HDR 밝기 (최대 채널)
 };
 
 enum class EDepthOfFieldMode : int32

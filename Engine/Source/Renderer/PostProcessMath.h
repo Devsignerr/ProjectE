@@ -114,6 +114,26 @@ struct FPostProcessMath
 		return Signed > 0.0f ? -T * FMath::Max(NearBlur, 0.0f) : T * FMath::Max(FarBlur, 0.0f);
 	}
 
+	// 보케 조리개 다각형 (DepthOfField.hlsl BokehPolygonRadius와 같은 식): 방향 Angle(라디안)에서 외접원 반지름 1인 정 BladeCount각형의
+	//   가장자리까지 거리. 날 3개 미만 = 원(1). Rotation = 다각형 회전(라디안). 꼭짓점 방향 1, 변 가운데 cos(π/N)
+	static float BokehPolygonRadius(float Angle, float BladeCount, float Rotation)
+	{
+		if (BladeCount < 3.0f)
+		{
+			return 1.0f;
+		}
+		const float Sector = 6.28318530718f / BladeCount;
+		const float Local  = Angle - Rotation;
+		const float Wrapped = Local - Sector * std::floor(Local / Sector); // [0, Sector)
+		return FMath::Cos(Sector * 0.5f) / FMath::Cos(Wrapped - Sector * 0.5f);
+	}
+
+	// 보케 하이라이트 가중치 (DepthOfField.hlsl BokehHighlightWeight와 같은 식): 1 + 세기 × max(밝기 - 문턱, 0) — 밝은 점이 빛망울로 남는다
+	static float BokehHighlightWeight(float MaxComponent, float Boost, float Threshold)
+	{
+		return 1.0f + FMath::Max(Boost, 0.0f) * FMath::Max(MaxComponent - Threshold, 0.0f);
+	}
+
 	// 모드별 최종 CoC (EDepthOfFieldMode와 같은 번호): 0 깊이, 1 틸트시프트, 2 둘 중 절댓값이 큰 쪽 (같으면 깊이)
 	static float CombineCircleOfConfusion(int32 Mode, float DepthCoc, float TiltCoc)
 	{

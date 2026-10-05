@@ -142,6 +142,13 @@ void RegisterSceneTypes()
 		.Property(&FDepthOfFieldComponent::TiltShiftTransition, "TiltShiftTransition", "틸트시프트 전환 폭").Range(0.0f, 2.0f, 0.005f)
 		.Tooltip("띠 밖에서 최대 흐림(근경/원경 흐림)까지의 거리 (화면 높이 비율, 0 = 바로 최대). 띠 아래 = 근경, 위 = 원경")
 		.Property(&FDepthOfFieldComponent::TiltShiftAngle, "TiltShiftAngle", "틸트시프트 기울기 (도)").Range(-90.0f, 90.0f, 0.5f)
+		.Property(&FDepthOfFieldComponent::BokehBladeCount, "BokehBladeCount", "보케 조리개 날 수").Range(0.0f, 12.0f, 1.0f)
+		.Tooltip("0 = 둥근 보케, 5~8 = 다각형 빛망울 (카메라 조리개 모양)")
+		.Property(&FDepthOfFieldComponent::BokehRotation, "BokehRotation", "보케 회전 (도)").Range(-180.0f, 180.0f, 0.5f)
+		.Property(&FDepthOfFieldComponent::BokehHighlightBoost, "BokehHighlightBoost", "보케 하이라이트 강조").Range(0.0f, 20.0f, 0.05f)
+		.Tooltip("흐린 영역의 밝은 점(등불·불티·반딧불)을 또렷한 빛망울로 남긴다 (0 = 끔)")
+		.Property(&FDepthOfFieldComponent::BokehHighlightThreshold, "BokehHighlightThreshold", "보케 하이라이트 문턱").Range(0.0f, 100.0f, 0.05f)
+		.Tooltip("강조가 시작되는 HDR 밝기 (노출 전 최대 채널)")
 		.AsComponent();
 
 	// 스크립트 Properties 오버라이드는 인스펙터가 스크립트 선언을 읽어 전용 UI로 편집한다

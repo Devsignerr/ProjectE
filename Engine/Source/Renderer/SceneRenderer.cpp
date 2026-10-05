@@ -1192,6 +1192,10 @@ void FSceneRenderer::RenderFrame(FRenderGraph& Graph, FScene& Scene, const FCame
 			Params.TiltShiftBand       = DepthOfField->TiltShiftBand;
 			Params.TiltShiftTransition = DepthOfField->TiltShiftTransition;
 			Params.TiltShiftAngle      = FMath::DegreesToRadians(DepthOfField->TiltShiftAngle);
+			Params.BokehBladeCount         = DepthOfField->BokehBladeCount;
+			Params.BokehRotation           = FMath::DegreesToRadians(DepthOfField->BokehRotation);
+			Params.BokehHighlightBoost     = DepthOfField->BokehHighlightBoost;
+			Params.BokehHighlightThreshold = DepthOfField->BokehHighlightThreshold;
 			PostInput = PostProcessor.AddDepthOfFieldPasses(Graph, PostInput, { Refs.Depth, SceneColor->GetDepthSrv() }, Output.Width, Output.Height, Params,
 			                                                static_cast<int32>(ERenderTimer::DepthOfField));
 		}

@@ -84,7 +84,11 @@ namespace
 		float  TiltTransition     = 0.0f;
 		float  TiltNormal[2]      = { 0.0f, 1.0f };
 		float  Aspect             = 1.0f;
-		float  Padding[4]         = {};
+		// 보케
+		float  BladeCount         = 0.0f; // 3 미만 = 원
+		float  BladeRotation      = 0.0f; // 라디안
+		float  HighlightBoost     = 0.0f;
+		float  HighlightThreshold = 1.0f;
 	};
 	static_assert(sizeof(FDepthOfFieldConstants) == PostRootConstantCount * 4);
 
@@ -688,6 +692,10 @@ FPostProcessGraphInput FPostProcessor::AddDepthOfFieldPasses(FRenderGraph& Graph
 	Constants.TiltNormal[0]  = -FMath::Sin(Params.TiltShiftAngle);
 	Constants.TiltNormal[1]  = FMath::Cos(Params.TiltShiftAngle);
 	Constants.Aspect         = static_cast<float>(Width) / static_cast<float>(FMath::Max(Height, 1u));
+	Constants.BladeCount         = Params.BokehBladeCount >= 3 ? static_cast<float>(FMath::Min(Params.BokehBladeCount, 12)) : 0.0f;
+	Constants.BladeRotation      = Params.BokehRotation;
+	Constants.HighlightBoost     = FMath::Max(Params.BokehHighlightBoost, 0.0f);
+	Constants.HighlightThreshold = FMath::Max(Params.BokehHighlightThreshold, 0.0f);
 	if (Constants.MaxCoc <= 0.0f || Width == 0 || Height == 0)
 	{
 		return SceneColor;

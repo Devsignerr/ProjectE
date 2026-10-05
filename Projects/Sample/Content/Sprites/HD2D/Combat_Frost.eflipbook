@@ -1,0 +1,28 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Frost0",
+      "Duration": 0.04
+    },
+    {
+      "Slice": "Frost1",
+      "Duration": 0.05
+    },
+    {
+      "Slice": "Frost2",
+      "Duration": 0.12
+    },
+    {
+      "Slice": "Frost3",
+      "Duration": 0.08
+    },
+    {
+      "Slice": "Frost4",
+      "Duration": 0.08
+    }
+  ]
+}

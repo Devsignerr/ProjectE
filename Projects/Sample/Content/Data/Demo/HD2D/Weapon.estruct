@@ -110,6 +110,33 @@
       "Type": "String",
       "Default": "Audio/RPG/Swing1.wav",
       "Description": "공격 소리"
+    },
+    {
+      "Name": "Element",
+      "Type": "Enum",
+      "Default": "Slash",
+      "Description": "기본 공격 속성 (적 약점 — HD2DCombatGen.py)",
+      "Values": [
+        "Slash",
+        "Pierce",
+        "Bow",
+        "Fire",
+        "Ice",
+        "Thunder",
+        "Light"
+      ]
+    },
+    {
+      "Name": "SkillK",
+      "Type": "String",
+      "Default": "",
+      "Description": "무기 기술 K (Skills.etable)"
+    },
+    {
+      "Name": "SkillL",
+      "Type": "String",
+      "Default": "",
+      "Description": "무기 기술 L (Skills.etable)"
     }
   ]
 }

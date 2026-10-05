@@ -1,0 +1,17 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 20.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Zap0"
+    },
+    {
+      "Slice": "Zap1"
+    },
+    {
+      "Slice": "Zap2"
+    }
+  ]
+}

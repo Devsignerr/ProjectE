@@ -26,12 +26,14 @@
     "StartItems": [
       "Potion",
       "Potion",
-      "Potion"
+      "Potion",
+      "Antidote"
     ],
     "ShopStock": [
       "Potion",
       "HiPotion",
       "Ether",
+      "Antidote",
       "Bow",
       "ChainMail",
       "LuckyRing",
@@ -46,8 +48,8 @@
     "StartArmor": "LeatherVest",
     "BoostMax": 5,
     "BoostStart": 1,
-    "BoostRegenTime": 7.0,
-    "BoostHitsPerPoint": 5,
+    "BoostRegenTime": 10.0,
+    "BoostHitsPerPoint": 8,
     "BoostMaxLevel": 3,
     "BoostDamagePerLevel": 0.35,
     "TitleName": "황혼의 들판",
@@ -72,6 +74,34 @@
       "만든 것들|ProjectE — 자체 C++ / DirectX 12 엔진\nHD-2D 디오라마 · 도트 스프라이트 · 틸트시프트 흐림 · 볼류메트릭 안개",
       "도트 아트 · 지도|절차 생성 (Tools/DemoMap — HD2DArt · BuildHD2D · BuildHD2DCave)\n3D 키트 KayKit · 질감 Poly Haven (CC0)",
       "소리|효과음 Kenney (CC0)\n\n플레이해 주셔서 고맙습니다!"
-    ]
+    ],
+    "MagicSkills": [
+      "Fireball",
+      "IceLance",
+      "Heal"
+    ],
+    "CompanionName": "엘라",
+    "CompanionHealth": 90,
+    "CompanionHealthPerLevel": 12,
+    "CompanionDamage": 15,
+    "CompanionCastInterval": 2.8,
+    "CompanionHealInterval": 14.0,
+    "CompanionHealRatio": 0.25,
+    "CompanionReviveTime": 8.0,
+    "CompanionLines": [
+      "엘라|Mage|저기, 여행자님! 들판으로 나가신다고 들었어요. 저도 데려가 주세요!",
+      "엘라|Mage|마법 학교에서 배운 속성 마법이라면 마물마다 다른 약점을 찾아낼 수 있어요.",
+      "아르펜|Hero|약점이라… 그거 든든한걸. 잘 부탁해, 엘라.",
+      "엘라|Mage|네! 다치시면 제가 치유 마법으로 돌봐 드릴게요."
+    ],
+    "CompanionWaitLines": [
+      "엘라|Mage|어머, 처음 뵙는 분이네요. 촌장님께 먼저 인사드리고 오세요.",
+      "엘라|Mage|들판에 나가실 거라면… 그때 다시 이야기해요!"
+    ],
+    "CompanionTalkLines": [
+      "엘라|Mage|마물의 머리 위 \"?\" 칸이 약점이에요. 제가 마법으로 하나씩 찾아 볼게요!"
+    ],
+    "BreakDamage": 1.5,
+    "WeakDamage": 1.25
   }
 }

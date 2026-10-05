@@ -61,6 +61,7 @@ function HD2DEnemy:OnStart()
 	self.GM:RegisterEnemy(self)
 	self.GM:SpawnFx("Poof", self.entity:GetWorldPosition() + Vector3(0, 6, self.Foot + 20), { Scale = 0.8 })
 	self:Play("Idle")
+	self.GM:InitEnemyCombat(self) -- 약점·실드·상태 이상 (HD2DCombat.lua)
 end
 
 function HD2DEnemy:OnDestroy()
@@ -120,6 +121,9 @@ end
 
 function HD2DEnemy:OnUpdate(Dt)
 	if self.bDead or Dt <= 0 then return end
+	local bSkip
+	bSkip, Dt = self.GM:UpdateEnemyCombat(self, Dt) -- 브레이크·기절이면 건너뜀, 빙결이면 느리게
+	if bSkip then return end
 	local E = self.entity
 	local Pos = E:GetWorldPosition()
 	local R = self.Row
@@ -153,7 +157,7 @@ function HD2DEnemy:OnUpdate(Dt)
 	local Contact = self.Radius + 38
 	if Player and Dist < Contact and self.ContactCooldown <= 0 then
 		local Damage = (self.State == "Attack" and (B == "Charger" or B == "Flyer")) and R.AttackDamage or R.ContactDamage
-		if Damage > 0 and Player:TakeDamage(Damage, Pos) then
+		if Damage > 0 and Player:TakeDamage(Damage, Pos, self.HitOpt) then
 			self.ContactCooldown = 0.9
 		end
 	end

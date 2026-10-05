@@ -37,6 +37,7 @@ function HD2DData.Enemy(Kind) return ByName("Enemies.etable")[Kind] end
 function HD2DData.Npc(Id) return ByName("Npcs.etable")[Id] end
 function HD2DData.Quest(Stage) return ByName("Quests.etable")["Stage" .. tostring(Stage)] end
 function HD2DData.SubQuest(Id) return ByName("SubQuests.etable")[Id] end
+function HD2DData.Skill(Id) return ByName("Skills.etable")[Id] end
 
 -- 메인 퀘스트 마지막 단계 번호 (Quests.etable의 Stage<n> 중 가장 큰 n — 엔딩 단계)
 function HD2DData.FinalQuestStage()
@@ -67,7 +68,7 @@ end
 HD2DData.WeaponOrder = { "Sword", "Spear", "Bow", "Staff", "CrystalSword" }
 HD2DData.ArmorOrder = { "LeatherVest", "ChainMail", "KnightPlate" }
 HD2DData.AccessoryOrder = { "LuckyRing", "SwiftCharm", "LifeAmulet", "CrystalCharm" }
-HD2DData.ConsumableOrder = { "Potion", "HiPotion", "Ether", "Elixir" }
+HD2DData.ConsumableOrder = { "Potion", "HiPotion", "Ether", "Antidote", "Elixir" }
 HD2DData.MaterialOrder = { "Jelly", "LostCat" }
 HD2DData.SubQuestOrder = { "Cat", "Smith", "Scarecrow" }
 

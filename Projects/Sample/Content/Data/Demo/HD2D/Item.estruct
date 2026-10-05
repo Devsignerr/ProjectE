@@ -13,7 +13,7 @@
       "Name": "Kind",
       "Type": "Enum",
       "Default": "Heal",
-      "Description": "무기 / 체력 회복 / 마나 회복 / 둘 다 전부 / 방어구 / 장신구 / 재료·귀중품(쓰지 않음)",
+      "Description": "무기 / 체력 회복 / 마나 회복 / 둘 다 전부 / 방어구 / 장신구 / 재료·귀중품(쓰지 않음) / 상태 이상 회복(해독제)",
       "Values": [
         "Weapon",
         "Heal",
@@ -21,7 +21,8 @@
         "Elixir",
         "Armor",
         "Accessory",
-        "Material"
+        "Material",
+        "Cure"
       ]
     },
     {

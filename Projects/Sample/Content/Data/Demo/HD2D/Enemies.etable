@@ -29,7 +29,19 @@
           1,
           1,
           1
-        ]
+        ],
+        "Weakness": [
+          "Slash",
+          "Fire"
+        ],
+        "Shield": 1,
+        "Weakness2": [],
+        "Shield2": 0,
+        "BreakTime": 3.5,
+        "Elite": false,
+        "Inflict": "",
+        "InflictChance": 0.0,
+        "Guard": 1.0
       }
     },
     {
@@ -37,7 +49,7 @@
       "Values": {
         "DisplayName": "흡혈 박쥐",
         "Behavior": "Flyer",
-        "MaxHealth": 22,
+        "MaxHealth": 30,
         "ContactDamage": 6,
         "AttackDamage": 11,
         "MoveSpeed": 380,
@@ -59,7 +71,19 @@
           1,
           1,
           1
-        ]
+        ],
+        "Weakness": [
+          "Bow",
+          "Thunder"
+        ],
+        "Shield": 1,
+        "Weakness2": [],
+        "Shield2": 0,
+        "BreakTime": 3.5,
+        "Elite": false,
+        "Inflict": "",
+        "InflictChance": 0.0,
+        "Guard": 1.0
       }
     },
     {
@@ -67,7 +91,7 @@
       "Values": {
         "DisplayName": "고블린 도적",
         "Behavior": "Charger",
-        "MaxHealth": 48,
+        "MaxHealth": 80,
         "ContactDamage": 6,
         "AttackDamage": 14,
         "MoveSpeed": 330,
@@ -89,7 +113,19 @@
           1,
           1,
           1
-        ]
+        ],
+        "Weakness": [
+          "Pierce",
+          "Ice"
+        ],
+        "Shield": 2,
+        "Weakness2": [],
+        "Shield2": 0,
+        "BreakTime": 3.5,
+        "Elite": false,
+        "Inflict": "",
+        "InflictChance": 0.0,
+        "Guard": 1.0
       }
     },
     {
@@ -97,7 +133,7 @@
       "Values": {
         "DisplayName": "해골 궁수",
         "Behavior": "Archer",
-        "MaxHealth": 36,
+        "MaxHealth": 60,
         "ContactDamage": 5,
         "AttackDamage": 12,
         "MoveSpeed": 220,
@@ -119,7 +155,19 @@
           1,
           1,
           1
-        ]
+        ],
+        "Weakness": [
+          "Light",
+          "Fire"
+        ],
+        "Shield": 2,
+        "Weakness2": [],
+        "Shield2": 0,
+        "BreakTime": 3.5,
+        "Elite": false,
+        "Inflict": "",
+        "InflictChance": 0.0,
+        "Guard": 1.0
       }
     },
     {
@@ -127,7 +175,7 @@
       "Values": {
         "DisplayName": "독버섯",
         "Behavior": "Spore",
-        "MaxHealth": 44,
+        "MaxHealth": 70,
         "ContactDamage": 6,
         "AttackDamage": 5,
         "MoveSpeed": 160,
@@ -149,7 +197,19 @@
           1,
           1,
           1
-        ]
+        ],
+        "Weakness": [
+          "Fire",
+          "Slash"
+        ],
+        "Shield": 2,
+        "Weakness2": [],
+        "Shield2": 0,
+        "BreakTime": 3.5,
+        "Elite": false,
+        "Inflict": "",
+        "InflictChance": 0.0,
+        "Guard": 1.0
       }
     },
     {
@@ -157,7 +217,7 @@
       "Values": {
         "DisplayName": "고대의 바위 골렘",
         "Behavior": "Boss",
-        "MaxHealth": 900,
+        "MaxHealth": 4000,
         "ContactDamage": 14,
         "AttackDamage": 24,
         "MoveSpeed": 170,
@@ -179,7 +239,22 @@
           1,
           1,
           1
-        ]
+        ],
+        "Weakness": [
+          "Pierce",
+          "Ice"
+        ],
+        "Shield": 12,
+        "Weakness2": [
+          "Thunder",
+          "Light"
+        ],
+        "Shield2": 14,
+        "BreakTime": 5.0,
+        "Elite": false,
+        "Inflict": "Stun",
+        "InflictChance": 1.0,
+        "Guard": 0.5
       }
     },
     {
@@ -187,7 +262,7 @@
       "Values": {
         "DisplayName": "동굴 흡혈 박쥐",
         "Behavior": "Flyer",
-        "MaxHealth": 30,
+        "MaxHealth": 46,
         "ContactDamage": 8,
         "AttackDamage": 14,
         "MoveSpeed": 430,
@@ -209,7 +284,19 @@
           0.92,
           1.45,
           1.0
-        ]
+        ],
+        "Weakness": [
+          "Bow",
+          "Fire"
+        ],
+        "Shield": 2,
+        "Weakness2": [],
+        "Shield2": 0,
+        "BreakTime": 3.5,
+        "Elite": false,
+        "Inflict": "Poison",
+        "InflictChance": 0.35,
+        "Guard": 1.0
       }
     },
     {
@@ -217,7 +304,7 @@
       "Values": {
         "DisplayName": "수정 슬라임",
         "Behavior": "Hopper",
-        "MaxHealth": 58,
+        "MaxHealth": 90,
         "ContactDamage": 13,
         "AttackDamage": 13,
         "MoveSpeed": 280,
@@ -239,7 +326,19 @@
           1.05,
           1.7,
           1.0
-        ]
+        ],
+        "Weakness": [
+          "Thunder",
+          "Pierce"
+        ],
+        "Shield": 3,
+        "Weakness2": [],
+        "Shield2": 0,
+        "BreakTime": 3.5,
+        "Elite": false,
+        "Inflict": "Freeze",
+        "InflictChance": 0.4,
+        "Guard": 1.0
       }
     },
     {
@@ -247,7 +346,7 @@
       "Values": {
         "DisplayName": "수정 거미 여왕",
         "Behavior": "Boss",
-        "MaxHealth": 1500,
+        "MaxHealth": 5200,
         "ContactDamage": 14,
         "AttackDamage": 22,
         "MoveSpeed": 240,
@@ -269,7 +368,108 @@
           1,
           1,
           1
-        ]
+        ],
+        "Weakness": [
+          "Fire",
+          "Bow"
+        ],
+        "Shield": 14,
+        "Weakness2": [
+          "Ice",
+          "Light"
+        ],
+        "Shield2": 16,
+        "BreakTime": 5.0,
+        "Elite": false,
+        "Inflict": "Stun",
+        "InflictChance": 1.0,
+        "Guard": 0.5
+      }
+    },
+    {
+      "Name": "EliteGoblin",
+      "Values": {
+        "DisplayName": "정예 고블린 도적",
+        "Behavior": "Charger",
+        "MaxHealth": 260,
+        "ContactDamage": 9,
+        "AttackDamage": 19,
+        "MoveSpeed": 360,
+        "AggroRange": 1000,
+        "AttackRange": 380,
+        "AttackCooldown": 1.7,
+        "WindupTime": 0.45,
+        "ProjectileSpeed": 1400,
+        "GoldMin": 30,
+        "GoldMax": 40,
+        "Exp": 45,
+        "DropItem": "HiPotion",
+        "DropChance": 1.0,
+        "Radius": 56,
+        "RespawnTime": 90,
+        "Look": "Goblin",
+        "Tint": [
+          1.12,
+          0.86,
+          0.8,
+          1.0
+        ],
+        "Weakness": [
+          "Pierce",
+          "Ice",
+          "Light"
+        ],
+        "Shield": 5,
+        "Weakness2": [],
+        "Shield2": 0,
+        "BreakTime": 4.0,
+        "Elite": true,
+        "Inflict": "",
+        "InflictChance": 0.0,
+        "Guard": 0.8
+      }
+    },
+    {
+      "Name": "EliteArcher",
+      "Values": {
+        "DisplayName": "정예 해골 궁수",
+        "Behavior": "Archer",
+        "MaxHealth": 240,
+        "ContactDamage": 8,
+        "AttackDamage": 17,
+        "MoveSpeed": 220,
+        "AggroRange": 1300,
+        "AttackRange": 950,
+        "AttackCooldown": 1.9,
+        "WindupTime": 0.6,
+        "ProjectileSpeed": 1300,
+        "GoldMin": 35,
+        "GoldMax": 45,
+        "Exp": 55,
+        "DropItem": "HiPotion",
+        "DropChance": 1.0,
+        "Radius": 54,
+        "RespawnTime": 0,
+        "Look": "Archer",
+        "Tint": [
+          1.08,
+          0.95,
+          1.3,
+          1.0
+        ],
+        "Weakness": [
+          "Light",
+          "Fire",
+          "Slash"
+        ],
+        "Shield": 5,
+        "Weakness2": [],
+        "Shield2": 0,
+        "BreakTime": 4.0,
+        "Elite": true,
+        "Inflict": "",
+        "InflictChance": 0.0,
+        "Guard": 0.8
       }
     }
   ]

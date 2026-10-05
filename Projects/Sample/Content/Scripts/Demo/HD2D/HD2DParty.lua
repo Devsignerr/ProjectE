@@ -156,8 +156,11 @@ function Party:UseItem(Id)
 		Player:Heal(Row.Amount, 0)
 	elseif Row.Kind == "Mana" then
 		Player:Heal(0, Row.Amount)
+	elseif Row.Kind == "Cure" then
+		self:CureStatus(Player) -- 해독제: 독·화상·빙결 (HD2DCombat.lua)
 	else
 		Player:Heal(99999, 99999)
+		self:CureStatus(Player)
 	end
 	self.Report.Used[Id] = (self.Report.Used[Id] or 0) + 1
 	Audio.PlayOneShot(self.Sounds.Potion)
@@ -334,6 +337,7 @@ function Party:BuildSave(Pos)
 		Level = Player and Player.Level or 1, Exp = Player and Player.Exp or 0, Health = Player and Player.Health or 1, Mana = Player and Player.Mana or 0,
 		BP = Player and Player.BP or 1, QuestStage = self.QuestStage, QuestKills = self.QuestKills, Sub = Sub, Opened = Opened,
 		BossDead = self.BossDead, Defeated = self:CopyDefeated(), PlayTime = (self.PlayTime or 0),
+		Combat = self:BuildCombatSave(), -- 약점 공개 기록 (HD2DCombat.lua)
 	}
 end
 
@@ -359,6 +363,7 @@ function Party:ApplySave(Data)
 	self.Defeated = {}
 	for K, V in pairs(Data.Defeated or {}) do self.Defeated[K] = V == true end
 	self.PlayTime = Data.PlayTime or 0
+	self:ApplyCombatSave(Data.Combat)
 	self.PendingPlayer = Data -- 플레이어 OnStart가 아직이면 거기서 적용
 	local Player = self:GetPlayer()
 	if Player and Player.bStarted then Player:ApplySave(Data) end
@@ -385,11 +390,11 @@ function Party:StateSignature()
 		for _, K in ipairs(Keys) do Parts[#Parts + 1] = Fmt(K, T[K]) end
 		return table.concat(Parts, ",")
 	end
-	return string.format("G=%d;L=%d;E=%d;W=%s;A=%s;C=%s;Q=%d/%d;Boss=%s;D=%s;I=%s;S=%s;O=%s", self.Gold, Player and Player.Level or 0, Player and Player.Exp or 0,
+	return string.format("G=%d;L=%d;E=%d;W=%s;A=%s;C=%s;Q=%d/%d;Boss=%s;D=%s;I=%s;S=%s;O=%s;R=%s", self.Gold, Player and Player.Level or 0, Player and Player.Exp or 0,
 		self.Equipped, self.Armor or "-", self.Accessory or "-", self.QuestStage, self.QuestKills, tostring(self.BossDead),
 		Sorted(self.Defeated or {}, function(K) return K end),
 		Sorted(self.Items, function(K, V) return K .. ":" .. V end), Sorted(self.Sub, function(K, V) return K .. ":" .. V.State .. ":" .. V.Count end),
-		Sorted(self.Opened, function(K) return K end))
+		Sorted(self.Opened, function(K) return K end), self:CombatSignature())
 end
 
 -- 맵 이동 (HD2DTravel.lua가 부른다): 페이드 아웃 → 세션 저장 → 씬 열기

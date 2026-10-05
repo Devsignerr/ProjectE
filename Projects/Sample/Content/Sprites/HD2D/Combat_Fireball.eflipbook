@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 16.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Fireball0"
+    },
+    {
+      "Slice": "Fireball1"
+    },
+    {
+      "Slice": "Fireball2"
+    },
+    {
+      "Slice": "Fireball3"
+    }
+  ]
+}

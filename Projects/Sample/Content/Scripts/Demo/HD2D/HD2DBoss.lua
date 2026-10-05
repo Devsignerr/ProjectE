@@ -36,6 +36,7 @@ function HD2DBoss:OnStart()
 	self.Anim = ""
 	self.GM:RegisterEnemy(self)
 	self:Play("Dormant")
+	self.GM:InitEnemyCombat(self) -- 약점·실드(2단계에 바뀜)·상태 이상 (HD2DCombat.lua)
 end
 
 function HD2DBoss:OnDestroy()
@@ -65,6 +66,9 @@ end
 
 function HD2DBoss:OnUpdate(Dt)
 	if self.bDead or Dt <= 0 then return end
+	local bSkip
+	bSkip, Dt = self.GM:UpdateEnemyCombat(self, Dt) -- 브레이크·기절이면 건너뜀, 빙결이면 느리게
+	if bSkip then return end
 	local E = self.entity
 	local R = self.Row
 	local Pos = E:GetWorldPosition()
@@ -122,7 +126,7 @@ function HD2DBoss:OnUpdate(Dt)
 			end
 			Audio.PlayOneShot("Audio/RPG/HitHeavy.wav")
 			if Player and Dist < R.AttackRange + 40 then
-				Player:TakeDamage(R.AttackDamage, Pos)
+				Player:TakeDamage(R.AttackDamage, Pos, self.HitOpt) -- 내리치기 = 기절 (표 Inflict)
 			end
 		end
 	elseif self.State == "Slam" then
@@ -140,7 +144,8 @@ function HD2DBoss:OnUpdate(Dt)
 					Offset = Vector3(math.cos(A), math.sin(A), 0) * 230
 				end
 				self.GM:SpawnProjectile({ Kind = "Rock", Pos = Pos + Vector3(110, 10, 230), Target = Ground_ + Offset, Duration = 0.95 + I * 0.08,
-				                          Height = 380, Damage = R.AttackDamage * 0.8, Team = "Enemy" })
+				                          Height = 380, Damage = R.AttackDamage * 0.8, Team = "Enemy",
+				                          HitOpt = self.Phase == 2 and { Status = "Burn", Chance = 0.5 } or nil }) -- 분노한 골렘의 바위는 달아올라 화상
 			end
 			Audio.PlayOneShot("Audio/RPG/Swing3.wav")
 			self:SetState("Recover", 1.1)

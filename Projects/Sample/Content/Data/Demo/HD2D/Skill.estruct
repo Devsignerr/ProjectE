@@ -1,0 +1,140 @@
+{
+  "Version": 1,
+  "Name": "Skill",
+  "Description": "HD2D 스킬 (Skills.etable, 행 이름 = 스킬 id — 무기 SkillK/SkillL, Balance.MagicSkills)",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "스킬",
+      "Description": "표시 이름 (쓸 때 화면 위 띠)"
+    },
+    {
+      "Name": "Slot",
+      "Type": "Enum",
+      "Default": "Weapon",
+      "Description": "무기 기술(K/L) / 마법(3/4/5)",
+      "Values": [
+        "Weapon",
+        "Magic"
+      ]
+    },
+    {
+      "Name": "Element",
+      "Type": "Enum",
+      "Default": "Slash",
+      "Description": "공격 속성",
+      "Values": [
+        "Slash",
+        "Pierce",
+        "Bow",
+        "Fire",
+        "Ice",
+        "Thunder",
+        "Light"
+      ]
+    },
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Default": "Cone",
+      "Description": "동작: 회전 베기 / 부채꼴 / 돌진 / 직선 / 화살 부채 / 관통 탄 / 빛기둥 / 연쇄 / 폭발 탄 / 회복",
+      "Values": [
+        "Whirl",
+        "Cone",
+        "Rush",
+        "Line",
+        "Volley",
+        "Pierce",
+        "Pillar",
+        "Chain",
+        "Bolt",
+        "Heal"
+      ]
+    },
+    {
+      "Name": "Damage",
+      "Type": "Float",
+      "Default": 10,
+      "Description": "한 대 피해 (레벨 배율 전)"
+    },
+    {
+      "Name": "Hits",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "대 수 (회전·기둥·연쇄 = 판정 수, 화살비 = 화살 수)"
+    },
+    {
+      "Name": "ManaCost",
+      "Type": "Float",
+      "Default": 10,
+      "Description": "MP"
+    },
+    {
+      "Name": "Cooldown",
+      "Type": "Float",
+      "Default": 5,
+      "Description": "다시 쓸 때까지 (초)"
+    },
+    {
+      "Name": "UnlockLevel",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "배우는 레벨"
+    },
+    {
+      "Name": "Range",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "사거리·돌진 거리 (cm)"
+    },
+    {
+      "Name": "Radius",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "반경·폭 (cm)"
+    },
+    {
+      "Name": "Speed",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "투사체·돌진 속도 (cm/s)"
+    },
+    {
+      "Name": "Status",
+      "Type": "String",
+      "Default": "",
+      "Description": "거는 상태 이상"
+    },
+    {
+      "Name": "StatusChance",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "확률 0~1"
+    },
+    {
+      "Name": "CastTime",
+      "Type": "Float",
+      "Default": 0.3,
+      "Description": "동작 시간 (초 — 그동안 움직이지 않음)"
+    },
+    {
+      "Name": "HitDelay",
+      "Type": "Float",
+      "Default": 0.1,
+      "Description": "시작 뒤 첫 판정 (초)"
+    },
+    {
+      "Name": "Icon",
+      "Type": "String",
+      "Default": "",
+      "Description": "UI 아이콘"
+    },
+    {
+      "Name": "Description",
+      "Type": "String",
+      "Default": "",
+      "Description": "설명"
+    }
+  ]
+}

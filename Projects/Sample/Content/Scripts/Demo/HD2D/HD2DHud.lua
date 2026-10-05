@@ -11,6 +11,7 @@ local Hud = {
 
 local PoolSize = 24
 local Rows = 10
+for Name, Fn in pairs(Script.Require("Scripts/Demo/HD2D/HD2DCombatHud.lua")) do Hud[Name] = Fn end -- 전투 표시 (태그·브레이크·스킬 칸)
 
 function Hud:Init()
 	if self.bInit then return end
@@ -163,6 +164,7 @@ function Hud:ShowDialog(Name, Portrait, Line, Chars, bDone)
 	self:Show("DialogNamePlate", Name ~= nil and Name ~= "")
 	self:Show("DialogWindow", true, "SelfHitTestInvisible")
 	self:Show("WeaponPanel", false)
+	self:Show("SkillBar", false)
 	self:Set("DialogName", "Text", Name or "")
 	local TextX = Portrait and 176 or 48
 	if self.DialogTextX ~= TextX then
@@ -182,6 +184,7 @@ end
 function Hud:HideDialog()
 	self:Show("DialogWindow", false, "SelfHitTestInvisible")
 	self:Show("WeaponPanel", true)
+	self:Show("SkillBar", true)
 end
 
 -- ---- 메뉴 (인벤토리 "Inv" / 상점 "Shop" / nil = 닫기)
@@ -288,7 +291,7 @@ end
 
 -- 게임 HUD 패널 (타이틀 동안 숨김)
 function Hud:SetHudVisible(bShow)
-	for _, Name in ipairs({ "StatusPanel", "GoldRow", "BoostRow", "WeaponPanel", "QuestPanel", "ToastBox" }) do
+	for _, Name in ipairs({ "StatusPanel", "GoldRow", "BoostRow", "WeaponPanel", "QuestPanel", "ToastBox", "SkillBar" }) do
 		self:Show(Name, bShow)
 	end
 end
@@ -436,6 +439,7 @@ function Hud:OnLateUpdate(Dt)
 		end
 	end
 	self:UpdateEffects(UDt)
+	self:UpdateCombatHud(UDt)
 	-- 대화 ▼ 깜빡임
 	self:Show("DialogNext", self.bDialogDone == true and math.floor(self.Clock * 2.5) % 2 == 0)
 end

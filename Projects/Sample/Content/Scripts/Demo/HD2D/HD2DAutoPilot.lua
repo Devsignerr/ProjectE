@@ -17,12 +17,13 @@ local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
 
 local AutoPilot = {}
 AutoPilot.__index = AutoPilot
+for Name, Fn in pairs(Script.Require("Scripts/Demo/HD2D/HD2DAutoCombat.lua")) do AutoPilot[Name] = Fn end -- 전투 깊이: 스킬 쓰기·확인·스크린샷
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
 
 function AutoPilot.New(Scenario, Player, GM)
 	local A = setmetatable({ Scenario = Scenario, Player = Player, GM = GM, Time = 0, Frame = 0, Failures = {}, Checks = 0, Teleports = 0,
-	                         DamageTakenScale = Scenario == "Full" and 0.35 or 0.25, PotionTimer = 0 }, AutoPilot)
+	                         DamageTakenScale = 1.0, PotionTimer = 0 }, AutoPilot) -- 받는 피해 그대로 (2026-10-05 전투 깊이: 자동 조종도 사람과 같은 난이도로)
 	local Name = Scenario
 	if Scenario == "Full" or Scenario == "Cave" then
 		A.Phase = Game.GetPersistent("HD2D_AutoPhase", Scenario == "Full" and "Main" or "Run")
@@ -133,6 +134,11 @@ end
 function AutoPilot:Route(From, To)
 	local Foot = Vector3(From.X, From.Y, From.Z - 85)
 	local Nav = AI.FindPath(Foot, Vector3(To.X, To.Y, Foot.Z))
+	-- 출발점이 내비메시 가장자리 밖(소품·적에 밀려남)이면 조금 옆에서 다시
+	for _, Off in ipairs({ Vector3(80, 0, 0), Vector3(-80, 0, 0), Vector3(0, 80, 0), Vector3(0, -80, 0) }) do
+		if Nav and #Nav >= 2 then break end
+		Nav = AI.FindPath(Foot + Off, Vector3(To.X, To.Y, Foot.Z))
+	end
 	if Nav and #Nav >= 2 and Flat(Nav[#Nav] - To):Length() < 200 then
 		local Points = {}
 		for I = 2, #Nav do Points[#Points + 1] = Nav[I] end
@@ -183,7 +189,9 @@ function AutoPilot:MoveToward(Target, Scale)
 	if (self.StuckTotal or 0) > 4.5 then
 		self:Note(string.format("막힘 → 순간이동 (%.0f, %.0f)", Target.X, Target.Y))
 		self.Teleports = self.Teleports + 1
-		self.Player:Teleport(Vector3(Target.X, Target.Y, Pos.Z + 30))
+		-- 목표 자리의 바닥 위로 (높은 단·낮은 바닥 — 지금 높이로 놓으면 바닥 속에 묻혀 떨어진다)
+		local Hit = Physics.Raycast(Vector3(Target.X, Target.Y, Pos.Z + 600), Vector3(0, 0, -1), 1500)
+		self.Player:Teleport(Vector3(Target.X, Target.Y, Hit and (Hit.position.Z + 92) or (Pos.Z + 30)))
 		self.StuckTotal = 0
 		return
 	end
@@ -200,7 +208,8 @@ function AutoPilot:GoTo(Target, Radius, Timeout, Label)
 	local Nav0 = self.NavRoutes or 0
 	local Route = self:Route(self:Pos(), Target)
 	if self.Scenario == "Cave" and Label then
-		self:Note(string.format("길 %s: %d점 (%s)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path"))
+		local From = self:Pos()
+		self:Note(string.format("길 %s: %d점 (%s, 출발 %.0f, %.0f, %.0f)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path", From.X, From.Y, From.Z))
 	end
 	local Index = 1
 	self.StuckTotal, self.StuckClock, self.StuckFrom = 0, 0, nil
@@ -328,6 +337,9 @@ function AutoPilot:Engage(Target, bBoost)
 	else
 		self.In.Move = Dir * 0.25
 	end
+	-- 보스·정예에는 BP를 아껴 두었다가 브레이크(또는 실드 마지막 두 칸)에 몰아 쓴다
+	if bBoost and (Target.bBoss or Target.Row.Elite) and not Target.bBroken and (Target.Shield or 0) > 2 then bBoost = false end
+	if not (bBoost and P.BP >= 2) and self:UseSkills(Target, L) then return end -- 약점 속성 스킬·치유 (HD2DAutoCombat.lua — 부스트를 모을 땐 평타)
 	if L < Want + (W.Kind == "Slash" and 70 or 120) and P.AttackTimer <= 0 then
 		if bBoost and P.BP >= 2 and P.BoostLevel < 2 then
 			self.In.Boost = true -- 프레임마다 한 단계 (BP 2개 이상 모이면 2단계 부스트 공격)
@@ -560,14 +572,19 @@ function AutoPilot:RunFullMain()
 	self:Fight("Slime", "Sword", 2, 70, true, nil, function() return GM:Count("Jelly") >= 3 end)
 	self:Expect(GM.Report.Boosts >= 1 and GM.Report.BoostMax >= 2, string.format("부스트 공격 (%d회, 최대 %d단계)", GM.Report.Boosts, GM.Report.BoostMax))
 	self:Expect(GM:Count("Jelly") >= 3, "슬라임 젤리 3개")
+	self:Expect(GM.Report.Reveals >= 1, "약점 공개 (슬라임 ← 검 = 베기)")
 	self:Fight("Goblin", "Spear", 1, 50, true)
 	self:Fight("Mushroom", "Staff", 1, 55)
+	self:PoisonAndCure()
 	self:Fight("Bat", "Bow", 1, 55, true)
 	self:Fight("Archer", "Bow", 1, 60)
 	if GM.QuestKills < D.Quest(1).KillGoal then
 		self:Fight("Slime", "Spear", D.Quest(1).KillGoal - GM.QuestKills, 45)
 	end
 	self:Expect(GM.QuestKills >= D.Quest(1).KillGoal, "퀘스트 처치 목표")
+	self:Fight("EliteGoblin", "Spear", 1, 90, true)
+	self:Expect(GM.Report.EliteKills >= 1, "정예 고블린 도적 처치")
+	self:CheckBreaks("들판 (고블린·정예)")
 	self:Expect((GM.Report.Paths or 0) > 0, "적 내비메시 길찾기 (" .. (GM.Report.Paths or 0) .. ")")
 
 	-- 고양이 찾기
@@ -592,6 +609,7 @@ function AutoPilot:RunFullMain()
 	self:Expect(P.Mover.MaxWalkSpeed > Speed0 + 1, string.format("부적으로 이동 속도 증가 (%.0f → %.0f)", Speed0, P.Mover.MaxWalkSpeed))
 
 	-- 마을로: 리나 보고(목걸이) → 촌장 보고(2단계) → 대장장이 보고(판금 갑옷 장비)
+	self:RecruitCompanionCheck() -- 들판에서 돌아와 광장의 엘라를 영입 (들판 시험은 혼자 — 독 시험을 엘라가 대신 끝내지 않게)
 	self:TalkToNpc("Girl")
 	self:TalkThrough()
 	self:Expect(GM:SubState("Cat") == "Done" and GM:Count("LifeAmulet") == 1, "서브 퀘스트 완료: 고양이 (목걸이)")
@@ -608,6 +626,7 @@ function AutoPilot:RunFullMain()
 	self:Wait(0.25)
 	self:SelectTab(3)
 	self:Expect(#GM:BuildRows() == 4, "퀘스트 탭 (메인 + 서브 3)")
+	self:CheckSkills("들판", 2)
 	self:Press("Inventory")
 	self:Wait(0.2)
 
@@ -632,6 +651,7 @@ function AutoPilot:RunFullTravel()
 	self:Expect(GM.Menu == nil and GM.Mode == "Play", "맵 이동 도착: 타이틀 없음")
 	local Spawn = Scene.Find("Spawn_Test")
 	self:Expect(Spawn and Flat(self:Pos() - Spawn:GetWorldPosition()):Length() < 150, "도착 자리 = Spawn_Test")
+	self:Expect(GM.Companion ~= nil and GM.Companion.Mode == "Follow", "맵 이동 뒤 동료 동행")
 	local Expect = Game.GetPersistent("HD2D_AutoExpect", "")
 	local Now = GM:StateSignature()
 	if not self:Expect(Now == Expect, "세션 상태 유지") then
@@ -642,7 +662,8 @@ function AutoPilot:RunFullTravel()
 	-- 보스
 	self:EquipBySwitch("Spear")
 	self:GoTo(GM.BossPos + Vector3(-700, 250, 0), 150, 70, "보스 앞")
-	local Until = self.Time + 120
+	local Until = self.Time + 240 -- 보스는 브레이크를 노려야 잡힌다 (HD2DCombatGen 보스 수치 근거)
+	local Dash0, Fight0 = P.Stats.Dashes, self.Time
 	local Swap = self.Time + 10
 	local HoldUntil = nil -- 분노(2단계) 뒤 세 번째 패턴(돌진)을 볼 때까지 거리를 두고 공격을 멈춘다 (최대 15초 — 화력이 세면 돌진 전에 쓰러져 검증이 흔들렸다)
 	while not GM.bBossDead and self.Time < Until do
@@ -667,13 +688,16 @@ function AutoPilot:RunFullTravel()
 			end
 			self:Survive()
 			if self.Time > Swap then
-				Swap = self.Time + 10
-				self.In.Switch = true -- 가끔 무기를 바꿔 본다
+				Swap = self.Time + 2
+				if Boss then self:SwitchToWeakWeapon(Boss) end -- R로 약점 속성 무기로 (2단계에 약점이 바뀌면 다시 — HD2DAutoCombat.lua)
 			end
 		end
 		self:Yield()
 	end
-	self:Expect(GM.bBossDead, "보스 처치")
+	self:Expect(GM.bBossDead, string.format("보스 처치 (%.0f초)", self.Time - Fight0))
+	self:Expect(P.Stats.Dashes > Dash0, "골렘 패턴 대시 회피 (" .. (P.Stats.Dashes - Dash0) .. ")")
+	self:CheckCompanion("골렘전")
+	self:Expect(GM.Report.BossBreaks >= 1, "골렘 브레이크 (" .. GM.Report.BossBreaks .. ")")
 	local Patterns = 0
 	for _, N in pairs(GM.Report.BossPatterns) do if N > 0 then Patterns = Patterns + 1 end end
 	self:Expect(Patterns >= 3, "보스 패턴 3종 이상 (" .. Patterns .. ")")
@@ -712,6 +736,7 @@ function AutoPilot:RunFullLoad()
 	self:Expect(Flat(self:Pos() - Board):Length() < 300, "이어하기 자리 = 저장한 게시판 앞")
 	self:Expect(GM.Mode == "Play" and GM.Menu == nil and Game.GetTimeScale() == 1, "이어하기 → 플레이")
 	self:Expect(GM.BossDead and GM.QuestStage == 4, "보스·퀘스트 진행 유지")
+	self:Expect(GM.CompanionRecruited and GM.Companion ~= nil and GM.Companion.Mode == "Follow", "이어하기 → 동료 동행")
 	-- 전체 기록 (마지막 씬의 보고는 이번 씬 것뿐이라 처치·명중 같은 누적은 앞 단계에서 확인했다)
 	self:Expect(self.Player.Level >= 3, "레벨 (Lv " .. self.Player.Level .. ")")
 	self:Finish()
@@ -732,6 +757,7 @@ function AutoPilot:CaveLoadout()
 	P:AddExp(D.Balance().ExpTable[5] or 0)
 	P:RecalcStats()
 	P.Health, P.Mana, P.BP = P.MaxHealth, P.MaxMana, 3
+	GM:RecruitCompanion() -- 마을에서 영입한 동료와 함께 (HD2DCombat.lua)
 	self:Note(string.format("동굴 시작 상태: 퀘스트 4단계, Lv %d, HP %d", P.Level, P.MaxHealth))
 end
 
@@ -839,6 +865,7 @@ function AutoPilot:RunCaveRun()
 
 	-- 4 수정 호수 (강한 혼합) + 물가 상자
 	self:ClearArea(Vector3(2450, 0, 0), 900, 80, "CrystalSword", "수정 호수")
+	self:Expect(GM.Report.EliteKills >= 1, "정예 해골 궁수 처치 (수정 호수)")
 	self:OpenChestAt(2)
 
 	-- 5 보스 방: 들어서면 문이 닫힌다 → 수정 거미 여왕
@@ -847,7 +874,8 @@ function AutoPilot:RunCaveRun()
 	self:WaitUntil(function() return GM:IsGateClosed() end, 3)
 	self:Expect(GM:IsGateClosed(), "보스 방 입장 → 문 닫힘")
 	self:EquipBySwitch("Spear")
-	local Until = self.Time + 150
+	local Until = self.Time + 260
+	local Dash0, Fight0 = P.Stats.Dashes, self.Time
 	local HoldUntil = nil
 	while not GM.bBossDead and self.Time < Until do
 		local Boss = GM:NearestEnemy(self:Pos(), 3000, function(S) return S.bBoss end)
@@ -864,6 +892,7 @@ function AutoPilot:RunCaveRun()
 					if L < 600 then self:MoveToward(GM.Arena.Pos + Vector3(-450, 350, 0)) end
 				end
 			elseif Boss then
+				if self.Frame % 120 == 0 then self:SwitchToWeakWeapon(Boss) end -- R로 약점 속성 무기로 (HD2DAutoCombat.lua)
 				self:Engage(Boss, true)
 			else
 				self:MoveToward(GM.BossPos) -- 잠든 보스는 목록에 없다 → 다가가 깨운다
@@ -872,7 +901,14 @@ function AutoPilot:RunCaveRun()
 		end
 		self:Yield()
 	end
-	self:Expect(GM.bBossDead and GM:IsBossDefeated("Cave"), "수정 거미 여왕 처치")
+	self:Expect(GM.bBossDead and GM:IsBossDefeated("Cave"), string.format("수정 거미 여왕 처치 (%.0f초)", self.Time - Fight0))
+	self:Expect(P.Stats.Dashes > Dash0, "여왕 패턴 대시 회피 (" .. (P.Stats.Dashes - Dash0) .. ")")
+	self:Expect(GM.Report.BossBreaks >= 1, "여왕 브레이크 (" .. GM.Report.BossBreaks .. ")")
+	self:CheckSkills("동굴", 3)
+	self:CheckCompanion("동굴")
+	local PlayerStatus = 0
+	for _, N in pairs(GM.Report.StatusOnPlayer) do PlayerStatus = PlayerStatus + N end
+	self:Expect(PlayerStatus >= 1, "동굴 적·여왕의 상태 이상 (" .. PlayerStatus .. ")")
 	self:Expect(self:PatternsSeen() >= 3, "보스 패턴 3종 이상 (" .. self:PatternsSeen() .. ")")
 	self:Expect((GM.Report.BossPatterns.Summon or 0) >= 1, "보스 2단계 (격노·소환)")
 	self:Expect(GM.Report.Afterimages > 0 and GM.Report.Eruptions > 0, string.format("덮치기 잔상 %d, 수정 가시 %d", GM.Report.Afterimages, GM.Report.Eruptions))

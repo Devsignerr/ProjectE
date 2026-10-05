@@ -21,7 +21,10 @@
         "AttackTime": 0.29,
         "HitDelay": 0.09,
         "Flipbook": "Hero_Attack",
-        "Sound": "Audio/RPG/Swing1.wav"
+        "Sound": "Audio/RPG/Swing1.wav",
+        "Element": "Slash",
+        "SkillK": "Whirl",
+        "SkillL": "FlameSlash"
       }
     },
     {
@@ -43,7 +46,10 @@
         "AttackTime": 0.39,
         "HitDelay": 0.08,
         "Flipbook": "Hero_AttackSpear",
-        "Sound": "Audio/RPG/Swing3.wav"
+        "Sound": "Audio/RPG/Swing3.wav",
+        "Element": "Pierce",
+        "SkillK": "PierceRush",
+        "SkillL": "ThunderThrust"
       }
     },
     {
@@ -65,7 +71,10 @@
         "AttackTime": 0.4,
         "HitDelay": 0.14,
         "Flipbook": "Hero_AttackBow",
-        "Sound": "Audio/RPG/Swing2.wav"
+        "Sound": "Audio/RPG/Swing2.wav",
+        "Element": "Bow",
+        "SkillK": "ArrowRain",
+        "SkillL": "FrostArrow"
       }
     },
     {
@@ -87,7 +96,10 @@
         "AttackTime": 0.42,
         "HitDelay": 0.13,
         "Flipbook": "Hero_AttackStaff",
-        "Sound": "Audio/RPG/Spin.wav"
+        "Sound": "Audio/RPG/Spin.wav",
+        "Element": "Light",
+        "SkillK": "HolyPillar",
+        "SkillL": "ChainLightning"
       }
     },
     {
@@ -109,7 +121,10 @@
         "AttackTime": 0.28,
         "HitDelay": 0.09,
         "Flipbook": "Hero_Attack",
-        "Sound": "Audio/RPG/Swing1.wav"
+        "Sound": "Audio/RPG/Swing1.wav",
+        "Element": "Slash",
+        "SkillK": "Whirl",
+        "SkillL": "FrostSlash"
       }
     }
   ]

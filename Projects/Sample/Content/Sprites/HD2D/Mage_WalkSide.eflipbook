@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Mage.esprite",
+  "Fps": 8.5,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "WalkSide0"
+    },
+    {
+      "Slice": "WalkSide1"
+    },
+    {
+      "Slice": "WalkSide2"
+    },
+    {
+      "Slice": "WalkSide3"
+    }
+  ]
+}

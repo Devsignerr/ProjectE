@@ -168,10 +168,10 @@ function Dungeon:OnDungeonBossKilled()
 end
 
 -- ================================================================ 수정 가시 분출
-function Dungeon:SpawnEruption(Pos, Delay, Radius, Damage)
+function Dungeon:SpawnEruption(Pos, Delay, Radius, Damage, HitOpt)
 	local Warn = self:SpawnSprite({ Sprite = "Sprites/HD2D/Fx.esprite", Slice = "Warn", Position = Pos + Vector3(0, 0, 3), Flat = true, Blend = 0,
 	                                Life = Delay + 0.05, Scale = Radius / 108.0, Color = { 0.7, 0.85, 1.4, 0.9 } })
-	self.Eruptions[#self.Eruptions + 1] = { Pos = Pos, Delay = Delay, Radius = Radius, Damage = Damage, Warn = Warn }
+	self.Eruptions[#self.Eruptions + 1] = { Pos = Pos, Delay = Delay, Radius = Radius, Damage = Damage, Warn = Warn, HitOpt = HitOpt }
 end
 
 function Dungeon:UpdateEruptions(Dt, Player, PP)
@@ -188,7 +188,7 @@ function Dungeon:UpdateEruptions(Dt, Player, PP)
 				Audio.PlayOneShot("Audio/RPG/HitHeavy.wav", R.Pos, 0.55, 1.6)
 			end
 			if Player and not Player.bDead and Flat(PP - R.Pos):Length() < R.Radius then
-				Player:TakeDamage(R.Damage, R.Pos, { Color = { 0.6, 0.85, 1, 1 } })
+				Player:TakeDamage(R.Damage, R.Pos, { Color = { 0.6, 0.85, 1, 1 }, Status = R.HitOpt and R.HitOpt.Status, Chance = R.HitOpt and R.HitOpt.Chance })
 			end
 		else
 			Keep[#Keep + 1] = R

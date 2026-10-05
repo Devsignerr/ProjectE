@@ -2,6 +2,7 @@
 #   데이터 표(Data/Demo/HD2D — 무기·아이템(장비 포함)·적·마을 사람·퀘스트·서브 퀘스트·밸런스), 게임 UI(UI/Demo/HD2D/HUD.eui + 창틀·아이콘·초상화),
 #   프리팹(Prefabs/Demo/HD2D — 플레이어·적 5종 + 동굴 변형 2종·보스 2종(골렘·수정 거미 여왕)·효과 조각·보물상자·마을 사람·소품), 씬 배치(게임 관리자 속성 + HUD + 내비메시 + 플레이어),
 #   자동 검증 시나리오 변형(--views), 내비메시 굽기용 씬(WriteNavBakeScene).
+#   전투 깊이(약점·실드·브레이크·스킬·상태 이상·정예·동료 엘라)의 표 필드·HUD 위젯·도트 아트·프리팹은 HD2DCombatGen.py — 여기서는 그 함수를 부르기만 한다.
 #   규약: 좌표·카메라는 BuildHD2D.py 머리 주석과 같다 (화면 오른쪽 = +X, 화면 안쪽 = -Y, 스프라이트는 XZ 평면 + 앞면 +Y, 1 도트 = 6cm).
 #         적·보물상자·마을 사람·소품은 게임 관리자(HD2DGame.lua)가 시작할 때 프리팹으로 만든다 — 자리는 여기서 지면 높이까지 계산해 속성 문자열로 넘긴다.
 #         수치(무기 피해·적 체력·가격·대사)는 데이터 표에 있고 스크립트는 HD2DData.lua로만 읽는다.
@@ -15,8 +16,10 @@
 import json
 import math
 import os
+import sys
 
 import HD2DArt
+import HD2DCombatGen
 
 PREFABS = "Prefabs/Demo/HD2D"
 DATA    = "Data/Demo/HD2D"
@@ -44,7 +47,7 @@ SCARECROW = (4980.0, -900.0)  # 밀밭 허수아비 (BuildHD2D.py 배경) — �
 ENEMY_SLOTS = [  # (종류, X, Y) — 죽으면 RespawnTime 뒤 같은 자리에 다시 (플레이어가 가까우면 미룸)
 	("Slime", 1000.0, -700.0), ("Slime", 1700.0, -250.0), ("Slime", 2300.0, 450.0), ("Slime", 900.0, 650.0), ("Slime", 3150.0, -250.0),
 	("Bat", 2400.0, -300.0), ("Bat", 3400.0, -1350.0), ("Bat", 1900.0, -1500.0),
-	("Goblin", 3400.0, 750.0), ("Goblin", 2800.0, 950.0), ("Goblin", 3900.0, 350.0),
+	("Goblin", 3400.0, 750.0), ("Goblin", 2800.0, 950.0), ("EliteGoblin", 3900.0, 350.0),
 	("Archer", 1250.0, -1350.0), ("Archer", 3300.0, -1450.0),
 	("Mushroom", 2200.0, -500.0), ("Mushroom", 600.0, -950.0), ("Mushroom", 3700.0, -300.0),
 	# 밀밭 (허수아비 둘레 — 서브 퀘스트)
@@ -65,6 +68,7 @@ SHOT_SCENES = {
 	"Shot_Boost":     ((2500.0, 500.0), "Boost"),
 	"Shot_Boss":      ((4250.0, 520.0), "Boss"),
 }
+SHOT_SCENES.update(HD2DCombatGen.SHOT_SCENES)  # 전투 깊이 (브레이크·스킬·상태 이상)
 
 
 class FMapLayout:
@@ -92,7 +96,7 @@ ENEMY_CAPSULE = {  # 종류: (반지름, 반높이, 몸 스프라이트 높이(�
 	"CaveBat":      (30.0, 10.0, 105.0, 185.0, 15.0),
 	"CrystalSlime": (38.0, 4.0, 0.0, 95.0, 30.0),
 	"SpiderQueen":  (90.0, 45.0, 0.0, 380.0, 500.0),
-}
+}  # 정예 변형 캡슐은 HD2DCombatGen.ExtendEnemies가 더한다
 BOSS_SCRIPTS = {"Golem": "Scripts/Demo/HD2D/HD2DBoss.lua", "SpiderQueen": "Scripts/Demo/HD2D/HD2DSpiderQueen.lua"}
 
 
@@ -185,40 +189,43 @@ ITEMS = [
 	_Item("LostCat", {"DisplayName": "길 잃은 고양이 미미", "Kind": "Material", "Amount": 0, "Weapon": "", "Icon": Icon("CatIcon"),
 					  "Description": "리나의 고양이. 품에 안겨 얌전히 가르랑거린다.", "Price": 0}),
 ]
+HD2DCombatGen.ExtendItems(ITEMS, _Item, Icon)  # 해독제
 
 ENEMIES = [
 	("Slime", {"DisplayName": "슬라임", "Behavior": "Hopper", "MaxHealth": 30, "ContactDamage": 8, "AttackDamage": 8, "MoveSpeed": 300, "AggroRange": 700,
 			   "AttackRange": 0, "AttackCooldown": 1.1, "WindupTime": 0.0, "ProjectileSpeed": 0, "GoldMin": 2, "GoldMax": 4, "Exp": 6,
 			   "DropItem": "Potion", "DropChance": 0.15, "Radius": 48, "RespawnTime": 12}),
-	("Bat", {"DisplayName": "흡혈 박쥐", "Behavior": "Flyer", "MaxHealth": 22, "ContactDamage": 6, "AttackDamage": 11, "MoveSpeed": 380, "AggroRange": 950,
+	("Bat", {"DisplayName": "흡혈 박쥐", "Behavior": "Flyer", "MaxHealth": 30, "ContactDamage": 6, "AttackDamage": 11, "MoveSpeed": 380, "AggroRange": 950,
 			 "AttackRange": 430, "AttackCooldown": 2.2, "WindupTime": 0.45, "ProjectileSpeed": 1150, "GoldMin": 2, "GoldMax": 5, "Exp": 8,
 			 "DropItem": "Ether", "DropChance": 0.15, "Radius": 50, "RespawnTime": 14}),
-	("Goblin", {"DisplayName": "고블린 도적", "Behavior": "Charger", "MaxHealth": 48, "ContactDamage": 6, "AttackDamage": 14, "MoveSpeed": 330, "AggroRange": 950,
+	("Goblin", {"DisplayName": "고블린 도적", "Behavior": "Charger", "MaxHealth": 80, "ContactDamage": 6, "AttackDamage": 14, "MoveSpeed": 330, "AggroRange": 950,
 				"AttackRange": 380, "AttackCooldown": 2.0, "WindupTime": 0.5, "ProjectileSpeed": 1250, "GoldMin": 4, "GoldMax": 8, "Exp": 12,
 				"DropItem": "Potion", "DropChance": 0.2, "Radius": 48, "RespawnTime": 16}),
-	("Archer", {"DisplayName": "해골 궁수", "Behavior": "Archer", "MaxHealth": 36, "ContactDamage": 5, "AttackDamage": 12, "MoveSpeed": 220, "AggroRange": 1300,
+	("Archer", {"DisplayName": "해골 궁수", "Behavior": "Archer", "MaxHealth": 60, "ContactDamage": 5, "AttackDamage": 12, "MoveSpeed": 220, "AggroRange": 1300,
 				"AttackRange": 950, "AttackCooldown": 2.4, "WindupTime": 0.75, "ProjectileSpeed": 1100, "GoldMin": 4, "GoldMax": 8, "Exp": 14,
 				"DropItem": "HiPotion", "DropChance": 0.1, "Radius": 46, "RespawnTime": 18}),
-	("Mushroom", {"DisplayName": "독버섯", "Behavior": "Spore", "MaxHealth": 44, "ContactDamage": 6, "AttackDamage": 5, "MoveSpeed": 160, "AggroRange": 750,
+	("Mushroom", {"DisplayName": "독버섯", "Behavior": "Spore", "MaxHealth": 70, "ContactDamage": 6, "AttackDamage": 5, "MoveSpeed": 160, "AggroRange": 750,
 				  "AttackRange": 280, "AttackCooldown": 3.2, "WindupTime": 0.6, "ProjectileSpeed": 0, "GoldMin": 3, "GoldMax": 6, "Exp": 10,
 				  "DropItem": "Ether", "DropChance": 0.15, "Radius": 50, "RespawnTime": 16}),
-	("Golem", {"DisplayName": "고대의 바위 골렘", "Behavior": "Boss", "MaxHealth": 900, "ContactDamage": 14, "AttackDamage": 24, "MoveSpeed": 170, "AggroRange": 850,
+	("Golem", {"DisplayName": "고대의 바위 골렘", "Behavior": "Boss", "MaxHealth": 4000, "ContactDamage": 14, "AttackDamage": 24, "MoveSpeed": 170, "AggroRange": 850,
 			   "AttackRange": 340, "AttackCooldown": 1.5, "WindupTime": 0.8, "ProjectileSpeed": 900, "GoldMin": 150, "GoldMax": 150, "Exp": 150,
 			   "DropItem": "Elixir", "DropChance": 1.0, "Radius": 115, "RespawnTime": 0}),
 	# 동굴 유적 (HD2DCave): 변형은 바탕 종류의 그림(Look)에 색(Tint)만 다르다
-	("CaveBat", {"DisplayName": "동굴 흡혈 박쥐", "Behavior": "Flyer", "MaxHealth": 30, "ContactDamage": 8, "AttackDamage": 14, "MoveSpeed": 430, "AggroRange": 1000,
+	("CaveBat", {"DisplayName": "동굴 흡혈 박쥐", "Behavior": "Flyer", "MaxHealth": 46, "ContactDamage": 8, "AttackDamage": 14, "MoveSpeed": 430, "AggroRange": 1000,
 				 "AttackRange": 460, "AttackCooldown": 1.9, "WindupTime": 0.4, "ProjectileSpeed": 1250, "GoldMin": 3, "GoldMax": 6, "Exp": 11,
 				 "DropItem": "Ether", "DropChance": 0.2, "Radius": 50, "RespawnTime": 14, "Look": "Bat", "Tint": [0.62, 0.92, 1.45, 1.0]}),
-	("CrystalSlime", {"DisplayName": "수정 슬라임", "Behavior": "Hopper", "MaxHealth": 58, "ContactDamage": 13, "AttackDamage": 13, "MoveSpeed": 280, "AggroRange": 750,
+	("CrystalSlime", {"DisplayName": "수정 슬라임", "Behavior": "Hopper", "MaxHealth": 90, "ContactDamage": 13, "AttackDamage": 13, "MoveSpeed": 280, "AggroRange": 750,
 					  "AttackRange": 0, "AttackCooldown": 1.0, "WindupTime": 0.0, "ProjectileSpeed": 0, "GoldMin": 4, "GoldMax": 7, "Exp": 14,
 					  "DropItem": "HiPotion", "DropChance": 0.15, "Radius": 50, "RespawnTime": 14, "Look": "Slime", "Tint": [0.55, 1.05, 1.7, 1.0]}),
-	("SpiderQueen", {"DisplayName": "수정 거미 여왕", "Behavior": "Boss", "MaxHealth": 1500, "ContactDamage": 14, "AttackDamage": 22, "MoveSpeed": 240,
+	("SpiderQueen", {"DisplayName": "수정 거미 여왕", "Behavior": "Boss", "MaxHealth": 5200, "ContactDamage": 14, "AttackDamage": 22, "MoveSpeed": 240,
 					 "AggroRange": 780, "AttackRange": 520, "AttackCooldown": 1.35, "WindupTime": 0.7, "ProjectileSpeed": 950, "GoldMin": 220, "GoldMax": 220,
 					 "Exp": 220, "DropItem": "Elixir", "DropChance": 1.0, "Radius": 125, "RespawnTime": 0}),
 ]
 for _, _Row in ENEMIES:
 	_Row.setdefault("Look", "")
 	_Row.setdefault("Tint", [1, 1, 1, 1])
+HD2DCombatGen.ExtendEnemies(ENEMIES, ENEMY_CAPSULE)  # 정예 행·캡슐 + 약점·실드·브레이크 필드
+HD2DCombatGen.ExtendWeapons(WEAPONS)                 # 기본 공격 속성 + 무기 기술
 
 def Portrait(Name):
 	return f"{UI_DIR}/Portraits/{Name}.png"
@@ -303,7 +310,7 @@ BALANCE = {
 	"ExpTable": [0, 30, 75, 140, 230, 350, 500, 700, 950, 1250], "StartWeapon": "Sword", "StartGold": 120, "StartItems": ["Potion", "Potion", "Potion"],
 	"ShopStock": ["Potion", "HiPotion", "Ether", "Bow", "ChainMail", "LuckyRing", "Elixir"], "InvulnTime": 0.8, "DashSpeed": 1700, "DashTime": 0.2,
 	"DashCooldown": 0.5, "CritChance": 0.1, "CritMultiplier": 1.6,
-	"StartArmor": "LeatherVest", "BoostMax": 5, "BoostStart": 1, "BoostRegenTime": 7.0, "BoostHitsPerPoint": 5, "BoostMaxLevel": 3,
+	"StartArmor": "LeatherVest", "BoostMax": 5, "BoostStart": 1, "BoostRegenTime": 10.0, "BoostHitsPerPoint": 8, "BoostMaxLevel": 3,
 	"BoostDamagePerLevel": 0.35,
 	"TitleName": "황혼의 들판", "TitleSub": "― 여명을 찾는 아르펜의 여행 ―",
 	"IntroLines": ["||해 질 녘, 낡은 지도 한 장을 손에 쥔 여행자가 작은 마을 하르트에 닿았다.",
@@ -320,6 +327,7 @@ BALANCE = {
 					"도트 아트 · 지도|절차 생성 (Tools/DemoMap — HD2DArt · BuildHD2D · BuildHD2DCave)\n3D 키트 KayKit · 질감 Poly Haven (CC0)",
 					"소리|효과음 Kenney (CC0)\n\n플레이해 주셔서 고맙습니다!"],
 }
+HD2DCombatGen.ExtendBalance(BALANCE)  # 해독제 진열 + 마법 칸 + 브레이크/약점 배율
 
 
 def WriteData(Content):
@@ -342,13 +350,13 @@ def WriteData(Content):
 		_Field("HitDelay", "Float", 0.1, "공격 시작 뒤 판정·발사 시점 (초)"),
 		_Field("Flipbook", "String", "Hero_Attack", "용사 공격 플립북 접두사 (+ Down/Up/Side)"),
 		_Field("Sound", "String", "Audio/RPG/Swing1.wav", "공격 소리"),
-	])
+	] + HD2DCombatGen.WeaponFields(_Field))
 	_Table(Content, "Weapons", "Weapon", WEAPONS)
 
 	_Struct(Content, "Item", "HD2D 아이템 (Items.etable, 행 이름 = 아이템 id — 인벤토리·상점·보물상자·전리품)", [
 		_Field("DisplayName", "String", "아이템", "표시 이름"),
-		_Field("Kind", "Enum", "Heal", "무기 / 체력 회복 / 마나 회복 / 둘 다 전부 / 방어구 / 장신구 / 재료·귀중품(쓰지 않음)",
-			   Values=["Weapon", "Heal", "Mana", "Elixir", "Armor", "Accessory", "Material"]),
+		_Field("Kind", "Enum", "Heal", "무기 / 체력 회복 / 마나 회복 / 둘 다 전부 / 방어구 / 장신구 / 재료·귀중품(쓰지 않음) / 상태 이상 회복(해독제)",
+			   Values=["Weapon", "Heal", "Mana", "Elixir", "Armor", "Accessory", "Material", "Cure"]),
 		_Field("Amount", "Float", 0, "회복량"),
 		_Field("Weapon", "String", "", "무기 id (Kind = Weapon)"),
 		_Field("Icon", "String", Icon("Potion"), "UI 아이콘 (Content 기준)"),
@@ -383,7 +391,7 @@ def WriteData(Content):
 		_Field("RespawnTime", "Float", 15, "다시 나타나는 시간 (초, 0 = 안 나타남)"),
 		_Field("Look", "String", "", "그림·몸 모양을 빌려 올 종류 (비면 자기 행 이름 — 동굴 변형)"),
 		_Field("Tint", "Array", [1.0, 1.0, 1.0, 1.0], "몸 스프라이트 색 배율 RGBA (변형 색)", Element="Float"),
-	])
+	] + HD2DCombatGen.EnemyFields(_Field))
 	_Table(Content, "Enemies", "Enemy", ENEMIES)
 
 	_Struct(Content, "Npc", "HD2D 마을 사람 (Npcs.etable, 행 이름 = 마을 사람 id)", [
@@ -465,8 +473,9 @@ def WriteData(Content):
 		_Field("ShopLines", "Array", [], "상점 주인 말: 들어옴 / 구입 / 골드 부족 / 이미 가짐 / 나감", Element="String"),
 		_Field("SaveSlot", "String", "HD2D", "저장 슬롯 (SaveGame)"),
 		_Field("EndingPages", "Array", [], "엔딩·크레딧 쪽 (제목|본문, 본문 줄바꿈 \\n)", Element="String"),
-	])
+	] + HD2DCombatGen.BalanceFields(_Field))
 	_WriteJson(os.path.join(Content, *DATA.split("/"), "Balance.edata"), {"Version": 1, "Struct": f"{DATA}/Balance.estruct", "Values": BALANCE})
+	HD2DCombatGen.WriteSkills(Content, _Struct, _Table, _Field)
 
 
 # ================================================================ 게임 UI (.eui)
@@ -729,6 +738,7 @@ def WriteUi(Content):
 		Text("EndingHint", "E · J 넘기기", 17, CanvasSlot((0.5, 1), 0, -30, 0, 0, (0.5, 1), True, 2), TEXT_DIM, "Center"),
 	]))
 
+	C += HD2DCombatGen.HudWidgets(sys.modules[__name__])  # 전투: 적 실드·약점 태그, 브레이크 글자, 스킬 칸·이름 띠
 	Root = Widget("Canvas", "Root", None, "SelfHitTestInvisible", C)
 	_WriteJson(os.path.join(Content, *UI_DIR.split("/"), "HUD.eui"),
 			   {"Version": 2, "DesignSize": [1280, 720], "ScaleMode": "MatchHeight", "Root": Root, "Animations": []})
@@ -812,6 +822,7 @@ def WritePrefabs(Content, CameraDistance, PlayMin, PlayMax):
 			Extra.append({"Name": "Glow", "Parent": 1, "Components": {
 				"PointLightComponent": {"Color": [0.62, 0.8, 1.0], "Intensity": 4.5, "Radius": 750.0, "CastShadows": False},
 				"PrefabLinkComponent": Link(7), "TransformComponent": Transform((0, 120, EFoot + 260))}})
+		Extra += HD2DCombatGen.EnemyExtraChildren(Kind, Link, Transform, Sprite, SpriteAsset, Slice, EFoot + Lift)  # 정예 금빛 윤곽
 		WritePrefab(Content, Kind, [
 			{"Name": Kind, "Parent": -1, "Components": {
 				"CharacterMovementComponent": Mover(Radius, Half, Speed, Mass, PushForce=4000.0 if Kind in BOSS_SCRIPTS else 500.0),
@@ -820,7 +831,7 @@ def WritePrefabs(Content, CameraDistance, PlayMin, PlayMax):
 			{"Name": "Visual", "Parent": 0, "Components": {"PrefabLinkComponent": Link(2), "TransformComponent": Transform()}},
 			{"Name": "Body", "Parent": 1, "Components": {
 				"SpriteComponent": Sprite(SpriteAsset, Slice, Billboard=2, Color=Rows[Kind]["Tint"]), "FlipbookComponent": Flipbook(Book),
-				"PrefabLinkComponent": Link(3), "TransformComponent": Transform((0, 0, EFoot + Lift))}},
+				"PrefabLinkComponent": Link(3), "TransformComponent": Transform((0, 0, EFoot + Lift), None, HD2DCombatGen.BodyScale(Kind))}},
 			{"Name": "Shadow", "Parent": 1, "Components": {
 				"SpriteComponent": Sprite("Sprites/HD2D/Fx.esprite", "Shadow", Lit=False, Shadows=False, Blend=0),
 				"PrefabLinkComponent": Link(4), "TransformComponent": Transform((0, 0, EFoot + 1.5), FLAT, (ShadowScale, 1.0, ShadowScale))}},
@@ -928,6 +939,7 @@ def AddGame(S, Height, Path, AutoPlay=False, Layout=None, Title=None, NavMesh="S
 	if not L.Respawn:
 		Overrides["Respawn"] = False
 	Overrides.update(L.Extra)
+	Overrides.update(HD2DCombatGen.GameOverrides(L, P3))  # 동료 자리 (마을)
 	S.Add("HD2DGame", {"ScriptComponent": {"ScriptAsset": "Scripts/Demo/HD2D/HD2DGame.lua", "ExecutionLocation": 0,
 		"PropertyOverrides": json.dumps(Overrides, ensure_ascii=False)}})
 	S.Add("HUD", {"UIComponent": {"Asset": f"{UI_DIR}/HUD.eui", "ZOrder": 0, "Visible": True, "ReceiveInput": True, "KeyboardFocus": False},
@@ -996,6 +1008,7 @@ def WriteAll(Content, CameraDistance, PlayMin, PlayMax):
 	WriteData(Content)
 	WriteUi(Content)
 	WritePrefabs(Content, CameraDistance, PlayMin, PlayMax)
+	HD2DCombatGen.WriteAll(Content, sys.modules[__name__])  # 전투 효과·아이콘·동료 도트 아트 + 동료 프리팹
 
 
 def WriteNavBake(Content, Scene, Height, PlayMin, PlayMax, Path, Name="_HD2DNavBake", Cell=100.0):

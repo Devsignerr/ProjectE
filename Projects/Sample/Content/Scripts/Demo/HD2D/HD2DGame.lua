@@ -29,10 +29,12 @@ local HD2DGame = {
 		Path     = "",  -- "x,y;..." 마을 → 들판 길 (내비메시가 없을 때 자동 조종이 따라 걷는다)
 		AutoPlay = "",  -- "" | Full | TitleShot | Inventory | Equip | Shop | Dialog | Combat | Boost | Boss (HD2DAutoPilot.lua)
 		Title    = false, -- 시작할 때 타이틀 화면 (맵 이동으로 온 경우는 건너뜀)
+		Companion = "",   -- 동료(엘라)가 영입 전 서 있는 자리 "x,y,z" (HD2DCombat.lua — 마을만)
 		RespawnMinDistance = 900.0,
 	},
 }
-for _, Module in ipairs({ "Scripts/Demo/HD2D/HD2DParty.lua", "Scripts/Demo/HD2D/HD2DMenu.lua", "Scripts/Demo/HD2D/HD2DDungeon.lua" }) do
+for _, Module in ipairs({ "Scripts/Demo/HD2D/HD2DParty.lua", "Scripts/Demo/HD2D/HD2DMenu.lua", "Scripts/Demo/HD2D/HD2DDungeon.lua",
+                         "Scripts/Demo/HD2D/HD2DCombat.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do HD2DGame[Name] = Fn end
 end
 
@@ -82,6 +84,7 @@ function HD2DGame:OnStart()
 	self.Menu = nil        -- nil | "Title" | "Dialog" | "Inventory" | "Shop" | "Travel"
 	self.Mode = "Play"     -- Title | Intro | Play | Travel
 	self:InitParty()
+	self:InitCombat() -- 전투: 약점 공개 기록·스킬 투사체 (HD2DCombat.lua — 세션 불러오기 전에)
 	local bSession = self:TryResumeSession()
 
 	for Item in string.gmatch(self.Properties.Enemies, "[^;]+") do
@@ -179,6 +182,7 @@ function HD2DGame:OnEnemyKilled(S)
 		and self:Random() < 0.85 then
 		self:SpawnPickup(Ground, "Jelly", 1)
 	end
+	if Row.Elite then self.Report.EliteKills = self.Report.EliteKills + 1 end
 	local Player = self:GetPlayer()
 	if Player then Player:AddExp(Row.Exp) end
 	local SlotIndex = self.SlotOf[S.entity.Id]
@@ -207,7 +211,6 @@ function HD2DGame:PendingPickups(Id)
 end
 
 function HD2DGame:OnBossKilled(S)
-	local Pos = S.entity:GetWorldPosition()
 	self.bBossDead = true
 	self:SetBossDefeated()
 	self:Hud():ShowBoss(nil)
@@ -216,7 +219,8 @@ function HD2DGame:OnBossKilled(S)
 	local bGoal = Q and Q.BossGoal == self.Properties.Map
 	self:Hud():Announce(S.Row.DisplayName .. "을(를) 쓰러뜨렸다!", bGoal and D.Quest(self.QuestStage + 1).Objective or nil, 3.5)
 	self:Fanfare()
-	self:SpawnChest(Pos + Vector3(0, 170, S.Foot + 47), self.Properties.BossReward, true, self.Properties.Map .. ":Boss") -- 상자 루트 = 지면 + 45
+	-- 보상 상자는 보스 자리(방 가운데) 앞에 — 쓰러진 자리는 벽 가까이일 수 있다 (불러오기 때 OnStart와 같은 자리)
+	self:SpawnChest(self.BossPos + Vector3(0, 170, -self.Properties.BossLift + 47), self.Properties.BossReward, true, self.Properties.Map .. ":Boss")
 	self:OnDungeonBossKilled()
 	if bGoal then
 		self:SetQuestStage(self.QuestStage + 1, true)
@@ -286,12 +290,20 @@ function HD2DGame:NearestEnemy(Pos, MaxDist, Filter)
 	return Best, BestDist
 end
 
--- 플레이어 공격 한 대 (근접·투사체 공용). 맞혔으면 true
-function HD2DGame:HitEnemy(S, Damage, Dir, Knockback, bCrit, WeaponId)
+-- 플레이어 공격 한 대 (근접·투사체·스킬 공용). Hit = 스킬 속성 { Element, Status, Chance } (없으면 무기 속성). 맞혔으면 true
+--   약점·브레이크 배율과 실드·상태 이상은 HD2DCombat.lua (ResolveCombatHit → TakeHit → AfterCombatHit)
+function HD2DGame:HitEnemy(S, Damage, Dir, Knockback, bCrit, WeaponId, Hit)
+	local Info = self:ResolveCombatHit(S, Damage, WeaponId, Hit)
+	Damage = Info.Damage
 	if not S:TakeHit(Damage, Dir, Knockback) then return false end
 	local P = S.entity:GetWorldPosition()
-	self:DamageNumber(P + Vector3(0, 0, S.HitHeight or 60), tostring(Damage), bCrit and { 1, 0.86, 0.3, 1 } or { 1, 1, 1, 1 }, bCrit and 1.35 or 1.0)
-	self:SpawnFx("Spark", P + Vector3(0, 40, (S.HitHeight or 60) - 30), { Blend = 2, Scale = bCrit and 2.0 or 1.4 })
+	local Big = (bCrit and 1.35 or 1.0) * (Info.bBroken and 1.3 or 1.0)
+	local Color = (Info.bWeak or Info.bBroken) and { 1, 0.62, 0.25, 1 } or (bCrit and { 1, 0.86, 0.3, 1 } or { 1, 1, 1, 1 })
+	self:DamageNumber(P + Vector3(0, 0, S.HitHeight or 60), tostring(Damage), Color, Big)
+	if Info.bWeak then self:DamageNumber(P + Vector3(0, 0, (S.HitHeight or 60) + 38), "WEAK", { 1, 0.9, 0.35, 1 }, 0.62) end
+	self:SpawnFx("Spark", P + Vector3(0, 40, (S.HitHeight or 60) - 30), { Blend = 2, Scale = (bCrit or Info.bWeak) and 2.0 or 1.4,
+	                                                                     Color = Info.Element and self.ElementColor[Info.Element] or nil })
+	self:AfterCombatHit(S, Info)
 	if WeaponId then
 		self.Report.WeaponHits[WeaponId] = (self.Report.WeaponHits[WeaponId] or 0) + 1
 		local Player = self:GetPlayer()
@@ -497,6 +509,8 @@ function HD2DGame:TalkTo(Npc)
 		self:StartDialog(Row.DisplayName, Row.Lines, function() self:OpenShop() end, Row.Portrait)
 	elseif Row.Role == "Quest" then
 		self:TalkSubQuest(Npc)
+	elseif Row.Role == "Companion" then
+		self:TalkCompanion(Npc) -- 동료 영입 (HD2DCombat.lua)
 	else
 		self:StartDialog(Row.DisplayName, Row.Lines, nil, Row.Portrait)
 	end
@@ -614,7 +628,7 @@ end
 function HD2DGame:SpawnProjectile(Desc)
 	local P = { Kind = Desc.Kind, Pos = Desc.Pos, Dir = Desc.Dir, Speed = Desc.Speed or 1000, Travel = 0, Range = Desc.Range or 1200, Damage = Desc.Damage,
 	            Knockback = Desc.Knockback or 300, Splash = Desc.Splash or 0, Team = Desc.Team or "Player", Crit = Desc.Crit, Weapon = Desc.Weapon,
-	            Trail = 0, Time = 0 }
+	            Trail = 0, Time = 0, HitOpt = Desc.HitOpt }
 	if P.Kind == "Rock" then
 		P.From, P.Target, P.Duration, P.Height = Desc.Pos, Desc.Target, Desc.Duration or 0.9, Desc.Height or 320
 		P.Warn = self:SpawnSprite({ Sprite = FxSprite, Slice = "Warn", Position = Desc.Target + Vector3(0, 0, 3), Flat = true, Blend = 0, Life = P.Duration + 0.1,
@@ -655,7 +669,7 @@ function HD2DGame:ExplodeProjectile(P, Pos)
 		Audio.PlayOneShot("Audio/RPG/HitHeavy.wav")
 		local Player = self:GetPlayer()
 		if Player and Flat(Player.entity:GetWorldPosition() - Pos):Length() < 140 then
-			Player:TakeDamage(P.Damage, Pos)
+			Player:TakeDamage(P.Damage, Pos, P.HitOpt)
 		end
 	end
 end
@@ -703,7 +717,7 @@ function HD2DGame:UpdateProjectiles(Dt)
 				end
 			elseif Player and not Player.bDead then
 				if Flat(Player.entity:GetWorldPosition() - P.Pos):Length() < 50 then
-					Player:TakeDamage(P.Damage, P.Pos - P.Dir * 100)
+					Player:TakeDamage(P.Damage, P.Pos - P.Dir * 100, P.HitOpt)
 					self:SpawnFx("Spark", P.Pos, { Blend = 2, Color = { 1, 0.5, 0.4, 1 } })
 					bDone = true
 				end
@@ -739,7 +753,7 @@ function HD2DGame:UpdateHazards(Dt)
 		if H.Life > 0 then
 			if Player and H.Tick <= 0 and Flat(Player.entity:GetWorldPosition() - H.Pos):Length() < H.Radius then
 				H.Tick = 0.5
-				if Player:TakeDamage(H.Damage, H.Pos, { bNoKnockback = true, bNoInvuln = true, Color = { 0.75, 0.45, 1.0, 1 } }) then
+				if Player:TakeDamage(H.Damage, H.Pos, { bNoKnockback = true, bNoInvuln = true, Color = { 0.75, 0.45, 1.0, 1 }, Status = "Poison" }) then
 					self.Report.PoisonTicks = self.Report.PoisonTicks + 1
 				end
 			end
@@ -862,6 +876,7 @@ function HD2DGame:OnUpdate(Dt)
 	self:UpdateHazards(Dt)
 	self:UpdateSlots(Dt)
 	self:UpdateDungeon(Dt)
+	self:UpdateCombat(Dt)
 end
 
 -- ================================================================ 자동 검증 결과 (HD2DAutoPilot.lua가 끝에 부른다)
@@ -880,6 +895,7 @@ function HD2DGame:ReportAutoPlay(Failures, Summary)
 		Summary or "", table.concat(Kills, ", "), table.concat(Hits, ", "), table.concat(Patterns, ", "), R.Chests, R.Pickups, R.Dialogs, R.InventoryOpened, R.Equips,
 		R.GearEquips, R.Boosts, R.BoostMax, R.SubDone, R.Saves, R.Projectiles, R.PoisonTicks, R.TrapRises, R.TrapHits, R.Eruptions, R.GateCloses, R.GateOpens,
 		R.Afterimages, R.Endings, self.QuestStage, self.Gold))
+	Log.Info(self:CombatReportLine())
 	if Failures == nil then
 		return -- 단계 요약만 (자동 검증이 씬을 다시 여는 중간)
 	elseif #Failures == 0 then

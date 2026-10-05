@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Mage.esprite",
+  "Fps": 2.4,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "IdleDown0"
+    },
+    {
+      "Slice": "IdleDown1"
+    }
+  ]
+}

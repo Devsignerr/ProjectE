@@ -1,0 +1,247 @@
+{
+  "Entities": [
+    {
+      "Name": "Companion",
+      "Parent": -1,
+      "Components": {
+        "CharacterMovementComponent": {
+          "AirControl": 1.0,
+          "CapsuleHalfHeight": 53.0,
+          "CapsuleRadius": 32.0,
+          "FaceControlYaw": false,
+          "GravityScale": 1.0,
+          "JumpZVelocity": 0.0,
+          "Mass": 60.0,
+          "MaxSlopeAngle": 50.0,
+          "MaxStepHeight": 25.0,
+          "MaxWalkSpeed": 520.0,
+          "PushForce": 600.0,
+          "KnockbackDeceleration": 2600.0,
+          "ClientPrediction": false
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "ScriptAsset": "Scripts/Demo/HD2D/HD2DCompanion.lua",
+          "PropertyOverrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Visual",
+      "Parent": 0,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Body",
+      "Parent": 1,
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/HD2D/Mage.esprite",
+          "Slice": "IdleDown0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 2
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/HD2D/Mage_IdleDown.eflipbook",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -85.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Shadow",
+      "Parent": 1,
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/HD2D/Fx.esprite",
+          "Slice": "Shadow",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "PrefabLinkComponent": {
+          "Id": "4",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -83.5
+          ],
+          "Rotation": [
+            -0.7071067811865476,
+            0.0,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            0.75,
+            1.0,
+            0.75
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Marker",
+      "Parent": 1,
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/HD2D/Fx.esprite",
+          "Slice": "Exclaim",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 2
+        },
+        "PrefabLinkComponent": {
+          "Id": "5",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            6.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    }
+  ],
+  "NextId": 6,
+  "Version": 1
+}

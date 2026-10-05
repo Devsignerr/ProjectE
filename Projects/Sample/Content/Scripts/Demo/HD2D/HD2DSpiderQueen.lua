@@ -42,6 +42,7 @@ function HD2DSpiderQueen:OnStart()
 	self.Anim = ""
 	self.GM:RegisterEnemy(self)
 	self:Play("Dormant")
+	self.GM:InitEnemyCombat(self) -- 약점·실드(2단계에 바뀜)·상태 이상 (HD2DCombat.lua)
 end
 
 function HD2DSpiderQueen:OnDestroy()
@@ -80,6 +81,9 @@ end
 
 function HD2DSpiderQueen:OnUpdate(Dt)
 	if self.bDead or Dt <= 0 then return end
+	local bSkip
+	bSkip, Dt = self.GM:UpdateEnemyCombat(self, Dt) -- 브레이크·기절이면 건너뜀, 빙결이면 느리게
+	if bSkip then return end
 	local E = self.entity
 	local R = self.Row
 	local Pos = E:GetWorldPosition()
@@ -135,7 +139,7 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 				local A = (I - (Count + 1) * 0.5) * Spread
 				local Dir = Vector3(DirP.X * math.cos(A) - DirP.Y * math.sin(A), DirP.X * math.sin(A) + DirP.Y * math.cos(A), 0)
 				self.GM:SpawnProjectile({ Kind = "Web", Pos = Ground + Dir * 110 + Vector3(0, 10, 120), Dir = Dir, Speed = R.ProjectileSpeed,
-				                          Range = 1400, Damage = R.AttackDamage * 0.7, Team = "Enemy" })
+				                          Range = 1400, Damage = R.AttackDamage * 0.7, Team = "Enemy", HitOpt = { Status = "Freeze", Chance = 1.0 } })
 			end
 			self:Sound("Audio/RPG/Swing2.wav", 1.0, 0.7)
 			self:SetState("Recover", 0.8)
@@ -152,7 +156,7 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 					local A = (I - 2) / (Count - 1) * math.pi * 2 + self.Time
 					Offset = Vector3(math.cos(A), math.sin(A), 0) * (self.Phase == 2 and 260 or 230)
 				end
-				self.GM:SpawnEruption(Center + Offset, 0.85 + (I - 1) * 0.1, 115, R.AttackDamage)
+				self.GM:SpawnEruption(Center + Offset, 0.85 + (I - 1) * 0.1, 115, R.AttackDamage, { Status = "Freeze", Chance = 0.5 })
 			end
 			self:Sound("Audio/RPG/Spin.wav", 0.9, 0.6)
 			self:SetState("Recover", 1.0)
@@ -196,7 +200,7 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 			self:Sound("Audio/RPG/HitHeavy.wav", 1.0, 0.8)
 			local PP = Player and Player.entity:GetWorldPosition()
 			if PP and Flat(PP - Ground):Length() < 240 then
-				Player:TakeDamage(R.AttackDamage * 1.2, Pos)
+				Player:TakeDamage(R.AttackDamage * 1.2, Pos, self.HitOpt) -- 착지 = 기절 (표 Inflict)
 			end
 			self:SetState("Recover", 0.75)
 		end

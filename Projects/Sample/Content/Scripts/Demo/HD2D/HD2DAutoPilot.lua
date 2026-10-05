@@ -453,7 +453,7 @@ function AutoPilot:TalkToNpc(Id)
 end
 
 function AutoPilot:InteractAt(Pos, Label)
-	self:GoTo(Pos + Vector3(0, 115, 0), 50, 70, Label)
+	self:GoTo(Pos + Vector3(0, 115, 0), 30, 70, Label) -- 상자 상호작용 160cm 안 (115 + 30)
 	self:Wait(0.2)
 	self:Press("Interact")
 	self:Wait(0.3)

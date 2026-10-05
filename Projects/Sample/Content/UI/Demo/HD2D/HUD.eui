@@ -13909,7 +13909,7 @@
             1
           ],
           "AutoSize": true,
-          "ZOrder": 3
+          "ZOrder": -1
         },
         "Children": [
           {

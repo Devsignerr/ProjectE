@@ -273,7 +273,8 @@ def HudWidgets(G):
 	Dir = f"{G.UI_DIR}/Combat"
 	Out = []
 	# ---- 적 머리 위 태그 템플릿 (복제해 쓴다 — HD2DCombatHud.lua): 이름(정예) / 상태 이상 / 실드(숫자) + 약점 칸
-	Out.append(W("VerticalBox", "TagTemplate", CanvasSlot((0, 0), 0, 0, 0, 0, (0.5, 1), True, 3), "Collapsed", [
+	# Z = -1: 월드에 붙은 표시라 HUD 창(상태·퀘스트·미니맵·스킬 이름 띠) 밑으로 지나간다
+	Out.append(W("VerticalBox", "TagTemplate", CanvasSlot((0, 0), 0, 0, 0, 0, (0.5, 1), True, -1), "Collapsed", [
 		Text("TagName", "", 16, BoxSlot((0, 0, 0, 2), HAlign="Center"), G.TEXT_GOLD, "Center", "Collapsed"),
 		W("HorizontalBox", "TagStatus", BoxSlot((0, 0, 0, 2), HAlign="Center"), "Collapsed",
 		  [Img(f"TagSt{K}", f"{Dir}/StatusPoison.png", 26, BoxSlot((1, 0, 1, 0)), "Collapsed") for K in range(4)]),

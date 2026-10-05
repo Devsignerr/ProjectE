@@ -169,10 +169,10 @@ function HD2DCompanion:OnUpdate(Dt)
 	self.Sprite.Visible = not (self.Invuln > 0 and math.floor(self.Invuln * 16) % 2 == 1)
 end
 
--- 따라가기: 플레이어 뒤쪽(보는 방향 반대) 140cm, 적이 가까우면 물러선다
+-- 따라가기: 플레이어 비스듬히 뒤(보는 방향 반대 110cm + 옆 100cm — 겹쳐 서지 않게), 적이 가까우면 물러선다
 function HD2DCompanion:FollowStep(Dt, Pos, PP, Player, Target)
 	local Back = Player.AimDir or Vector3(0, 1, 0)
-	local Goal = PP - Back * 140 + Vector3(-Back.Y, Back.X, 0) * 50
+	local Goal = PP - Back * 110 + Vector3(-Back.Y, Back.X, 0) * 100
 	local To = Flat(Goal - Pos)
 	local Move = nil
 	if Target then
@@ -340,7 +340,7 @@ end
 -- 플레이어 곁으로 (뒤쪽, 지면 위)
 function HD2DCompanion:Teleport(PP)
 	local Back = (self.GM:GetPlayer().AimDir or Vector3(0, 1, 0))
-	local At = PP - Back * 120 + Vector3(0, 0, 4)
+	local At = PP - Back * 110 + Vector3(-Back.Y, Back.X, 0) * 100 + Vector3(0, 0, 4)
 	self.entity:SetPosition(At)
 	self.Path = nil
 	self.GM:SpawnFx("Sparkle", At + Vector3(0, 20, 10), { Blend = 2, Scale = 1.0, Color = { 0.85, 0.7, 1, 1 } })

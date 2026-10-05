@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "HarborEnemies.esprite",
+  "Fps": 6.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "GhostWindup0"
+    },
+    {
+      "Slice": "GhostWindup1"
+    }
+  ]
+}

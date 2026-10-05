@@ -248,6 +248,7 @@ function Party:SubReady(Id)
 	local Q = D.SubQuest(Id)
 	local S = self.Sub[Id]
 	if not S or S.State ~= "Active" then return false end
+	if Q.Kind == "Boss" then return self:IsBossDefeated(Q.Target) end
 	if Q.Kind == "Hunt" then return S.Count >= Q.Count end
 	return self:Count(Q.Target) >= Q.Count
 end
@@ -257,7 +258,7 @@ function Party:SubProgressText(Id)
 	local S = self.Sub[Id]
 	if not S then return "" end
 	if S.State == "Done" then return "완료" end
-	local Have = Q.Kind == "Hunt" and S.Count or self:Count(Q.Target)
+	local Have = Q.Kind == "Hunt" and S.Count or (Q.Kind == "Boss" and (self:IsBossDefeated(Q.Target) and 1 or 0) or self:Count(Q.Target))
 	if self:SubReady(Id) then return string.format("보고 가능 (%d/%d)", math.min(Have, Q.Count), Q.Count) end
 	return string.format("진행 중 (%d/%d)", math.min(Have, Q.Count), Q.Count)
 end
@@ -287,7 +288,7 @@ end
 
 function Party:CompleteSubQuest(Id)
 	local Q = D.SubQuest(Id)
-	if Q.Kind ~= "Hunt" then self:RemoveItem(Q.Target, Q.Count) end
+	if Q.Kind == "Find" or Q.Kind == "Collect" then self:RemoveItem(Q.Target, Q.Count) end
 	self.Sub[Id].State = "Done"
 	if Q.RewardGold > 0 then self:AddGold(Q.RewardGold, true) end
 	if Q.RewardItem ~= "" then self:AddItem(Q.RewardItem, 1, true) end
@@ -338,7 +339,7 @@ function Party:BuildSave(Pos)
 		Gold = self.Gold, Items = Items, Equipped = self.Equipped, Armor = self.Armor or "", Accessory = self.Accessory or "",
 		Level = Player and Player.Level or 1, Exp = Player and Player.Exp or 0, Health = Player and Player.Health or 1, Mana = Player and Player.Mana or 0,
 		BP = Player and Player.BP or 1, QuestStage = self.QuestStage, QuestKills = self.QuestKills, Sub = Sub, Opened = Opened,
-		BossDead = self.BossDead, Defeated = self:CopyDefeated(), PlayTime = (self.PlayTime or 0), Meta = self:BuildMetaSave(),
+		BossDead = self.BossDead, Defeated = self:CopyDefeated(), PlayTime = (self.PlayTime or 0), Meta = self:BuildMetaSave(), World = self:BuildWorldSave(),
 		Combat = self:BuildCombatSave(), -- 약점 공개 기록·동료 (HD2DCombat.lua)
 	}
 end
@@ -366,6 +367,7 @@ function Party:ApplySave(Data)
 	for K, V in pairs(Data.Defeated or {}) do self.Defeated[K] = V == true end
 	self.PlayTime = Data.PlayTime or 0
 	self:ApplyMetaSave(Data.Meta)
+	self:ApplyWorldSave(Data.World)
 	self:ApplyCombatSave(Data.Combat)
 	self.PendingPlayer = Data -- 플레이어 OnStart가 아직이면 거기서 적용
 	local Player = self:GetPlayer()

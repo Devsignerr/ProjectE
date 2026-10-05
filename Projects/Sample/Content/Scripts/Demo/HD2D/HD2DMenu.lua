@@ -130,7 +130,7 @@ function Menu:BuildRows()
 		end
 	end
 	if self.Menu == "Shop" then
-		for _, Id in ipairs(D.Balance().ShopStock) do Rows[#Rows + 1] = Id end
+		for _, Id in ipairs(self:ShopStockList()) do Rows[#Rows + 1] = Id end
 	elseif self.MenuTab == 2 then
 		AddOwned(D.WeaponOrder)
 		AddOwned(D.ArmorOrder)
@@ -164,9 +164,10 @@ function Menu:OpenShop()
 	self.Menu = "Shop"
 	self.MenuIndex = 1
 	self.MenuNote = nil
-	self.ShopSay = D.Balance().ShopLines[1]
+	self.ShopSay = self:ShopLine(1)
 	self:SetPaused(true)
 	self:Hud():ShowMenu("Shop")
+	self:ApplyShopLook()
 	self:RefreshMenu()
 	Audio.PlayOneShot(self.Sounds.Open)
 end
@@ -297,20 +298,19 @@ function Menu:MenuConfirm()
 	local Id = self:SelectedId()
 	if not Id or string.sub(Id, 1, 1) == "#" then return end
 	local Row = D.Item(Id)
-	local Lines = D.Balance().ShopLines
 	self.MenuNote = nil
 	if self.Menu == "Shop" then
 		if self:IsGear(Row) and self:Count(Id) > 0 then
-			self.ShopSay = Lines[4]
+			self.ShopSay = self:ShopLine(4)
 			Audio.PlayOneShot(self.Sounds.Error)
 		elseif self.Gold < Row.Price then
-			self.ShopSay = Lines[3]
+			self.ShopSay = self:ShopLine(3)
 			Audio.PlayOneShot(self.Sounds.Error)
 		else
 			self.Gold = self.Gold - Row.Price
 			self:AddItem(Id, 1, true)
 			self.Report.Bought[Id] = (self.Report.Bought[Id] or 0) + 1
-			self.ShopSay = Lines[2]
+			self.ShopSay = self:ShopLine(2)
 			Audio.PlayOneShot(self.Sounds.Buy)
 			Log.Info(string.format("[HD2D] 구입: %s (%d G, 남은 골드 %d)", Row.DisplayName, Row.Price, self.Gold))
 		end
@@ -416,7 +416,10 @@ function Menu:MenuInput(In)
 	if In.Cancel or In.Inventory then
 		local bShop = self.Menu == "Shop"
 		self:CloseMenu()
-		if bShop then self:Hud():Toast("UI/Demo/HD2D/Portraits/Merchant.png", "미라: " .. D.Balance().ShopLines[5]) end
+		if bShop then
+			local Keeper, Portrait = self:ShopKeeperName()
+			self:Hud():Toast(Portrait, Keeper .. ": " .. self:ShopLine(5))
+		end
 		return
 	end
 	if self.Menu == "Inventory" and (In.MenuLeft or In.MenuRight) then

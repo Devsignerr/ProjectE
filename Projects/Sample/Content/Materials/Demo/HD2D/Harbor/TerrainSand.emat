@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DHarborTerrainSand",
+  "BaseColorFactor": [
+    1.02,
+    0.96,
+    0.86,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 1.0,
+  "Roughness": 1.0,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "../../../../Asset/PolyHaven/coast_sand_01/coast_sand_01_diff_2k.jpg",
+  "MetallicRoughnessTexture": "../../../../Asset/PolyHaven/coast_sand_01/coast_sand_01_arm_2k.jpg",
+  "NormalTexture": "../../../../Asset/PolyHaven/coast_sand_01/coast_sand_01_nor_gl_2k.jpg",
+  "OcclusionTexture": "../../../../Asset/PolyHaven/coast_sand_01/coast_sand_01_arm_2k.jpg",
+  "EmissiveTexture": ""
+}

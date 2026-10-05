@@ -307,6 +307,102 @@
       }
     },
     {
+      "Name": "Harpoon",
+      "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
+        "DisplayName": "어부의 작살",
+        "Kind": "Weapon",
+        "Amount": 0,
+        "Weapon": "Harpoon",
+        "Icon": "UI/Demo/HD2D/Icons/Harpoon.png",
+        "Description": "",
+        "Price": 0
+      }
+    },
+    {
+      "Name": "GrilledFish",
+      "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
+        "DisplayName": "구운 생선",
+        "Kind": "Heal",
+        "Amount": 80,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/GrilledFish.png",
+        "Description": "베라네 노점의 소금 구이 고등어. 체력을 80 회복한다.",
+        "Price": 22
+      }
+    },
+    {
+      "Name": "SailorCoat",
+      "Values": {
+        "DisplayName": "선원의 외투",
+        "Kind": "Armor",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Coat.png",
+        "Description": "바닷바람을 막는 두꺼운 푸른 외투. 가벼워서 움직이기 편하다.",
+        "Price": 190,
+        "Defense": 9,
+        "HealthBonus": 10,
+        "SpeedBonus": 0.04,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "PearlRing",
+      "Values": {
+        "DisplayName": "진주 반지",
+        "Kind": "Accessory",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Pearl.png",
+        "Description": "갈매기 항구 앞바다의 흰 진주를 박은 반지. 마음이 차분해져 급소가 잘 보인다.",
+        "Price": 150,
+        "Defense": 3,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.08
+      }
+    },
+    {
+      "Name": "CompassCharm",
+      "Values": {
+        "DisplayName": "선장의 나침반",
+        "Kind": "Accessory",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Compass.png",
+        "Description": "해적 선장 바렌의 선장실에서 나온 놋쇠 나침반. 길을 잃지 않게 발걸음을 이끈다.",
+        "Price": 0,
+        "Defense": 5,
+        "HealthBonus": 25,
+        "SpeedBonus": 0.08,
+        "CritBonus": 0.05
+      }
+    },
+    {
+      "Name": "LighthouseLens",
+      "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
+        "DisplayName": "등대 렌즈",
+        "Kind": "Material",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Lens.png",
+        "Description": "해적들이 떼어 간 등대의 큰 유리 렌즈. 등대지기 노아에게 돌려주자.",
+        "Price": 0
+      }
+    },
+    {
       "Name": "BatWing",
       "Values": {
         "DisplayName": "박쥐 날개",

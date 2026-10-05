@@ -29,7 +29,7 @@ function AutoPilot.New(Scenario, Player, GM)
 	local A = setmetatable({ Scenario = Scenario, Player = Player, GM = GM, Time = 0, Frame = 0, Failures = {}, Checks = 0, Teleports = 0,
 	                         DamageTakenScale = 1.0, PotionTimer = 0 }, AutoPilot) -- 받는 피해 그대로 (2026-10-05 전투 깊이: 자동 조종도 사람과 같은 난이도로)
 	local Name = Scenario
-	if Scenario == "Full" or Scenario == "Cave" then
+	if Scenario == "Full" or Scenario == "Cave" or Scenario == "Harbor" then
 		A.Phase = Game.GetPersistent("HD2D_AutoPhase", Scenario == "Full" and "Main" or "Run")
 		Name = Scenario .. A.Phase
 		-- 앞 단계의 실패·확인 수를 잇는다
@@ -198,7 +198,7 @@ function AutoPilot:MoveToward(Target, Scale)
 		self.StuckFrom = Pos
 	end
 	if (self.StuckTotal or 0) > 4.5 then
-		self:Note(string.format("막힘 → 순간이동 (%.0f, %.0f)", Target.X, Target.Y))
+		self:Note(string.format("막힘 → 순간이동 (%.0f, %.0f) — 막힌 자리 (%.0f, %.0f)", Target.X, Target.Y, Pos.X, Pos.Y))
 		self.Teleports = self.Teleports + 1
 		self.Player:Teleport(Vector3(Target.X, Target.Y, self:GroundZ(Target, Pos.Z) + 90))
 		self.StuckTotal = 0
@@ -211,12 +211,29 @@ function AutoPilot:MoveToward(Target, Scale)
 	self.In.Move = Dir * (Scale or 1.0)
 end
 
+-- 한 프레임 이동: 멀면 내비메시 경로를 따라 (적 자리·전리품·보스 자리로 곧장 가다 개울·벽에 막히던 것), 가까우면 곧장
+--   경로는 목표가 300cm 넘게 바뀌거나 1.5초마다 다시 찾는다
+function AutoPilot:MoveRouted(Target, Scale)
+	local Pos = self:Pos()
+	if Flat(Target - Pos):Length() < 350 then
+		self.RoutedPath = nil
+		return self:MoveToward(Target, Scale)
+	end
+	local RP = self.RoutedPath
+	if not RP or Flat(RP.Goal - Target):Length() > 300 or self.Time > RP.Until then
+		RP = { Goal = Target, Points = self:Route(Pos, Target), Index = 1, Until = self.Time + 1.5 }
+		self.RoutedPath = RP
+	end
+	while RP.Points[RP.Index + 1] and Flat(RP.Points[RP.Index] - Pos):Length() < 90 do RP.Index = RP.Index + 1 end
+	self:MoveToward(RP.Points[RP.Index] or Target, Scale)
+end
+
 function AutoPilot:GoTo(Target, Radius, Timeout, Label)
 	local Deaths = self.Player.Stats.Deaths
 	local Until = self.Time + (Timeout or 50)
 	local Nav0 = self.NavRoutes or 0
 	local Route = self:Route(self:Pos(), Target)
-	if self.Scenario == "Cave" and Label then
+	if (self.Scenario == "Cave" or self.Scenario == "Harbor") and Label then
 		local From = self:Pos()
 		self:Note(string.format("길 %s: %d점 (%s, 출발 %.0f, %.0f, %.0f)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path", From.X, From.Y, From.Z))
 	end
@@ -348,7 +365,7 @@ function AutoPilot:Engage(Target, bBoost)
 	end
 	if self:DodgeEruptions() or self:DodgeProjectiles() then return end
 	if L > Want + 50 then
-		self:MoveToward(Target.entity:GetWorldPosition())
+		self:MoveRouted(Target.entity:GetWorldPosition())
 	elseif (W.Kind == "Arrow" or W.Kind == "Bolt") and L < Want - 220 then
 		self.In.Move = Dir * -1
 	else
@@ -384,7 +401,7 @@ function AutoPilot:Fight(Kind, WeaponId, Count, Timeout, bBoost, Near, Done)
 			local Pick = self:NearestPickup(900)
 			local TargetDist = Target and Flat(Target.entity:GetWorldPosition() - self:Pos()):Length() or 1.0e9
 			if Pick and TargetDist > 260 then
-				self:MoveToward(Pick.Pos) -- 떨어진 전리품(젤리 등)부터 줍는다
+				self:MoveRouted(Pick.Pos) -- 떨어진 전리품(젤리 등)부터 줍는다
 			elseif Target then
 				self:Engage(Target, bBoost)
 			else
@@ -398,7 +415,7 @@ function AutoPilot:Fight(Kind, WeaponId, Count, Timeout, bBoost, Near, Done)
 						end
 					end
 				end
-				if Best and Flat(Best - self:Pos()):Length() > 200 then self:MoveToward(Best) end
+				if Best and Flat(Best - self:Pos()):Length() > 200 then self:MoveRouted(Best) end
 			end
 			self:Survive()
 		end
@@ -689,8 +706,9 @@ function AutoPilot:RunFullTravel()
 		if not GM:IsMenuOpen() then
 			if Boss then
 				self:Engage(Boss, true)
+				self:LeashToArena(GM.BossPos, 750)
 			else
-				self:MoveToward(GM.BossPos) -- 잠든 보스는 목록에 없다 → 다가가 깨운다
+				self:MoveRouted(GM.BossPos) -- 잠든 보스는 목록에 없다 → 다가가 깨운다
 			end
 			self:Survive()
 			self:TrackLowHp()
@@ -792,7 +810,7 @@ function AutoPilot:ClearArea(Center, Radius, Timeout, WeaponId, Label)
 		if not GM:IsMenuOpen() then
 			local Pick = self:NearestPickup(700)
 			local TargetDist = Flat(Target.entity:GetWorldPosition() - self:Pos()):Length()
-			if Pick and TargetDist > 300 then self:MoveToward(Pick.Pos) else self:Engage(Target, true) end
+			if Pick and TargetDist > 300 then self:MoveRouted(Pick.Pos) else self:Engage(Target, true) end
 			self:Survive()
 		end
 		self:Yield()
@@ -802,7 +820,7 @@ function AutoPilot:ClearArea(Center, Radius, Timeout, WeaponId, Label)
 	while self.Time < PickUntil do
 		local Pick = self:NearestPickup(600)
 		if not Pick then break end
-		if not GM:IsMenuOpen() then self:MoveToward(Pick.Pos) end
+		if not GM:IsMenuOpen() then self:MoveRouted(Pick.Pos) end
 		self:Yield()
 	end
 	return self:Expect(true, string.format("%s 적 정리 (처치 %d)", Label, self:TotalKills() - Kills0))
@@ -892,8 +910,9 @@ function AutoPilot:RunCaveRun()
 			if Boss then
 				if self.Frame % 120 == 0 then self:SwitchToWeakWeapon(Boss) end -- R로 약점 속성 무기로 (HD2DAutoCombat.lua)
 				self:Engage(Boss, true)
+				self:LeashToArena(GM.BossPos, 650)
 			else
-				self:MoveToward(GM.BossPos) -- 잠든 보스는 목록에 없다 → 다가가 깨운다
+				self:MoveRouted(GM.BossPos) -- 잠든 보스는 목록에 없다 → 다가가 깨운다
 			end
 			self:Survive()
 			self:TrackLowHp()
@@ -1161,5 +1180,8 @@ function AutoPilot:RunBoss()
 		self:Yield()
 	end
 end
+
+-- 항구·낮밤 시나리오 (HD2DHarborPilot.lua — Harbor·HarborDay/Night/Lighthouse/Combat/Boss·VillageNight/Day)
+for Name, Fn in pairs(Script.Require("Scripts/Demo/HD2D/HD2DHarborPilot.lua")) do AutoPilot[Name] = Fn end
 
 return AutoPilot

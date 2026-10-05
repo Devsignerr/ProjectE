@@ -19,12 +19,13 @@
       "Name": "Role",
       "Type": "Enum",
       "Default": "Talk",
-      "Description": "대화만 / 대화 뒤 상점 / 촌장(퀘스트 단계 대사) / 서브 퀘스트 의뢰인(SubQuest)",
+      "Description": "대화만 / 대화 뒤 상점 / 촌장(퀘스트 단계 대사) / 서브 퀘스트 의뢰인(SubQuest) / 여관(잠자기 — 아침으로 + 회복)",
       "Values": [
         "Talk",
         "Shop",
         "Elder",
-        "Quest"
+        "Quest",
+        "Inn"
       ]
     },
     {
@@ -45,6 +46,39 @@
       "Type": "String",
       "Default": "",
       "Description": "의뢰하는 서브 퀘스트 (SubQuests.etable 행)"
+    },
+    {
+      "Name": "ShopStock",
+      "Type": "Array",
+      "Default": [],
+      "Description": "상점 진열 (비면 Balance.ShopStock)",
+      "Element": "String"
+    },
+    {
+      "Name": "ShopTitle",
+      "Type": "String",
+      "Default": "",
+      "Description": "상점 창 제목 (비면 기본)"
+    },
+    {
+      "Name": "ShopLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "상점 주인 말 (비면 Balance.ShopLines)",
+      "Element": "String"
+    },
+    {
+      "Name": "NightLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "밤 대사 (대화·상점 주인 — 상점은 밤에 닫는다)",
+      "Element": "String"
+    },
+    {
+      "Name": "NightOnly",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "밤에만 나타난다 (HD2DWorld.lua)"
     }
   ]
 }

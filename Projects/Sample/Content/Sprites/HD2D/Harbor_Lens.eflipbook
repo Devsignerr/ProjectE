@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "Sprite": "HarborProps.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Lens0",
+      "Duration": 0.7
+    },
+    {
+      "Slice": "Lens1",
+      "Duration": 0.25
+    }
+  ]
+}

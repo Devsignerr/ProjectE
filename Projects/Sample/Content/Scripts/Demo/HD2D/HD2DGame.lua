@@ -28,6 +28,10 @@ local HD2DGame = {
 		Gate     = "",  -- 보스 방 문 "x,y,z,창살 이동" (CaveGate 프리팹)
 		Arena    = "",  -- 보스 방 "x,y,반지름" (들어서면 문이 닫힌다)
 		Path     = "",  -- "x,y;..." 마을 → 들판 길 (내비메시가 없을 때 자동 조종이 따라 걷는다)
+		NightEnemies = "", -- 밤에만 나오는 적 "종류,x,y,z;..." (HD2DWorld.lua)
+		Gulls    = "",  -- 장식 갈매기 "x,y,z,반지름;..." (HD2DWorld.lua)
+		CameraMaxY = 0.0, -- 0이 아니면 플레이어 카메라 초점 범위 앞(+Y) 끝을 이 값으로 (항구 — 잔교·방파제 끝까지 따라가게, HD2DWorld.lua)
+		BossChestAtSpawn = false, -- 보스 보상 상자를 쓰러진 자리 대신 보스 처음 자리에 (항구 — 물가에서 쓰러지면 닿지 못했다)
 		AutoPlay = "",  -- "" | Full | TitleShot | Inventory | Equip | Shop | Dialog | Combat | Boost | Boss (HD2DAutoPilot.lua)
 		Title    = false, -- 시작할 때 타이틀 화면 (맵 이동으로 온 경우는 건너뜀)
 		Companion = "",   -- 동료(엘라)가 영입 전 서 있는 자리 "x,y,z" (HD2DCombat.lua — 마을만)
@@ -36,7 +40,7 @@ local HD2DGame = {
 }
 for _, Module in ipairs({ "Scripts/Demo/HD2D/HD2DParty.lua", "Scripts/Demo/HD2D/HD2DMenu.lua", "Scripts/Demo/HD2D/HD2DDungeon.lua",
                          "Scripts/Demo/HD2D/HD2DMeta.lua", "Scripts/Demo/HD2D/HD2DPause.lua", "Scripts/Demo/HD2D/HD2DCrafting.lua",
-                         "Scripts/Demo/HD2D/HD2DCombat.lua" }) do
+                         "Scripts/Demo/HD2D/HD2DWorld.lua", "Scripts/Demo/HD2D/HD2DCombat.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do HD2DGame[Name] = Fn end
 end
 
@@ -122,6 +126,7 @@ function HD2DGame:OnStart()
 		end
 	end
 	self:InitDungeon()
+	self:InitWorld(bSession)
 	self.Path = {}
 	for X, Y in string.gmatch(self.Properties.Path, "([-%d%.]+),([-%d%.]+)") do
 		self.Path[#self.Path + 1] = Vector3(tonumber(X), tonumber(Y), 0)
@@ -215,6 +220,7 @@ function HD2DGame:PendingPickups(Id)
 end
 
 function HD2DGame:OnBossKilled(S)
+	local Pos = S.entity:GetWorldPosition()
 	self.bBossDead = true
 	self:SetBossDefeated()
 	self:Hud():ShowBoss(nil)
@@ -223,8 +229,8 @@ function HD2DGame:OnBossKilled(S)
 	local bGoal = Q and Q.BossGoal == self.Properties.Map
 	self:Hud():Announce(S.Row.DisplayName .. "을(를) 쓰러뜨렸다!", bGoal and D.Quest(self.QuestStage + 1).Objective or nil, 3.5)
 	self:Fanfare()
-	-- 보상 상자는 보스 자리(방 가운데) 앞에 — 쓰러진 자리는 벽 가까이일 수 있다 (불러오기 때 OnStart와 같은 자리)
-	self:SpawnChest(self.BossPos + Vector3(0, 170, -self.Properties.BossLift + 47), self.Properties.BossReward, true, self.Properties.Map .. ":Boss")
+	local ChestAt = self.Properties.BossChestAtSpawn and (self.BossPos + Vector3(0, 170, -self.Properties.BossLift + 47)) or (Pos + Vector3(0, 170, S.Foot + 47))
+	self:SpawnChest(ChestAt, self.Properties.BossReward, true, self.Properties.Map .. ":Boss") -- 상자 루트 = 지면 + 45
 	self:OnDungeonBossKilled()
 	if bGoal then
 		self:SetQuestStage(self.QuestStage + 1, true)
@@ -347,6 +353,7 @@ function HD2DGame:SpawnNpc(Id, Pos)
 		Npc.Body = E:FindChild("Body")
 		Npc.Marker = E:FindChild("Marker")
 		Npc.Body:PlayFlipbook(Row.Flipbook)
+		self:OnNpcSpawned(Npc)
 		self:RefreshMarkers()
 	end)
 end
@@ -373,12 +380,16 @@ end
 function HD2DGame:SpawnProp(Id, Pos)
 	local Prop = { Id = Id, Pos = Pos }
 	self.Props_[#self.Props_ + 1] = Prop
-	Scene.SpawnPrefab(Prefabs .. (Id == "Cat" and "PropSmall.eprefab" or "Prop.eprefab"), Pos, function(E)
+	local WPrefab, WBook = self:WorldPropLook(Id)
+	Scene.SpawnPrefab(Prefabs .. (WPrefab or (Id == "Cat" and "PropSmall.eprefab" or "Prop.eprefab")), Pos, function(E)
 		Prop.Entity = E
 		Prop.Body = E:FindChild("Body")
 		Prop.Marker = E:FindChild("Marker")
 		local S = Prop.Body:GetComponent("SpriteComponent")
-		if Id == "Cat" then
+		if WBook then
+			Prop.Body:PlayFlipbook(WBook)
+			Prop.Body:SetPosition(Vector3(0, 0, -45))
+		elseif Id == "Cat" then
 			Prop.Body:PlayFlipbook("Sprites/HD2D/Cat_Idle.eflipbook")
 			Prop.Body:SetPosition(Vector3(0, 0, -45))
 		else
@@ -389,6 +400,8 @@ function HD2DGame:SpawnProp(Id, Pos)
 end
 
 function HD2DGame:IsPropActive(Prop)
+	local bWorld = self:WorldPropActive(Prop)
+	if bWorld ~= nil then return bWorld end
 	if Prop.Id == "Cat" then
 		return self:SubState("Cat") == "Active" and self:Count("LostCat") == 0
 	end
@@ -404,7 +417,7 @@ function HD2DGame:RefreshProps()
 			local Shadow = Prop.Entity:FindChild("Shadow")
 			if Shadow then Shadow:GetComponent("SpriteComponent").Visible = bShow end
 			local M = Prop.Marker and Prop.Marker:GetComponent("SpriteComponent")
-			if M then M.Visible = bShow and Prop.Id == "Cat" end
+			if M then M.Visible = bShow and Prop.Id ~= "SavePoint" end
 		end
 	end
 end
@@ -431,7 +444,7 @@ function HD2DGame:UpdateInteract(Pos)
 	local Best, BestDist, Text = nil, 1.0e9, nil
 	for _, Npc in ipairs(self.Npcs) do
 		local L = Flat(Npc.Pos - Pos):Length()
-		if Npc.Entity and L < 210 and L < BestDist then
+		if Npc.Entity and not Npc.bHidden and L < 210 and L < BestDist then
 			Best, BestDist, Text = Npc, L, "E  " .. Npc.Row.DisplayName .. "와(과) 이야기하기"
 		end
 	end
@@ -444,7 +457,7 @@ function HD2DGame:UpdateInteract(Pos)
 	for _, Prop in ipairs(self.Props_) do
 		local L = Flat(Prop.Pos - Pos):Length()
 		if Prop.Entity and self:IsPropActive(Prop) and L < 170 and L < BestDist then
-			Best, BestDist, Text = Prop, L, Prop.Id == "Cat" and "E  고양이를 안아 올리기" or "E  게시판에 모험을 기록하기 (저장)"
+			Best, BestDist, Text = Prop, L, self:WorldPropPrompt(Prop) or (Prop.Id == "Cat" and "E  고양이를 안아 올리기" or "E  게시판에 모험을 기록하기 (저장)")
 		end
 	end
 	self.Target = Best
@@ -460,6 +473,8 @@ function HD2DGame:Interact()
 		self:OpenChest(T)
 	elseif T.Row then
 		self:TalkTo(T)
+	elseif self:InteractWorldProp(T) then
+		return true
 	elseif T.Id == "Cat" then
 		self:AddItem("LostCat", 1, true)
 		self:SpawnFx("Sparkle", T.Pos + Vector3(0, 30, 10), { Blend = 2, Scale = 1.2 })
@@ -497,6 +512,7 @@ function HD2DGame:OpenChest(Chest)
 end
 
 function HD2DGame:TalkTo(Npc)
+	if self:TalkWorld(Npc) then return end -- 여관·밤 대사·주민별 상점 (HD2DWorld.lua)
 	local Row = Npc.Row
 	if Row.Role == "Elder" then
 		local Stage = self.QuestStage
@@ -879,6 +895,7 @@ function HD2DGame:OnUpdate(Dt)
 	self:UpdateSlots(Dt)
 	self:UpdateDungeon(Dt)
 	self:UpdateMeta(Dt)
+	self:UpdateWorld(Dt)
 	self:UpdateCombat(Dt)
 end
 

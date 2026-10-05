@@ -1,0 +1,281 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ProjectE HD2DMeshKit"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "HarborAnchor",
+   "mesh": 0
+  }
+ ],
+ "meshes": [
+  {
+   "name": "HarborAnchor",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    },
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "HarborAnchorIron",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.26,
+     0.25,
+     0.26,
+     1.0
+    ],
+    "metallicFactor": 0.55,
+    "roughnessFactor": 0.9,
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   },
+   "doubleSided": false,
+   "normalTexture": {
+    "index": 2,
+    "scale": 1.0
+   },
+   "occlusionTexture": {
+    "index": 1
+   }
+  },
+  {
+   "name": "HarborAnchorStock",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.66,
+     0.5,
+     0.38,
+     1.0
+    ],
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0,
+    "baseColorTexture": {
+     "index": 3
+    },
+    "metallicRoughnessTexture": {
+     "index": 4
+    }
+   },
+   "doubleSided": false,
+   "normalTexture": {
+    "index": 5,
+    "scale": 1.0
+   },
+   "occlusionTexture": {
+    "index": 4
+   }
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 2604,
+   "type": "VEC3",
+   "min": [
+    -0.11999999731779099,
+    -0.0455954372882843,
+    -1.02364981174469
+   ],
+   "max": [
+    0.11999999731779099,
+    2.7592313289642334,
+    1.02364981174469
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 2604,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 2604,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5125,
+   "count": 2604,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 36,
+   "type": "VEC3",
+   "min": [
+    -0.75,
+    1.8600000143051147,
+    -0.10999999940395355
+   ],
+   "max": [
+    0.75,
+    2.059999942779541,
+    0.10999999940395355
+   ]
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 36,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 36,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5125,
+   "count": 36,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 31248,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 31248,
+   "byteLength": 31248,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 62496,
+   "byteLength": 20832,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 83328,
+   "byteLength": 10416,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 93744,
+   "byteLength": 432,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 94176,
+   "byteLength": 432,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 94608,
+   "byteLength": 288,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 94896,
+   "byteLength": 144,
+   "target": 34963
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "HarborAnchor.bin",
+   "byteLength": 95040
+  }
+ ],
+ "images": [
+  {
+   "uri": "../../../../Asset/PolyHaven/rusty_metal_02/rusty_metal_02_diff_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/rusty_metal_02/rusty_metal_02_arm_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/rusty_metal_02/rusty_metal_02_nor_gl_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/dark_wooden_planks/dark_wooden_planks_diff_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/dark_wooden_planks/dark_wooden_planks_arm_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/dark_wooden_planks/dark_wooden_planks_nor_gl_2k.jpg"
+  }
+ ],
+ "textures": [
+  {
+   "source": 0,
+   "sampler": 0
+  },
+  {
+   "source": 1,
+   "sampler": 0
+  },
+  {
+   "source": 2,
+   "sampler": 0
+  },
+  {
+   "source": 3,
+   "sampler": 0
+  },
+  {
+   "source": 4,
+   "sampler": 0
+  },
+  {
+   "source": 5,
+   "sampler": 0
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ]
+}

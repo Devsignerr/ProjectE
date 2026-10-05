@@ -24,6 +24,7 @@ WEAPON_COMBAT = {
 	"Bow":          {"Element": "Bow", "SkillK": "ArrowRain", "SkillL": "FrostArrow"},
 	"Staff":        {"Element": "Light", "SkillK": "HolyPillar", "SkillL": "ChainLightning"},
 	"CrystalSword": {"Element": "Slash", "SkillK": "Whirl", "SkillL": "FrostSlash"},
+	"Harpoon":      {"Element": "Pierce", "SkillK": "PierceRush", "SkillL": "ThunderThrust"},
 }
 
 
@@ -90,6 +91,12 @@ ENEMY_COMBAT = {  # 종류: (약점, 실드, 2단계 약점, 2단계 실드, 브
 	"CrystalSlime": (["Thunder", "Pierce"], 3, [], 0, 3.5, "Freeze", 0.4),
 	"SpiderQueen":  (["Fire", "Bow"], 14, ["Ice", "Light"], 16, 5.0, "Stun", 1.0),  # 덮치기 착지에 맞으면 기절 (거미줄·수정 가시는 빙결 — 스크립트)
 	"EliteGoblin":  (["Pierce", "Ice", "Light"], 5, [], 0, 4.0, "", 0.0),
+	# 항구 (HD2DWorldData): 게는 단단한 껍질(번개·찌르기), 해적은 베기·얼음, 갈매기는 활·번개, 망령은 빛·불(몸에 닿으면 얼어붙는 냉기)
+	"Crab":          (["Thunder", "Pierce"], 3, [], 0, 3.5, "", 0.0),
+	"Pirate":        (["Slash", "Ice"], 2, [], 0, 3.5, "", 0.0),
+	"Seagull":       (["Bow", "Thunder"], 1, [], 0, 3.5, "", 0.0),
+	"Ghost":         (["Light", "Fire"], 3, [], 0, 3.5, "Freeze", 0.35),
+	"PirateCaptain": (["Pierce", "Thunder"], 12, ["Light", "Ice"], 14, 5.0, "Poison", 0.6),  # 돌진 베기 = 출혈(독), 화약통 = 화상, 포탄 = 기절 (스크립트)
 	"EliteArcher":  (["Light", "Fire", "Slash"], 5, [], 0, 4.0, "", 0.0),
 }
 
@@ -105,7 +112,7 @@ ELITES = {
 }
 
 
-GUARD = {"Golem": 0.5, "SpiderQueen": 0.5, "EliteGoblin": 0.8, "EliteArcher": 0.8}  # 브레이크가 아닐 때 받는 피해 배율 (없으면 1)
+GUARD = {"Golem": 0.5, "SpiderQueen": 0.5, "PirateCaptain": 0.5, "EliteGoblin": 0.8, "EliteArcher": 0.8}  # 브레이크가 아닐 때 받는 피해 배율 (없으면 1)
 
 
 def ExtendEnemies(Enemies, Capsules):

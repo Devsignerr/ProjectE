@@ -1,0 +1,848 @@
+{
+  "Name": "HD2DHarborSpray",
+  "Version": 2,
+  "Emitters": [
+    {
+      "Name": "Mist",
+      "Enabled": true,
+      "SimTarget": "CPU",
+      "LocalSpace": false,
+      "Duration": 6.0,
+      "Loop": true,
+      "MaxParticles": 40,
+      "Seed": 952,
+      "EmitterUpdate": [
+        {
+          "Module": "SpawnBurstInstantaneous",
+          "Enabled": true,
+          "Inputs": {
+            "SpawnCount": {
+              "Mode": 0,
+              "A": [
+                10.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SpawnTime": {
+              "Mode": 0,
+              "A": [
+                0.15,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "SpawnBurstInstantaneous",
+          "Enabled": true,
+          "Inputs": {
+            "SpawnCount": {
+              "Mode": 0,
+              "A": [
+                6.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SpawnTime": {
+              "Mode": 0,
+              "A": [
+                3.15,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "ParticleSpawn": [
+        {
+          "Module": "InitializeParticle",
+          "Enabled": true,
+          "Inputs": {
+            "Lifetime": {
+              "Mode": 1,
+              "A": [
+                2.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                3.4,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Color": {
+              "Mode": 1,
+              "A": [
+                0.6,
+                0.66,
+                0.7,
+                0.12
+              ],
+              "B": [
+                0.7,
+                0.76,
+                0.8,
+                0.2
+              ]
+            },
+            "SpriteSize": {
+              "Mode": 1,
+              "A": [
+                90.0,
+                90.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                160.0,
+                160.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SpriteRotation": {
+              "Mode": 1,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                360.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Mass": {
+              "Mode": 0,
+              "A": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "ShapeLocation",
+          "Enabled": true,
+          "Inputs": {
+            "Shape": {
+              "Mode": 0,
+              "A": [
+                2.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Radius": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "BoxSize": {
+              "Mode": 0,
+              "A": [
+                180.0,
+                40.0,
+                30.0,
+                0.0
+              ]
+            },
+            "Height": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SurfaceOnly": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Offset": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                80.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "AddVelocity",
+          "Enabled": true,
+          "Inputs": {
+            "Velocity": {
+              "Mode": 1,
+              "A": [
+                -30.0,
+                -90.0,
+                20.0,
+                0.0
+              ],
+              "B": [
+                30.0,
+                -30.0,
+                60.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "ParticleUpdate": [
+        {
+          "Module": "Drag",
+          "Enabled": true,
+          "Inputs": {
+            "Drag": {
+              "Mode": 0,
+              "A": [
+                0.5,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "SpriteRotationRate",
+          "Enabled": true,
+          "Inputs": {
+            "RotationRate": {
+              "Mode": 1,
+              "A": [
+                -10.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                10.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "ScaleSpriteSize",
+          "Enabled": true,
+          "Inputs": {
+            "Scale": {
+              "Mode": 2,
+              "A": [
+                0.6,
+                0.6,
+                0.0,
+                0.0
+              ],
+              "Curve": [
+                {
+                  "T": 0.0,
+                  "V": [
+                    0.6,
+                    0.6,
+                    0.0,
+                    0.0
+                  ]
+                },
+                {
+                  "T": 1.0,
+                  "V": [
+                    2.2,
+                    2.2,
+                    0.0,
+                    0.0
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "Module": "ScaleColor",
+          "Enabled": true,
+          "Inputs": {
+            "Scale": {
+              "Mode": 2,
+              "A": [
+                1.0,
+                1.0,
+                1.0,
+                0.0
+              ],
+              "Curve": [
+                {
+                  "T": 0.0,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0
+                  ]
+                },
+                {
+                  "T": 0.2,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "T": 1.0,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "Module": "SubUVAnimation",
+          "Enabled": true,
+          "Inputs": {
+            "Mode": {
+              "Mode": 0,
+              "A": [
+                2.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "FrameCount": {
+              "Mode": 0,
+              "A": [
+                16.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "FrameRate": {
+              "Mode": 0,
+              "A": [
+                30.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "Renderers": [
+        {
+          "Type": 0,
+          "Enabled": true,
+          "BlendMode": 0,
+          "Texture": "../../Textures/CampfireSmoke.png",
+          "SubImageColumns": 4,
+          "SubImageRows": 4,
+          "Alignment": 0,
+          "VelocityStretch": 0.02,
+          "Mesh": "primitive:sphere",
+          "RibbonWidth": 1.0
+        }
+      ]
+    },
+    {
+      "Name": "Splash",
+      "Enabled": true,
+      "SimTarget": "GPU",
+      "LocalSpace": false,
+      "Duration": 6.0,
+      "Loop": true,
+      "MaxParticles": 360,
+      "Seed": 951,
+      "FixedBounds": {
+        "Min": [
+          -400.0,
+          -400.0,
+          -200.0
+        ],
+        "Max": [
+          400.0,
+          300.0,
+          500.0
+        ]
+      },
+      "EmitterUpdate": [
+        {
+          "Module": "SpawnBurstInstantaneous",
+          "Enabled": true,
+          "Inputs": {
+            "SpawnCount": {
+              "Mode": 1,
+              "A": [
+                150.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                190.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SpawnTime": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "SpawnBurstInstantaneous",
+          "Enabled": true,
+          "Inputs": {
+            "SpawnCount": {
+              "Mode": 1,
+              "A": [
+                70.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                100.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SpawnTime": {
+              "Mode": 0,
+              "A": [
+                3.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "ParticleSpawn": [
+        {
+          "Module": "InitializeParticle",
+          "Enabled": true,
+          "Inputs": {
+            "Lifetime": {
+              "Mode": 1,
+              "A": [
+                0.8,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                1.5,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Color": {
+              "Mode": 1,
+              "A": [
+                0.7,
+                0.76,
+                0.8,
+                0.55
+              ],
+              "B": [
+                0.85,
+                0.9,
+                0.95,
+                0.8
+              ]
+            },
+            "SpriteSize": {
+              "Mode": 1,
+              "A": [
+                4.0,
+                4.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                9.0,
+                9.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SpriteRotation": {
+              "Mode": 1,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                360.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Mass": {
+              "Mode": 0,
+              "A": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "ShapeLocation",
+          "Enabled": true,
+          "Inputs": {
+            "Shape": {
+              "Mode": 0,
+              "A": [
+                2.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Radius": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "BoxSize": {
+              "Mode": 0,
+              "A": [
+                180.0,
+                40.0,
+                10.0,
+                0.0
+              ]
+            },
+            "Height": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SurfaceOnly": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Offset": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "AddVelocityInCone",
+          "Enabled": true,
+          "Inputs": {
+            "ConeAxis": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                -0.4,
+                1.0,
+                0.0
+              ]
+            },
+            "ConeAngle": {
+              "Mode": 0,
+              "A": [
+                30.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Speed": {
+              "Mode": 1,
+              "A": [
+                260.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                600.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "ParticleUpdate": [
+        {
+          "Module": "GravityForce",
+          "Enabled": true,
+          "Inputs": {
+            "Gravity": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                -980.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "Drag",
+          "Enabled": true,
+          "Inputs": {
+            "Drag": {
+              "Mode": 0,
+              "A": [
+                1.2,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "ScaleSpriteSize",
+          "Enabled": true,
+          "Inputs": {
+            "Scale": {
+              "Mode": 2,
+              "A": [
+                0.5,
+                0.5,
+                0.0,
+                0.0
+              ],
+              "Curve": [
+                {
+                  "T": 0.0,
+                  "V": [
+                    0.5,
+                    0.5,
+                    0.0,
+                    0.0
+                  ]
+                },
+                {
+                  "T": 1.0,
+                  "V": [
+                    3.0,
+                    3.0,
+                    0.0,
+                    0.0
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "Module": "ScaleColor",
+          "Enabled": true,
+          "Inputs": {
+            "Scale": {
+              "Mode": 2,
+              "A": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "Curve": [
+                {
+                  "T": 0.0,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "T": 0.6,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.7
+                  ]
+                },
+                {
+                  "T": 1.0,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "Module": "Collision",
+          "Enabled": true,
+          "Inputs": {
+            "PlaneHeight": {
+              "Mode": 0,
+              "A": [
+                -76.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Restitution": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Friction": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "KillOnCollide": {
+              "Mode": 0,
+              "A": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "SubUVAnimation",
+          "Enabled": true,
+          "Inputs": {
+            "Mode": {
+              "Mode": 0,
+              "A": [
+                2.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "FrameCount": {
+              "Mode": 0,
+              "A": [
+                16.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "FrameRate": {
+              "Mode": 0,
+              "A": [
+                30.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "Renderers": [
+        {
+          "Type": 0,
+          "Enabled": true,
+          "BlendMode": 0,
+          "Texture": "../../Textures/CampfireSmoke.png",
+          "SubImageColumns": 4,
+          "SubImageRows": 4,
+          "Alignment": 0,
+          "VelocityStretch": 0.02,
+          "Mesh": "primitive:sphere",
+          "RibbonWidth": 1.0
+        }
+      ]
+    }
+  ]
+}

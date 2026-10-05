@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Sprite": "HarborNpcs.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "GhostSailor0",
+      "Duration": 0.7
+    },
+    {
+      "Slice": "GhostSailor1",
+      "Duration": 0.45
+    },
+    {
+      "Slice": "GhostSailor2",
+      "Duration": 0.55
+    },
+    {
+      "Slice": "GhostSailor3",
+      "Duration": 0.12
+    }
+  ]
+}

@@ -13884,6 +13884,367 @@
         ]
       },
       {
+        "Type": "Canvas",
+        "Name": "RegionBanner",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0
+          ],
+          "AnchorMax": [
+            0.5,
+            0
+          ],
+          "Offsets": [
+            0,
+            96,
+            760,
+            120
+          ],
+          "Alignment": [
+            0.5,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 6
+        },
+        "Children": [
+          {
+            "Type": "Border",
+            "Name": "RegionBand",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                6,
+                760,
+                104
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 0
+            },
+            "Brush": {
+              "Color": [
+                0.02,
+                0.01,
+                0.05,
+                0.42
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "RegionOrnament",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                64,
+                384,
+                48
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/TitleOrnament.png"
+            },
+            "ImageSize": [
+              384,
+              48
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "RegionName",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                10,
+                0,
+                0
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": true,
+              "ZOrder": 2
+            },
+            "Text": "",
+            "FontSize": 44,
+            "TextColor": [
+              1.0,
+              0.85,
+              0.42,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 3,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "RegionSub",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                82,
+                0,
+                0
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": true,
+              "ZOrder": 2
+            },
+            "Text": "",
+            "FontSize": 19,
+            "TextColor": [
+              0.92,
+              0.88,
+              1.0,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "HorizontalBox",
+        "Name": "ClockRow",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0
+          ],
+          "AnchorMax": [
+            0.5,
+            0
+          ],
+          "Offsets": [
+            0,
+            14,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 3
+        },
+        "Children": [
+          {
+            "Type": "Image",
+            "Name": "ClockIcon",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                8,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/Icons/Sun.png"
+            },
+            "ImageSize": [
+              26,
+              26
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "ClockText",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "16:24",
+            "FontSize": 20,
+            "TextColor": [
+              0.96,
+              0.93,
+              0.86,
+              1
+            ],
+            "Justify": "Left",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          }
+        ]
+      },
+      {
         "Type": "VerticalBox",
         "Name": "TagTemplate",
         "Enabled": true,

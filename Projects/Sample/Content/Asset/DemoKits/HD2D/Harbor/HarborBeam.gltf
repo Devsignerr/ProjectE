@@ -1,0 +1,158 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ProjectE HD2DMeshKit"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "HarborBeam",
+   "mesh": 0
+  }
+ ],
+ "meshes": [
+  {
+   "name": "HarborBeam",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "HarborBeam",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     1.0,
+     0.92,
+     0.75,
+     0.1
+    ],
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0,
+    "baseColorTexture": {
+     "index": 0
+    }
+   },
+   "doubleSided": true,
+   "emissiveFactor": [
+    0.7,
+    0.6,
+    0.42
+   ],
+   "emissiveTexture": {
+    "index": 1
+   },
+   "alphaMode": "BLEND"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 108,
+   "type": "VEC3",
+   "min": [
+    -2.954423189163208,
+    0.0,
+    -3.0
+   ],
+   "max": [
+    2.954423189163208,
+    28.0,
+    3.0
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 108,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 108,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5125,
+   "count": 108,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 1296,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 1296,
+   "byteLength": 1296,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 2592,
+   "byteLength": 864,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 3456,
+   "byteLength": 432,
+   "target": 34963
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "HarborBeam.bin",
+   "byteLength": 3888
+  }
+ ],
+ "images": [
+  {
+   "uri": "HarborBeam.png"
+  },
+  {
+   "uri": "HarborBeamGlow.png"
+  }
+ ],
+ "textures": [
+  {
+   "source": 0,
+   "sampler": 0
+  },
+  {
+   "source": 1,
+   "sampler": 0
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "HarborProps.esprite",
+  "Fps": 7.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "FlagHarbor0"
+    },
+    {
+      "Slice": "FlagHarbor1"
+    },
+    {
+      "Slice": "FlagHarbor2"
+    },
+    {
+      "Slice": "FlagHarbor3"
+    }
+  ]
+}

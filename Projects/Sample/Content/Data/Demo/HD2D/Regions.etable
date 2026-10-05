@@ -1,0 +1,55 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/Region.estruct",
+  "Rows": [
+    {
+      "Name": "Village",
+      "Values": {
+        "DisplayName": "하르트 마을",
+        "Subtitle": "황혼의 들판 어귀",
+        "DayNight": true,
+        "NightLights": [
+          "LanternPost_#_Light",
+          "WindowPool_#",
+          "Tavern_DoorLight",
+          "Shop_DoorLight",
+          "Chapel_Glow",
+          "Well_Lantern",
+          "Mill_Lantern",
+          "Castle_GateLight-1",
+          "Castle_GateLight1",
+          "Night_#"
+        ],
+        "NightWindows": "NightWin_#",
+        "DayLights": []
+      }
+    },
+    {
+      "Name": "Cave",
+      "Values": {
+        "DisplayName": "고대 동굴 유적",
+        "Subtitle": "푸른 수정이 잠든 곳",
+        "DayNight": false,
+        "NightLights": [],
+        "NightWindows": "",
+        "DayLights": [
+          "Entrance_Shaft",
+          "Entrance_Glow"
+        ]
+      }
+    },
+    {
+      "Name": "Harbor",
+      "Values": {
+        "DisplayName": "갈매기 항구",
+        "Subtitle": "바닷바람이 머무는 항구 마을",
+        "DayNight": true,
+        "NightLights": [
+          "Night_#"
+        ],
+        "NightWindows": "NightWin_#",
+        "DayLights": []
+      }
+    }
+  ]
+}

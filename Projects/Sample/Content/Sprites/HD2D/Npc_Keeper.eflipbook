@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Sprite": "HarborNpcs.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Keeper0",
+      "Duration": 0.7
+    },
+    {
+      "Slice": "Keeper1",
+      "Duration": 0.45
+    },
+    {
+      "Slice": "Keeper2",
+      "Duration": 0.55
+    },
+    {
+      "Slice": "Keeper3",
+      "Duration": 0.12
+    }
+  ]
+}

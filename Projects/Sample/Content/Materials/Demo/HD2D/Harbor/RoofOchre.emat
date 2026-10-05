@@ -1,0 +1,41 @@
+{
+  "Name": "HD2DHarborRoofOchre",
+  "Parent": "../HD2DTriplanar.emat",
+  "Parameters": [
+    {
+      "Name": "Albedo",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/red_brick/red_brick_diff_2k.jpg"
+    },
+    {
+      "Name": "Arm",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/red_brick/red_brick_arm_2k.jpg"
+    },
+    {
+      "Name": "Normal",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/red_brick/red_brick_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.006666666666666667
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        0.72,
+        0.42,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

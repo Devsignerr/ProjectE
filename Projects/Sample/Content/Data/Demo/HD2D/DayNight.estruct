@@ -1,0 +1,67 @@
+{
+  "Version": 1,
+  "Name": "DayNight",
+  "Description": "HD2D 낮밤 설정 (DayNight.edata 하나 — 세 맵 공통 게임 시각, 저장·세션에 유지)",
+  "Fields": [
+    {
+      "Name": "DayMinutes",
+      "Type": "Float",
+      "Default": 10.0,
+      "Description": "실제 몇 분에 하루 (게임 시간 — 메뉴로 멈춘다)"
+    },
+    {
+      "Name": "StartHour",
+      "Type": "Float",
+      "Default": 9.0,
+      "Description": "새 게임 시작 시각 (첫인상은 낮)"
+    },
+    {
+      "Name": "SleepHour",
+      "Type": "Float",
+      "Default": 7.0,
+      "Description": "여관에서 자고 일어나는 시각"
+    },
+    {
+      "Name": "InnPrice",
+      "Type": "Int",
+      "Default": 20,
+      "Description": "여관 하룻밤 골드"
+    },
+    {
+      "Name": "NightStart",
+      "Type": "Float",
+      "Default": 19.2,
+      "Description": "밤 시작 (밤 적·밤 주민·밤 대사)"
+    },
+    {
+      "Name": "NightEnd",
+      "Type": "Float",
+      "Default": 5.4,
+      "Description": "밤 끝"
+    },
+    {
+      "Name": "LampOn",
+      "Type": "Float",
+      "Default": 17.4,
+      "Description": "등불이 켜지기 시작"
+    },
+    {
+      "Name": "LampFull",
+      "Type": "Float",
+      "Default": 18.6,
+      "Description": "등불 다 켜짐"
+    },
+    {
+      "Name": "LampDim",
+      "Type": "Float",
+      "Default": 5.6,
+      "Description": "새벽 등불이 줄기 시작"
+    },
+    {
+      "Name": "LampOff",
+      "Type": "Float",
+      "Default": 6.8,
+      "Description": "등불 다 꺼짐"
+    }
+  ]
+}

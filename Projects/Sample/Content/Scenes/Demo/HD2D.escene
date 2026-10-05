@@ -832,7 +832,7 @@
           ]
         }
       },
-      "Name": "House_West_GWin1_Glass",
+      "Name": "NightWin_0",
       "Parent": 14
     },
     {
@@ -1084,7 +1084,7 @@
           ]
         }
       },
-      "Name": "House_West_UWin0_Glass",
+      "Name": "NightWin_1",
       "Parent": 14
     },
     {
@@ -1644,7 +1644,7 @@
           ]
         }
       },
-      "Name": "House_West_UWin1_Glass",
+      "Name": "NightWin_2",
       "Parent": 14
     },
     {
@@ -1896,7 +1896,7 @@
           ]
         }
       },
-      "Name": "House_West_UWin2_Glass",
+      "Name": "NightWin_3",
       "Parent": 14
     },
     {
@@ -3348,7 +3348,7 @@
           ]
         }
       },
-      "Name": "House_West_Attic_Glass",
+      "Name": "NightWin_4",
       "Parent": 14
     },
     {
@@ -4048,7 +4048,7 @@
           ]
         }
       },
-      "Name": "Tavern_GWin0_Glass",
+      "Name": "NightWin_5",
       "Parent": 125
     },
     {
@@ -4552,7 +4552,7 @@
           ]
         }
       },
-      "Name": "Tavern_GWin2_Glass",
+      "Name": "NightWin_6",
       "Parent": 125
     },
     {
@@ -4804,7 +4804,7 @@
           ]
         }
       },
-      "Name": "Tavern_GWin3_Glass",
+      "Name": "NightWin_7",
       "Parent": 125
     },
     {
@@ -5056,7 +5056,7 @@
           ]
         }
       },
-      "Name": "Tavern_UWin0_Glass",
+      "Name": "NightWin_8",
       "Parent": 125
     },
     {
@@ -5252,7 +5252,7 @@
           ]
         }
       },
-      "Name": "Tavern_UWin1_Glass",
+      "Name": "NightWin_9",
       "Parent": 125
     },
     {
@@ -5868,7 +5868,7 @@
           ]
         }
       },
-      "Name": "Tavern_UWin2_Glass",
+      "Name": "NightWin_10",
       "Parent": 125
     },
     {
@@ -6428,7 +6428,7 @@
           ]
         }
       },
-      "Name": "Tavern_UWin3_Glass",
+      "Name": "NightWin_11",
       "Parent": 125
     },
     {
@@ -7044,7 +7044,7 @@
           ]
         }
       },
-      "Name": "Tavern_UWin4_Glass",
+      "Name": "NightWin_12",
       "Parent": 125
     },
     {
@@ -8748,7 +8748,7 @@
           ]
         }
       },
-      "Name": "Chapel_Tower_Win_Glass",
+      "Name": "NightWin_13",
       "Parent": 299
     },
     {
@@ -9523,7 +9523,7 @@
           ]
         }
       },
-      "Name": "Chapel_GWin1_Glass",
+      "Name": "NightWin_14",
       "Parent": 326
     },
     {
@@ -9995,7 +9995,7 @@
           ]
         }
       },
-      "Name": "Chapel_Attic_Glass",
+      "Name": "NightWin_15",
       "Parent": 326
     },
     {
@@ -10470,7 +10470,7 @@
           ]
         }
       },
-      "Name": "Cottage_Rose_GWin1_Glass",
+      "Name": "NightWin_16",
       "Parent": 360
     },
     {
@@ -12006,7 +12006,7 @@
           ]
         }
       },
-      "Name": "HomeB_GWin2_Glass",
+      "Name": "NightWin_17",
       "Parent": 405
     },
     {
@@ -12874,7 +12874,7 @@
           ]
         }
       },
-      "Name": "HomeB_UWin1_Glass",
+      "Name": "NightWin_18",
       "Parent": 405
     },
     {
@@ -13490,7 +13490,7 @@
           ]
         }
       },
-      "Name": "HomeB_UWin2_Glass",
+      "Name": "NightWin_19",
       "Parent": 405
     },
     {
@@ -14886,7 +14886,7 @@
           ]
         }
       },
-      "Name": "HomeB_Attic_Glass",
+      "Name": "NightWin_20",
       "Parent": 405
     },
     {
@@ -18617,7 +18617,7 @@
           ]
         }
       },
-      "Name": "Smithy_GWin1_Glass",
+      "Name": "NightWin_21",
       "Parent": 648
     },
     {
@@ -20135,7 +20135,7 @@
           ]
         }
       },
-      "Name": "Shop_GWin1_Glass",
+      "Name": "NightWin_22",
       "Parent": 698
     },
     {
@@ -20751,7 +20751,7 @@
           ]
         }
       },
-      "Name": "Shop_GWin2_Glass",
+      "Name": "NightWin_23",
       "Parent": 698
     },
     {
@@ -42324,7 +42324,7 @@
           ]
         }
       },
-      "Name": "Windmill_Win0_Glass",
+      "Name": "NightWin_24",
       "Parent": 1484
     },
     {
@@ -42576,7 +42576,7 @@
           ]
         }
       },
-      "Name": "Windmill_Win1_Glass",
+      "Name": "NightWin_25",
       "Parent": 1484
     },
     {
@@ -50844,20 +50844,20 @@
         },
         "TransformComponent": {
           "Position": [
-            586.025115196978,
-            1057.1791769940523,
-            -16.474710698869746
+            3190.659226117442,
+            1138.084452115167,
+            -9.486236295742883
           ],
           "Rotation": [
             0.0,
             0.0,
-            0.9603546179133982,
-            -0.27878129035573923
+            0.24709262788069147,
+            -0.9689918643863911
           ],
           "Scale": [
-            1.1779838266456064,
-            1.1779838266456064,
-            1.1779838266456064
+            1.18624750710101,
+            1.18624750710101,
+            1.18624750710101
           ]
         }
       },
@@ -51693,20 +51693,20 @@
         },
         "TransformComponent": {
           "Position": [
-            3046.177186936638,
-            1052.2685691890324,
-            -5.7388532594472945
+            2087.702027798938,
+            601.3201123039767,
+            1.194666139677219
           ],
           "Rotation": [
             0.0,
             0.0,
-            0.4357264487246855,
-            -0.9000791420101757
+            0.8814790137245633,
+            -0.4722231976122851
           ],
           "Scale": [
-            0.5654164414332521,
-            0.5654164414332521,
-            0.5654164414332521
+            0.592563539335653,
+            0.592563539335653,
+            0.592563539335653
           ]
         }
       },
@@ -52021,10 +52021,10 @@
             240.0
           ],
           "Rotation": [
-            0.0022733620434526327,
-            -0.035096186560412794,
-            0.12172348308138803,
-            0.9919407659636089
+            0.0015071546302811455,
+            0.02744595025743233,
+            0.12169324223731769,
+            0.9921870806925257
           ],
           "Scale": [
             3.6,
@@ -52049,10 +52049,10 @@
             260.0
           ],
           "Rotation": [
-            0.02187871816597248,
-            -0.01603201875915629,
-            -0.10417158296810869,
-            0.9941894071895147
+            -0.02836492351281345,
+            0.03766186574323701,
+            -0.10330825248137263,
+            0.9935312878576575
           ],
           "Scale": [
             3.8,
@@ -52077,10 +52077,10 @@
             300.0
           ],
           "Rotation": [
-            0.00413079374538958,
-            0.027175140177119198,
-            0.026036073300182892,
-            0.999283028569231
+            -0.03684668283335234,
+            -0.0351584118637047,
+            0.024851206031722275,
+            0.9983930216093105
           ],
           "Scale": [
             7.0,
@@ -52105,10 +52105,10 @@
             170.0
           ],
           "Rotation": [
-            -0.040407882344863935,
-            0.024293786480353387,
-            0.27639762745224306,
-            0.9598861216423654
+            -0.007582644606238821,
+            0.011193610867360614,
+            0.27566408974037576,
+            0.9611589442980468
           ],
           "Scale": [
             3.0,
@@ -52133,10 +52133,10 @@
             190.0
           ],
           "Rotation": [
-            -0.044902262569884666,
-            -0.02403286867406152,
-            -0.2428615508516068,
-            0.96872311583721
+            -0.026439558491231075,
+            -0.00217387732492711,
+            -0.24204420137297464,
+            0.9699024840600645
           ],
           "Scale": [
             3.2,
@@ -52161,10 +52161,10 @@
             520.0
           ],
           "Rotation": [
-            -0.004203528512366969,
-            0.012850049475396358,
-            5.402048695450462e-05,
-            0.9999085976519617
+            -0.020693123869267166,
+            -0.019509328345990742,
+            -0.00040387234392774544,
+            0.9995954269699063
           ],
           "Scale": [
             5.2,
@@ -52637,6 +52637,252 @@
     },
     {
       "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            220.0,
+            80.0,
+            140.0
+          ],
+          "IsTrigger": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/HD2D/HD2DTravel.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": \"Scenes/Demo/HD2DHarbor.escene\", \"SpawnName\": \"HartRoad\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            440.0,
+            1290.0,
+            60.31693901488442
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Harbor_Travel",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            420.0,
+            960.0,
+            -7.198701864171813
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Spawn_Harbor",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            630.0,
+            1050.0,
+            88.63015471015004
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.12,
+            2.1
+          ]
+        }
+      },
+      "Name": "HarborSign_Pole",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            630.0,
+            1050.0,
+            195.63015471015004
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.2,
+            0.2,
+            0.08
+          ]
+        }
+      },
+      "Name": "HarborSign_Cap",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/HD2D/HarborProps.esprite",
+          "Slice": "SignHarbor",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            630.0,
+            1059.0,
+            163.63015471015004
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "HarborSign_Board0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/HD2D/HarborProps.esprite",
+          "Slice": "SignVillage",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            630.0,
+            1059.0,
+            123.63015471015004
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "HarborSign_Board1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            12.0,
+            12.0,
+            90.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            630.0,
+            1050.0,
+            83.63015471015004
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "HarborSign_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
         "TransformComponent": {
           "Position": [
             -2780.0,
@@ -52685,7 +52931,7 @@
         }
       },
       "Name": "NoticeBoard_Post-1",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52713,7 +52959,7 @@
         }
       },
       "Name": "NoticeBoard_Post1",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52741,7 +52987,7 @@
         }
       },
       "Name": "NoticeBoard_Board",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52769,7 +53015,7 @@
         }
       },
       "Name": "NoticeBoard_Frame",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52797,7 +53043,7 @@
         }
       },
       "Name": "NoticeBoard_Sill",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52821,7 +53067,7 @@
         }
       },
       "Name": "NoticeBoard_Roof_GableScale",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52849,7 +53095,7 @@
         }
       },
       "Name": "NoticeBoard_Roof_Roof-1",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52877,7 +53123,7 @@
         }
       },
       "Name": "NoticeBoard_Roof_Roof1",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52905,7 +53151,7 @@
         }
       },
       "Name": "NoticeBoard_Paper0",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52933,7 +53179,7 @@
         }
       },
       "Name": "NoticeBoard_Pin0",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52961,7 +53207,7 @@
         }
       },
       "Name": "NoticeBoard_Paper1",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -52989,7 +53235,7 @@
         }
       },
       "Name": "NoticeBoard_Pin1",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -53017,7 +53263,7 @@
         }
       },
       "Name": "NoticeBoard_Paper2",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -53045,7 +53291,7 @@
         }
       },
       "Name": "NoticeBoard_Pin2",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -53073,7 +53319,7 @@
         }
       },
       "Name": "NoticeBoard_Paper3",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -53101,7 +53347,7 @@
         }
       },
       "Name": "NoticeBoard_Pin3",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -53129,7 +53375,7 @@
         }
       },
       "Name": "NoticeBoard_Paper4",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -53157,7 +53403,7 @@
         }
       },
       "Name": "NoticeBoard_Pin4",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -53185,7 +53431,7 @@
         }
       },
       "Name": "NoticeBoard_Paper5",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -53213,7 +53459,7 @@
         }
       },
       "Name": "NoticeBoard_Pin5",
-      "Parent": 1863
+      "Parent": 1870
     },
     {
       "Components": {
@@ -53296,7 +53542,7 @@
         }
       },
       "Name": "Inn_Sign_Arm",
-      "Parent": 1885
+      "Parent": 1892
     },
     {
       "Components": {
@@ -53324,7 +53570,7 @@
         }
       },
       "Name": "Inn_Sign_Brace",
-      "Parent": 1885
+      "Parent": 1892
     },
     {
       "Components": {
@@ -53352,7 +53598,7 @@
         }
       },
       "Name": "Inn_Sign_Chain-1",
-      "Parent": 1885
+      "Parent": 1892
     },
     {
       "Components": {
@@ -53380,7 +53626,7 @@
         }
       },
       "Name": "Inn_Sign_Chain1",
-      "Parent": 1885
+      "Parent": 1892
     },
     {
       "Components": {
@@ -53404,7 +53650,7 @@
         }
       },
       "Name": "Inn_Sign_BoardRoot",
-      "Parent": 1885
+      "Parent": 1892
     },
     {
       "Components": {
@@ -53432,7 +53678,7 @@
         }
       },
       "Name": "Inn_Sign_Board",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53460,7 +53706,7 @@
         }
       },
       "Name": "Inn_Sign_Edge",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53488,7 +53734,7 @@
         }
       },
       "Name": "Inn_Sign_Mark-1_0",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53516,7 +53762,7 @@
         }
       },
       "Name": "Inn_Sign_Mark-1_1",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53544,7 +53790,7 @@
         }
       },
       "Name": "Inn_Sign_Mark-1_2",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53572,7 +53818,7 @@
         }
       },
       "Name": "Inn_Sign_Mark-1_3",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53600,7 +53846,7 @@
         }
       },
       "Name": "Inn_Sign_Mark1_0",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53628,7 +53874,7 @@
         }
       },
       "Name": "Inn_Sign_Mark1_1",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53656,7 +53902,7 @@
         }
       },
       "Name": "Inn_Sign_Mark1_2",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53684,7 +53930,7 @@
         }
       },
       "Name": "Inn_Sign_Mark1_3",
-      "Parent": 1890
+      "Parent": 1897
     },
     {
       "Components": {
@@ -53736,7 +53982,7 @@
         }
       },
       "Name": "Inn_SignMug_Arm",
-      "Parent": 1901
+      "Parent": 1908
     },
     {
       "Components": {
@@ -53764,7 +54010,7 @@
         }
       },
       "Name": "Inn_SignMug_Brace",
-      "Parent": 1901
+      "Parent": 1908
     },
     {
       "Components": {
@@ -53792,7 +54038,7 @@
         }
       },
       "Name": "Inn_SignMug_Chain-1",
-      "Parent": 1901
+      "Parent": 1908
     },
     {
       "Components": {
@@ -53820,7 +54066,7 @@
         }
       },
       "Name": "Inn_SignMug_Chain1",
-      "Parent": 1901
+      "Parent": 1908
     },
     {
       "Components": {
@@ -53844,7 +54090,7 @@
         }
       },
       "Name": "Inn_SignMug_BoardRoot",
-      "Parent": 1901
+      "Parent": 1908
     },
     {
       "Components": {
@@ -53872,7 +54118,7 @@
         }
       },
       "Name": "Inn_SignMug_Board",
-      "Parent": 1906
+      "Parent": 1913
     },
     {
       "Components": {
@@ -53900,7 +54146,7 @@
         }
       },
       "Name": "Inn_SignMug_Edge",
-      "Parent": 1906
+      "Parent": 1913
     },
     {
       "Components": {
@@ -53928,7 +54174,7 @@
         }
       },
       "Name": "Inn_SignMug_Mark-1_0",
-      "Parent": 1906
+      "Parent": 1913
     },
     {
       "Components": {
@@ -53956,7 +54202,7 @@
         }
       },
       "Name": "Inn_SignMug_Mark-1_1",
-      "Parent": 1906
+      "Parent": 1913
     },
     {
       "Components": {
@@ -53984,7 +54230,7 @@
         }
       },
       "Name": "Inn_SignMug_Mark-1_2",
-      "Parent": 1906
+      "Parent": 1913
     },
     {
       "Components": {
@@ -54012,7 +54258,7 @@
         }
       },
       "Name": "Inn_SignMug_Mark1_0",
-      "Parent": 1906
+      "Parent": 1913
     },
     {
       "Components": {
@@ -54040,7 +54286,7 @@
         }
       },
       "Name": "Inn_SignMug_Mark1_1",
-      "Parent": 1906
+      "Parent": 1913
     },
     {
       "Components": {
@@ -54068,7 +54314,7 @@
         }
       },
       "Name": "Inn_SignMug_Mark1_2",
-      "Parent": 1906
+      "Parent": 1913
     },
     {
       "Components": {
@@ -54243,7 +54489,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/HD2D/HD2DGame.lua",
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"Map\": \"Village\", \"Enemies\": \"Slime,1000,-700,49;Slime,1700,-250,59;Slime,2300,450,47;Slime,900,650,42;Slime,3150,-250,42;Bat,2400,-300,50;Bat,3400,-1350,134;Bat,1900,-1500,41;Goblin,3400,750,67;Goblin,2800,950,65;EliteGoblin,3900,350,81;Archer,1250,-1350,72;Archer,3300,-1450,161;Mushroom,2200,-500,60;Mushroom,600,-950,54;Mushroom,3700,-300,48;Mushroom,4650,-800,88;Slime,5050,-600,60;Goblin,4800,-1100,120\", \"Npcs\": \"Elder,-2150,160,85;Merchant,-1380,330,85;Guard,-430,-170,83;Girl,1100,520,86;Smith,-3420,180,85;Farmer,4300,-130,84\", \"Chests\": \"-3250,-450,45,Spear*1+Potion*1;1450,-800,50,Ether*2+Gold*50;1300,1130,41,Staff*1+HiPotion*1\", \"Props\": \"SavePoint,-2650,420,45;Cat,3350,-850,64\", \"Boss\": \"4950,500,179\", \"Path\": \"-2400,-250;-1300,-100;-500,60;500,180;1500,120;2600,300;3700,250;4800,380;6500,420\", \"AutoPlay\": \"\", \"Title\": true, \"Companion\": \"-2600,0,89\"}"
+          "PropertyOverrides": "{\"Map\": \"Village\", \"Enemies\": \"Slime,1000,-700,49;Slime,1700,-250,59;Slime,2300,450,47;Slime,900,650,42;Slime,3150,-250,42;Bat,2400,-300,50;Bat,3400,-1350,134;Bat,1900,-1500,41;Goblin,3400,750,67;Goblin,2800,950,65;EliteGoblin,3900,350,81;Archer,1250,-1350,72;Archer,3300,-1450,161;Mushroom,2200,-500,60;Mushroom,600,-950,54;Mushroom,3700,-300,48;Mushroom,4650,-800,88;Slime,5050,-600,60;Goblin,4800,-1100,120\", \"Npcs\": \"Elder,-2150,160,85;Merchant,-1380,330,85;Guard,-430,-170,83;Girl,1100,520,86;Smith,-3420,180,85;Farmer,4300,-130,84;VillageInnkeeper,-3665,-1150,235\", \"Chests\": \"-3250,-450,45,Spear*1+Potion*1;1450,-800,50,Ether*2+Gold*50;1300,1130,41,Staff*1+HiPotion*1\", \"Props\": \"SavePoint,-2650,420,45;Cat,3350,-850,64\", \"Boss\": \"4950,500,179\", \"Path\": \"-2400,-250;-1300,-100;-500,60;500,180;1500,120;2600,300;3700,250;4800,380;6500,420\", \"AutoPlay\": \"\", \"Title\": true, \"Companion\": \"-2600,0,89\"}"
         },
         "TransformComponent": {
           "Position": [
@@ -54315,7 +54561,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/HD2D/HD2DMetaHud.lua",
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"Map\": \"Village\", \"MapImage\": \"UI/Demo/HD2D/Maps/Village.png\", \"MapBounds\": \"-4500,-2050,5500,1450\", \"MapTitle\": \"하르트 마을과 황혼의 들판\", \"Landmarks\": \"하르트 마을,-2450,-420,Place;연못,2500,-1050,Place;야영지,1300,1020,Place;방앗간,3950,-1180,Place;밀밭,4760,-760,Place;수호자의 언덕,4950,760,Place;동굴 유적,330,-1800,Exit\"}"
+          "PropertyOverrides": "{\"Map\": \"Village\", \"MapImage\": \"UI/Demo/HD2D/Maps/Village.png\", \"MapBounds\": \"-4500,-2050,5500,1450\", \"MapTitle\": \"하르트 마을과 황혼의 들판\", \"Landmarks\": \"하르트 마을,-2450,-420,Place;연못,2500,-1050,Place;야영지,1300,1020,Place;방앗간,3950,-1180,Place;밀밭,4760,-760,Place;수호자의 언덕,4950,760,Place;동굴 유적,330,-1800,Exit;갈매기 항구,440,1180,Exit\"}"
         },
         "TransformComponent": {
           "Position": [
@@ -54466,7 +54712,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 1926
+          "Root": 1933
         },
         "TransformComponent": {
           "Position": [

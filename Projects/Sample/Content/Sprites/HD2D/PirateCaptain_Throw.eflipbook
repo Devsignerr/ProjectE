@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Sprite": "PirateCaptain.esprite",
+  "Fps": 6.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Throw0"
+    }
+  ]
+}

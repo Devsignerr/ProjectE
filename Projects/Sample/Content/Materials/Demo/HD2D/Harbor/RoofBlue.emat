@@ -1,0 +1,41 @@
+{
+  "Name": "HD2DHarborRoofBlue",
+  "Parent": "../HD2DTriplanar.emat",
+  "Parameters": [
+    {
+      "Name": "Albedo",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/rough_wood/rough_wood_diff_2k.jpg"
+    },
+    {
+      "Name": "Arm",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/rough_wood/rough_wood_arm_2k.jpg"
+    },
+    {
+      "Name": "Normal",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/rough_wood/rough_wood_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.00625
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.34,
+        0.46,
+        0.72,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

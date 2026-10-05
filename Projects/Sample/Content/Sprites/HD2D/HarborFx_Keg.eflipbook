@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "HarborFx.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Keg0"
+    },
+    {
+      "Slice": "Keg1"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Sprite": "HarborNpcs.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Innkeeper0",
+      "Duration": 0.7
+    },
+    {
+      "Slice": "Innkeeper1",
+      "Duration": 0.45
+    },
+    {
+      "Slice": "Innkeeper2",
+      "Duration": 0.55
+    },
+    {
+      "Slice": "Innkeeper3",
+      "Duration": 0.12
+    }
+  ]
+}

@@ -155,6 +155,19 @@ function AutoCombat:PotionsUsed()
 	return N
 end
 
+-- 보스전: 피하다가 싸움터 밖(벼랑 위·물가)으로 밀려나지 않게 — 보스 자리에서 Radius 넘게 벗어나면 이동·대시 방향을 안쪽으로 꺾는다
+function AutoCombat:LeashToArena(Center, Radius)
+	if not Center then return end
+	local Out = Flat(self:Pos() - Center)
+	local L = Out:Length()
+	if L <= Radius then return end
+	local Home = Out * (-1.0 / L)
+	local M = self.In.Move or Vector3(0, 0, 0)
+	if M:Dot(Home) < 0.3 then
+		self.In.Move = (M + Home * (1.0 + (L - Radius) / 200.0)):Normalized()
+	end
+end
+
 -- 보스전 기록: 가장 낮았던 HP 비율 (난이도 확인 — 자동 조종도 회복약·회피를 써야 이기는가)
 function AutoCombat:TrackLowHp()
 	local P = self.Player

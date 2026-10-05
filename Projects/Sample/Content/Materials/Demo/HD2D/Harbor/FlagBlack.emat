@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DHarborFlagBlack",
+  "BaseColorFactor": [
+    0.04,
+    0.035,
+    0.04,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.95,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

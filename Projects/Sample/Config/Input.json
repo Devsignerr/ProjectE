@@ -132,6 +132,20 @@
 			]
 		},
 		{
+			"Name": "Pause",
+			"Type": "Button",
+			"Description": "일시정지 메뉴 열기/닫기·뒤로",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "Escape"
+				},
+				{
+					"Source": "Gamepad_Start"
+				}
+			]
+		},
+		{
 			"Name": "UsePotion1",
 			"Type": "Button",
 			"Description": "체력 물약 사용",

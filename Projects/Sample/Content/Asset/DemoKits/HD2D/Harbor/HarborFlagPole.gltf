@@ -1,0 +1,166 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ProjectE HD2DMeshKit"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "HarborFlagPole",
+   "mesh": 0
+  }
+ ],
+ "meshes": [
+  {
+   "name": "HarborFlagPole",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "HarborPole",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.6,
+     0.5,
+     0.4,
+     1.0
+    ],
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0,
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   },
+   "doubleSided": false,
+   "normalTexture": {
+    "index": 2,
+    "scale": 1.0
+   },
+   "occlusionTexture": {
+    "index": 1
+   }
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 192,
+   "type": "VEC3",
+   "min": [
+    -0.5,
+    -0.20000000298023224,
+    -0.09000000357627869
+   ],
+   "max": [
+    0.5,
+    4.5,
+    0.09000000357627869
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 192,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 192,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5125,
+   "count": 192,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 2304,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 2304,
+   "byteLength": 2304,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 4608,
+   "byteLength": 1536,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 6144,
+   "byteLength": 768,
+   "target": 34963
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "HarborFlagPole.bin",
+   "byteLength": 6912
+  }
+ ],
+ "images": [
+  {
+   "uri": "../../../../Asset/PolyHaven/dark_wooden_planks/dark_wooden_planks_diff_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/dark_wooden_planks/dark_wooden_planks_arm_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/dark_wooden_planks/dark_wooden_planks_nor_gl_2k.jpg"
+  }
+ ],
+ "textures": [
+  {
+   "source": 0,
+   "sampler": 0
+  },
+  {
+   "source": 1,
+   "sampler": 0
+  },
+  {
+   "source": 2,
+   "sampler": 0
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ]
+}

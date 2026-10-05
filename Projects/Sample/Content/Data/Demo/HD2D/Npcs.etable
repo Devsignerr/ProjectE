@@ -10,7 +10,12 @@
         "Role": "Elder",
         "Lines": [],
         "Portrait": "UI/Demo/HD2D/Portraits/Elder.png",
-        "SubQuest": ""
+        "SubQuest": "",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
       }
     },
     {
@@ -24,7 +29,12 @@
           "회복약부터 활과 갑옷까지, 필요한 건 다 있답니다."
         ],
         "Portrait": "UI/Demo/HD2D/Portraits/Merchant.png",
-        "SubQuest": ""
+        "SubQuest": "",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
       }
     },
     {
@@ -39,7 +49,12 @@
           "Q로 힘을 모아(BP) 공격하면 몇 번이고 연달아 몰아친다더군. 위험할 때를 위해 아껴 두게."
         ],
         "Portrait": "UI/Demo/HD2D/Portraits/Guard.png",
-        "SubQuest": ""
+        "SubQuest": "",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
       }
     },
     {
@@ -50,7 +65,12 @@
         "Role": "Quest",
         "Lines": [],
         "Portrait": "UI/Demo/HD2D/Portraits/Girl.png",
-        "SubQuest": "Cat"
+        "SubQuest": "Cat",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
       }
     },
     {
@@ -61,7 +81,12 @@
         "Role": "Quest",
         "Lines": [],
         "Portrait": "UI/Demo/HD2D/Portraits/Smith.png",
-        "SubQuest": "Smith"
+        "SubQuest": "Smith",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
       }
     },
     {
@@ -72,7 +97,174 @@
         "Role": "Quest",
         "Lines": [],
         "Portrait": "UI/Demo/HD2D/Portraits/Farmer.png",
-        "SubQuest": "Scarecrow"
+        "SubQuest": "Scarecrow",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
+      }
+    },
+    {
+      "Name": "Keeper",
+      "Values": {
+        "DisplayName": "등대지기 노아",
+        "Flipbook": "Sprites/HD2D/Npc_Keeper.eflipbook",
+        "Role": "Quest",
+        "Lines": [],
+        "Portrait": "UI/Demo/HD2D/Portraits/Keeper.png",
+        "SubQuest": "Lighthouse",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
+      }
+    },
+    {
+      "Name": "HarborMaster",
+      "Values": {
+        "DisplayName": "항만장 마르타",
+        "Flipbook": "Sprites/HD2D/Npc_HarborMaster.eflipbook",
+        "Role": "Quest",
+        "Lines": [],
+        "Portrait": "UI/Demo/HD2D/Portraits/HarborMaster.png",
+        "SubQuest": "Captain",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
+      }
+    },
+    {
+      "Name": "Fisher",
+      "Values": {
+        "DisplayName": "어부 토마",
+        "Flipbook": "Sprites/HD2D/Npc_Fisher.eflipbook",
+        "Role": "Quest",
+        "Lines": [],
+        "Portrait": "UI/Demo/HD2D/Portraits/Fisher.png",
+        "SubQuest": "Pirates",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
+      }
+    },
+    {
+      "Name": "Fishmonger",
+      "Values": {
+        "DisplayName": "생선 장수 베라",
+        "Flipbook": "Sprites/HD2D/Npc_Fishmonger.eflipbook",
+        "Role": "Shop",
+        "Lines": [
+          "어서 와요! 오늘 새벽에 잡은 고등어가 아주 싱싱해요.",
+          "구운 생선 하나면 기운이 번쩍 난답니다. 바다 사람 옷이랑 진주 반지도 있어요!"
+        ],
+        "Portrait": "UI/Demo/HD2D/Portraits/Fishmonger.png",
+        "SubQuest": "",
+        "ShopStock": [
+          "GrilledFish",
+          "Potion",
+          "Ether",
+          "HiPotion",
+          "SailorCoat",
+          "PearlRing"
+        ],
+        "ShopTitle": "베라의 어시장",
+        "ShopLines": [
+          "뭘 드릴까요? 전부 오늘 들어온 거예요!",
+          "고마워요! 바다의 축복이 함께하길!",
+          "어머, 골드가 조금 모자라네요…",
+          "그건 이미 가지고 있잖아요?",
+          "또 와요! 절벽 길에선 몸조심하고요."
+        ],
+        "NightLines": [
+          "오늘 장사는 끝났어요. 내일 아침 일찍 와요!",
+          "밤바다엔 이상한 게 떠다닌다니까, 절벽 길엔 가지 말아요."
+        ],
+        "NightOnly": false
+      }
+    },
+    {
+      "Name": "Innkeeper",
+      "Values": {
+        "DisplayName": "여관 주인 한나",
+        "Flipbook": "Sprites/HD2D/Npc_Innkeeper.eflipbook",
+        "Role": "Inn",
+        "Lines": [
+          "갈매기 여관에 어서 오세요.",
+          "하룻밤 묵으면 20골드예요. 푹 자고 나면 아침이랍니다."
+        ],
+        "Portrait": "UI/Demo/HD2D/Portraits/Innkeeper.png",
+        "SubQuest": "",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
+      }
+    },
+    {
+      "Name": "Sailor",
+      "Values": {
+        "DisplayName": "선원 잭",
+        "Flipbook": "Sprites/HD2D/Npc_Sailor.eflipbook",
+        "Role": "Talk",
+        "Lines": [
+          "저 배? 내가 타는 '바다제비호'야. 해적 놈들 때문에 벌써 보름째 출항을 못 하고 있지.",
+          "동쪽 문 밖 절벽 길엔 해적 졸개랑 사나운 갈매기가 들끓어. 바위 게 집게도 조심하고."
+        ],
+        "Portrait": "UI/Demo/HD2D/Portraits/Sailor.png",
+        "SubQuest": "",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [
+          "(딸꾹) 이 시간엔 노래나 한 곡… ♪ 바다 건너 저 멀리~ 갈매기 우는 항구로~",
+          "밤엔 절벽 길에 망령이 나온다던데… 난 절대 안 가."
+        ],
+        "NightOnly": false
+      }
+    },
+    {
+      "Name": "GhostSailor",
+      "Values": {
+        "DisplayName": "유령 선원",
+        "Flipbook": "Sprites/HD2D/Npc_GhostSailor.eflipbook",
+        "Role": "Talk",
+        "Lines": [
+          "…추워. 백 년 전 그 폭풍이 치던 밤처럼.",
+          "등대 불이 다시 켜진다면… 나도 집으로 돌아가는 길을 찾을 수 있을까."
+        ],
+        "Portrait": "UI/Demo/HD2D/Portraits/GhostSailor.png",
+        "SubQuest": "",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": true
+      }
+    },
+    {
+      "Name": "VillageInnkeeper",
+      "Values": {
+        "DisplayName": "여관 주인 로렌",
+        "Flipbook": "Sprites/HD2D/Npc_VillageInnkeeper.eflipbook",
+        "Role": "Inn",
+        "Lines": [
+          "어서 오게. 하르트 선술집 겸 여관일세.",
+          "하룻밤 묵으면 20골드. 침대는 푹신하고 아침밥도 따뜻하다네."
+        ],
+        "Portrait": "UI/Demo/HD2D/Portraits/VillageInnkeeper.png",
+        "SubQuest": "",
+        "ShopStock": [],
+        "ShopTitle": "",
+        "ShopLines": [],
+        "NightLines": [],
+        "NightOnly": false
       }
     }
   ]

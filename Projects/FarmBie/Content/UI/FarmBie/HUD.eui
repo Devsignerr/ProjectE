@@ -4372,7 +4372,7 @@
                   "AutoSize": true,
                   "ZOrder": 0
                 },
-                "Text": "E  처음부터 다시",
+                "Text": "E  처음부터 다시     Esc  타이틀로",
                 "FontSize": 20,
                 "TextColor": [
                   1.0,
@@ -13618,6 +13618,2048 @@
                   0,
                   0,
                   0.5
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "OptWindow",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0.5
+          ],
+          "AnchorMax": [
+            0.5,
+            0.5
+          ],
+          "Offsets": [
+            0,
+            -10,
+            640,
+            470
+          ],
+          "Alignment": [
+            0.5,
+            0.5
+          ],
+          "AutoSize": false,
+          "ZOrder": 8
+        },
+        "Brush": {
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Texture": "UI/FarmBie/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "TextureSize": [
+            48,
+            48
+          ]
+        },
+        "ContentPadding": [
+          28,
+          22,
+          28,
+          22
+        ],
+        "Children": [
+          {
+            "Type": "Canvas",
+            "Name": "OptCanvas",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "OptTitle",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "AnchorMin": [
+                    0.5,
+                    0
+                  ],
+                  "AnchorMax": [
+                    0.5,
+                    0
+                  ],
+                  "Offsets": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "Alignment": [
+                    0.5,
+                    0
+                  ],
+                  "AutoSize": true,
+                  "ZOrder": 0
+                },
+                "Text": "",
+                "FontSize": 30,
+                "TextColor": [
+                  1.0,
+                  0.86,
+                  0.45,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "OptSub",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "AnchorMin": [
+                    0.5,
+                    0
+                  ],
+                  "AnchorMax": [
+                    0.5,
+                    0
+                  ],
+                  "Offsets": [
+                    0,
+                    44,
+                    0,
+                    0
+                  ],
+                  "Alignment": [
+                    0.5,
+                    0
+                  ],
+                  "AutoSize": true,
+                  "ZOrder": 0
+                },
+                "Text": "",
+                "FontSize": 17,
+                "TextColor": [
+                  0.78,
+                  0.74,
+                  0.68,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              },
+              {
+                "Type": "VerticalBox",
+                "Name": "OptList",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "AnchorMin": [
+                    0,
+                    0
+                  ],
+                  "AnchorMax": [
+                    0,
+                    0
+                  ],
+                  "Offsets": [
+                    0,
+                    80,
+                    584,
+                    346
+                  ],
+                  "Alignment": [
+                    0,
+                    0
+                  ],
+                  "AutoSize": false,
+                  "ZOrder": 0
+                },
+                "Children": [
+                  {
+                    "Type": "Overlay",
+                    "Name": "OptRow0",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        3
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "OptSel0",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/FarmBie/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "OptRowBox0",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            10,
+                            4,
+                            14,
+                            4
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "OptIcon0",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ]
+                            },
+                            "ImageSize": [
+                              36,
+                              36
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptName0",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [
+                              0.98,
+                              0.95,
+                              0.88,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptPrice0",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                12,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.86,
+                              0.45,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptStock0",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                14,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 17,
+                            "TextColor": [
+                              0.78,
+                              0.74,
+                              0.68,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Overlay",
+                    "Name": "OptRow1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        3
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "OptSel1",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/FarmBie/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "OptRowBox1",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            10,
+                            4,
+                            14,
+                            4
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "OptIcon1",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ]
+                            },
+                            "ImageSize": [
+                              36,
+                              36
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptName1",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [
+                              0.98,
+                              0.95,
+                              0.88,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptPrice1",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                12,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.86,
+                              0.45,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptStock1",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                14,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 17,
+                            "TextColor": [
+                              0.78,
+                              0.74,
+                              0.68,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Overlay",
+                    "Name": "OptRow2",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        3
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "OptSel2",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/FarmBie/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "OptRowBox2",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            10,
+                            4,
+                            14,
+                            4
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "OptIcon2",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ]
+                            },
+                            "ImageSize": [
+                              36,
+                              36
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptName2",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [
+                              0.98,
+                              0.95,
+                              0.88,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptPrice2",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                12,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.86,
+                              0.45,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptStock2",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                14,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 17,
+                            "TextColor": [
+                              0.78,
+                              0.74,
+                              0.68,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Overlay",
+                    "Name": "OptRow3",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        3
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "OptSel3",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/FarmBie/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "OptRowBox3",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            10,
+                            4,
+                            14,
+                            4
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "OptIcon3",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ]
+                            },
+                            "ImageSize": [
+                              36,
+                              36
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptName3",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [
+                              0.98,
+                              0.95,
+                              0.88,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptPrice3",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                12,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.86,
+                              0.45,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptStock3",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                14,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 17,
+                            "TextColor": [
+                              0.78,
+                              0.74,
+                              0.68,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Overlay",
+                    "Name": "OptRow4",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        3
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "OptSel4",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/FarmBie/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "OptRowBox4",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            10,
+                            4,
+                            14,
+                            4
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "OptIcon4",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ]
+                            },
+                            "ImageSize": [
+                              36,
+                              36
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptName4",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [
+                              0.98,
+                              0.95,
+                              0.88,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptPrice4",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                12,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.86,
+                              0.45,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptStock4",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                14,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 17,
+                            "TextColor": [
+                              0.78,
+                              0.74,
+                              0.68,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Overlay",
+                    "Name": "OptRow5",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        3
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "OptSel5",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/FarmBie/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "OptRowBox5",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            10,
+                            4,
+                            14,
+                            4
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "OptIcon5",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ]
+                            },
+                            "ImageSize": [
+                              36,
+                              36
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptName5",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [
+                              0.98,
+                              0.95,
+                              0.88,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptPrice5",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                12,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.86,
+                              0.45,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptStock5",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                14,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 17,
+                            "TextColor": [
+                              0.78,
+                              0.74,
+                              0.68,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Overlay",
+                    "Name": "OptRow6",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        3
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "OptSel6",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/FarmBie/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "OptRowBox6",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            10,
+                            4,
+                            14,
+                            4
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "OptIcon6",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ]
+                            },
+                            "ImageSize": [
+                              36,
+                              36
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptName6",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [
+                              0.98,
+                              0.95,
+                              0.88,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptPrice6",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                12,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.86,
+                              0.45,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "OptStock6",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                14,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 17,
+                            "TextColor": [
+                              0.78,
+                              0.74,
+                              0.68,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.06,
+                              0.03,
+                              0.02,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.5
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
                 ]
               }
             ]

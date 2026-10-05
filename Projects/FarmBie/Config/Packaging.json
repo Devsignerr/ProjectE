@@ -3,5 +3,5 @@
   "UsePak": true,
   "IncludeSourceAssets": false,
   "AdditionalDirectories": "",
-  "AdditionalAssets": "Scripts/FarmBie;Data/FarmBie;Sprites/FarmBie"
+  "AdditionalAssets": "Scripts/FarmBie;Data/FarmBie;Sprites/FarmBie;Audio/FarmBie;UI/FarmBie"
 }

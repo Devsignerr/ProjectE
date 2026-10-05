@@ -118,6 +118,7 @@ function FarmPlayer:OnUpdate(Dt)
 	local In = self:GatherInput()
 	if self.GM.Phase == "GameOver" then
 		if In.Interact or In.UseTool then self.GM:RestartGame() end
+		if In.Pause then self.GM:GoToTitle() end
 		return
 	end
 	if not self.GM.bReady or self.GM.Phase == "Sleep" or self.GM.TravelTarget or self.bDown then
@@ -128,6 +129,10 @@ function FarmPlayer:OnUpdate(Dt)
 	if GM:IsMenuOpen() then
 		GM:MenuInput(In)
 		self:UpdateAnimation(Vector3(0, 0, 0))
+		return
+	end
+	if In.Pause then
+		GM:OpenPause()
 		return
 	end
 	if In.Inventory then
@@ -196,6 +201,7 @@ function FarmPlayer:OnUpdate(Dt)
 		self.Facing = FacingFromMove(Dir, self.Facing)
 		E:AddKnockback(Dir * self.Properties.DodgeSpeed, self.Properties.DodgeTime)
 		self.DodgeTimer, self.DodgeCooldown = self.Properties.DodgeTime, self.Properties.DodgeCooldown
+		GM:Sfx("Dodge", 0.45, 1.1)
 		self.Stats.Dodges = self.Stats.Dodges + 1
 	elseif Move:Length() > 0.05 then
 		self.Facing = FacingFromMove(Move, self.Facing)
@@ -284,6 +290,7 @@ end
 
 -- 맞음: 붉게 번쩍
 function FarmPlayer:OnHurt()
+	if (self.HurtTimer or 0) <= 0 then self.GM:Sfx("Hurt", 0.6) end
 	self.HurtTimer = 0.18
 end
 

@@ -9,6 +9,7 @@
 --   Defense: 진입로 예고·생성·덫/지뢰/포탑·검/활·작물 먹힘·밤 정리 → 침대 / DefenseLoss: 플레이어 피해·쓰러짐·부활·크리스탈 발견·시간 초과 패배·부재 정산 / GameOver
 --   Boss: 10일차 중간 보스 등장·크리스탈 사냥·어그로·처치 보상 → 20일차 패배 쓰러짐 / SeasonBoss: 30일차 중간+계절 보스·오라·소환·계절 보스 처치(다음 계절 씨앗)·중간 보스 패배
 --   Tower(씬 3번): 탑 문 → 1층(적 처치·보물상자·계단) → 5층 수호자·체크포인트·크리스탈 조각 → 쓰러짐(전리품 절반) → 집 → 다시 들어가면 5층
+--   Title(타이틀 씬에서 시작 — FarmTitle.lua가 앞뒤 단계): RunTitleFarm = 고른 슬롯 새 게임·환경음·저장·일시정지(계속하기/타이틀로 확인)
 --   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
@@ -1232,6 +1233,36 @@ function AutoPilot:RunTowerShot()
 	self:Wait(2.5)
 	P.Facing = "Up"
 	while true do self:Yield() end
+end
+
+function AutoPilot:RunTitleFarm()
+	local GM = self.GM
+	local Hud = GM:Hud()
+	self:Wait(1.0)
+	self:Expect(GM.Properties.Slot == "TitleTest1" and GM.Year == 1 and GM.Season == 0 and GM.Day == 1, "슬롯 TitleTest1 새 게임 " .. tostring(GM.Properties.Slot))
+	self:Expect(GM.AmbientDay ~= nil and GM.AmbientNight ~= nil and GM.Settings ~= nil, "환경음·설정")
+	self:Wait(3.5)
+	self:Expect(GM.AmbientDay:GetComponent("AudioSourceComponent").Volume > 0.2 and GM.AmbientNight:GetComponent("AudioSourceComponent").Volume < 0.01,
+		"낮 환경음 음량")
+	GM:SaveGame()
+	local Sounds = GM.Report.Sounds or 0
+	self:Press("Pause")
+	self:Expect(GM.Menu == "Pause" and Game.GetTimeScale() == 0 and Hud.Cache["OptWindow.Visibility"] == "HitTestInvisible"
+		and Hud.Cache["OptName0.Text"] == "계속하기", "일시정지 창")
+	self:Expect((GM.Report.Sounds or 0) > Sounds and GM.LastSound == "Open", "창 소리")
+	self:Press("Confirm")
+	self:Expect(GM.Menu == nil and Game.GetTimeScale() == 1 and Hud.Cache["OptWindow.Visibility"] == "Collapsed", "계속하기")
+	self:Press("Pause")
+	self:Press("MenuDown")
+	self:Press("MenuDown")
+	self:Press("Confirm")
+	self:Expect(Hud.Cache["OptTitle.Text"] == "타이틀로 갈까?" and Hud.Cache["OptName1.Text"] == "예", "타이틀로 확인")
+	self:HandOff("Back")
+	self:Press("MenuDown")
+	self:Press("Confirm")
+	self:Wait(5)
+	self:Expect(false, "타이틀로 가지 못함")
+	self:Finish()
 end
 
 function AutoPilot:RunNightShot()

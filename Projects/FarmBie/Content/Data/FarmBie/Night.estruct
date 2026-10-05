@@ -34,6 +34,18 @@
       "Description": "계절당 체력 배율 증가"
     },
     {
+      "Name": "CountPerYear",
+      "Type": "Float",
+      "Default": 0.25,
+      "Description": "해마다 수 배율 증가"
+    },
+    {
+      "Name": "HpPerYear",
+      "Type": "Float",
+      "Default": 0.35,
+      "Description": "해마다 체력 배율 증가 (보스 포함)"
+    },
+    {
       "Name": "SpawnWindow",
       "Type": "Float",
       "Default": 0.55,

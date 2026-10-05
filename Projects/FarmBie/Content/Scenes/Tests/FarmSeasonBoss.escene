@@ -11359,6 +11359,74 @@
     },
     {
       "Components": {
+        "AudioSourceComponent": {
+          "ClipAsset": "Audio/FarmBie/AmbientDay.wav",
+          "Volume": 0.0,
+          "Pitch": 1.0,
+          "Loop": true,
+          "PlayOnStart": true,
+          "Spatial": false,
+          "MinDistance": 100.0,
+          "MaxDistance": 5000.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "AmbientDay",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AudioSourceComponent": {
+          "ClipAsset": "Audio/FarmBie/AmbientNight.wav",
+          "Volume": 0.0,
+          "Pitch": 1.0,
+          "Loop": true,
+          "PlayOnStart": true,
+          "Spatial": false,
+          "MinDistance": 100.0,
+          "MaxDistance": 5000.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "AmbientNight",
+      "Parent": -1
+    },
+    {
+      "Components": {
         "BoxColliderComponent": {
           "HalfExtents": [
             60.0,
@@ -11560,7 +11628,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 402
+          "Root": 404
         },
         "TransformComponent": {
           "Position": [

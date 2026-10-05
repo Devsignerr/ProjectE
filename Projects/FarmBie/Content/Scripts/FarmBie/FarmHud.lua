@@ -14,7 +14,8 @@ end
 
 function Hud:OnStart()
 	self:Init()
-	self.GM = Scene.Find("FarmGame"):GetScript()
+	local Game_ = Scene.Find("FarmGame")
+	self.GM = Game_ and Game_:GetScript() -- 타이틀 씬에는 없다 (창 도우미만 씀)
 end
 
 function Hud:W(Name)

@@ -18,6 +18,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "Tools", "DemoMap"))
 sys.path.insert(0, HERE)
 import FarmBieArt  # noqa: E402
+import FarmBieAudio  # noqa: E402
 import FarmBieBuild  # noqa: E402
 import FarmBieCrops  # noqa: E402
 import FarmBieData  # noqa: E402
@@ -579,6 +580,14 @@ def AddGame(B, AutoPlay, Map="Farm", Bounds=None):
 													 Color=(1, 1, 1, 0.85))}, (0, 0, 3.0), FLAT)
 	B.S.Add("Hud", {"UIComponent": {"Asset": f"{FarmBieUI.UI_DIR}/HUD.eui", "ZOrder": 0, "Visible": True, "ReceiveInput": False, "KeyboardFocus": False},
 					"ScriptComponent": Script(f"{SCRIPTS}/FarmHud.lua", 2)})
+	AddAmbience(B)
+
+
+def AddAmbience(B):
+	# 반복 환경음 둘 (비공간, 음량 0으로 시작 — FarmSound.lua가 설정 음량·낮밤으로 섞는다)
+	for Name in ("AmbientDay", "AmbientNight"):
+		B.S.Add(Name, {"AudioSourceComponent": {"ClipAsset": f"Audio/FarmBie/{Name}.wav", "Volume": 0.0, "Pitch": 1.0, "Loop": True,
+												"PlayOnStart": True, "Spatial": False, "MinDistance": 100.0, "MaxDistance": 5000.0}}, (0.0, 0.0, 0.0))
 
 
 def AddPlayer(B, Start):
@@ -607,6 +616,44 @@ def BuildScene(Height, AutoPlay=""):
 	AddCamera(B, PLAYER_START)
 	AddPlayer(B, PLAYER_START)
 	return B.S
+
+
+# ================================================================ 타이틀 (F10 — FarmTitle.lua)
+def BuildTitleScene(Height, AutoPlay=""):
+	S = BuildScene(Height)
+	Drop = {"FarmGame", "Hud", "Player", "TileCursor", "Merchant", "AmbientNight"}
+	Keep = []
+	Removed = set()
+	for I, E in enumerate(S.Entities):
+		Parent = E.get("Parent", -1)
+		if E["Name"] in Drop or Parent in Removed or "FarmTravel" in json.dumps(E.get("Components", {})):
+			Removed.add(I)
+		else:
+			Keep.append(I)
+	Remap = {Old: New for New, Old in enumerate(Keep)}
+	Entities = []
+	for Old in Keep:
+		E = dict(S.Entities[Old])
+		if E.get("Parent", -1) != -1:
+			E["Parent"] = Remap[E["Parent"]]
+		Comps = E.get("Components", {})
+		if "PrefabLinkComponent" in Comps and "Root" in Comps["PrefabLinkComponent"]:
+			Comps["PrefabLinkComponent"] = dict(Comps["PrefabLinkComponent"], Root=Remap[Comps["PrefabLinkComponent"]["Root"]])
+		if E["Name"] == "AmbientDay":
+			Comps["AudioSourceComponent"]["Volume"] = 0.45
+		if E["Name"] == "Camera":
+			# 더 높이·멀리 (농장 전체가 보이게) — 초점은 집 앞
+			T = E["Components"]["TransformComponent"]
+			Focus = (SLEEP_SPOT[0] + 900.0, SLEEP_SPOT[1] + 600.0, 0.0)
+			Back = [T["Position"][I] - P for I, P in enumerate((PLAYER_START[0], PLAYER_START[1], Height(*PLAYER_START) + 70.0))]
+			T["Position"] = [Focus[I] + Back[I] * 1.9 for I in range(3)]
+			E["Components"]["DepthOfFieldComponent"]["FocusDistance"] = CAMERA_DISTANCE * 1.9
+		Entities.append(E)
+	S.Entities = Entities
+	S.Add("Hud", {"UIComponent": {"Asset": f"{FarmBieUI.UI_DIR}/Title.eui", "ZOrder": 0, "Visible": True, "ReceiveInput": False, "KeyboardFocus": False},
+				  "ScriptComponent": Script(f"{SCRIPTS}/FarmHud.lua", 2)})
+	S.Add("Title", {"ScriptComponent": Script(f"{SCRIPTS}/FarmTitle.lua", 2, AutoPlay=AutoPlay)})
+	return S
 
 
 # ================================================================ 탑 (F9 — 한 방을 층마다 다시 꾸민다: FarmTower.lua)
@@ -814,6 +861,8 @@ def Main():
 	WriteZombiePrefabs()
 	WriteBuildPrefabs()
 	FarmBieUI.WriteHud(CONTENT)
+	FarmBieUI.WriteTitle(CONTENT)
+	FarmBieAudio.WriteAll(CONTENT, os.path.join(CONTENT, "..", "..", "Sample", "Content"))
 	WritePrefabs()
 	Scene = BuildScene(Height)
 	Scene.Save(os.path.join(CONTENT, "Scenes", "Farm.escene"))
@@ -840,6 +889,8 @@ def Main():
 	BuildScene(Height, AutoPlay="Sanity").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmSanity.escene"))
 	BuildScene(Height, AutoPlay="Economy").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmEconomy.escene"))
 	BuildScene(Height, AutoPlay="Farm").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmFarming.escene"))
+	BuildTitleScene(Height).Save(os.path.join(CONTENT, "Scenes", "Title.escene"))
+	BuildTitleScene(Height, AutoPlay="Title").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmTitle.escene"))
 	if "--views" in sys.argv:
 		BuildScene(Height, AutoPlay="BossShot").Save(os.path.join(CONTENT, "Scenes", "_FarmBossShot.escene"))
 		BuildScene(Height, AutoPlay="NightShot").Save(os.path.join(CONTENT, "Scenes", "_FarmNightShot.escene"))

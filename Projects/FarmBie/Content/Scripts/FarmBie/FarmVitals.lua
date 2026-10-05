@@ -102,6 +102,7 @@ end
 
 function Vit:Eat(Key)
 	if not self:CanEat(Key) then return false end
+	self:Sfx("Eat", 0.7)
 	local V = self.Vitals
 	local Info = self:ItemInfo(Key)
 	if Info.Kind == "Food" then

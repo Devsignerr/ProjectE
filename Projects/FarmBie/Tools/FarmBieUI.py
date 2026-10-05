@@ -253,11 +253,12 @@ def HudWidgets():
 		Widget("Canvas", "GameOverCanvas", BoxSlot(), "HitTestInvisible", [
 			Text("GameOverTitle", "", 48, CanvasSlot((0.5, 0.5), 0, -90, 0, 0, (0.5, 0.5), True), (0.85, 0.6, 1.0, 1), "Center", Outline=3),
 			Text("GameOverBody", "", 22, CanvasSlot((0.5, 0.5), 0, 0, 900, 120, (0.5, 0)), TEXT_LIGHT, "Center", Wrap=True),
-			Text("GameOverHint", "E  처음부터 다시", 20, CanvasSlot((0.5, 1), 0, -60, 0, 0, (0.5, 1), True), TEXT_GOLD, "Center"),
+			Text("GameOverHint", "E  처음부터 다시     Esc  타이틀로", 20, CanvasSlot((0.5, 1), 0, -60, 0, 0, (0.5, 1), True), TEXT_GOLD, "Center"),
 		]),
 	], Brush=Brush((0.02, 0.0, 0.04, 0.9)), ContentPadding=[0, 0, 0, 0]))
 	C.append(ShopWindow())
 	C.append(BagWindow())
+	C.append(OptionWindow())
 	# 화면 전체 어둡게 (잠들기·새 날 전환)
 	C.append(Widget("Border", "Fade", StretchSlot(Z=10), "Collapsed", Brush=Brush((0.0, 0.0, 0.0, 1.0)), ContentPadding=[0, 0, 0, 0]))
 	return C
@@ -332,6 +333,41 @@ def BagWindow():
 			Text("BagHint", "WASD 고르기   E 집기/놓기 (자리 바꾸기)   I·Esc 닫기", 16, CanvasSlot((0.5, 1), 0, -4, 0, 0, (0.5, 1), AutoSize=True), TEXT_DIM, "Center"),
 		]),
 	], Brush=FrameBrush(), ContentPadding=[28, 22, 28, 22])
+
+
+OPT_ROWS = 7
+
+
+def OptionWindow(Y=-10, H=470):
+	# 선택지 창 (일시정지·설정·타이틀 슬롯 — Scripts/FarmBie/FarmOptions.lua): 제목 + 부제 + 줄(이름 · 오른쪽 값)
+	Rows = [ListRow("Opt", I) for I in range(OPT_ROWS)]
+	return Widget("Border", "OptWindow", CanvasSlot((0.5, 0.5), 0, Y, 640, H, (0.5, 0.5), Z=8), "Collapsed", [
+		Widget("Canvas", "OptCanvas", BoxSlot(), "HitTestInvisible", [
+			Text("OptTitle", "", 30, CanvasSlot((0.5, 0), 0, 0, 0, 0, (0.5, 0), AutoSize=True), TEXT_GOLD, "Center"),
+			Text("OptSub", "", 17, CanvasSlot((0.5, 0), 0, 44, 0, 0, (0.5, 0), AutoSize=True), TEXT_DIM, "Center"),
+			Widget("VerticalBox", "OptList", CanvasSlot((0, 0), 0, 80, 584, H - 124), "HitTestInvisible", Rows),
+		]),
+	], Brush=FrameBrush(), ContentPadding=[28, 22, 28, 22])
+
+
+def TitleWidgets():
+	return [
+		Widget("Border", "TitleBand", CanvasSlot((0.5, 0), 0, 26, 560, 180, (0.5, 0)), "HitTestInvisible",
+			   Brush=Brush((0.02, 0.01, 0.03, 0.55), 18), ContentPadding=[0, 0, 0, 0]),
+		Text("TitleLogo", "팜비", 96, CanvasSlot((0.5, 0), 0, 34, 0, 0, (0.5, 0), AutoSize=True), (0.72, 0.95, 0.5, 1), "Center", Outline=5),
+		Text("TitleSub", "좀비가 오는 밤의 농장", 24, CanvasSlot((0.5, 0), 0, 160, 0, 0, (0.5, 0), AutoSize=True), (0.95, 0.82, 0.62, 1), "Center", Outline=3),
+		OptionWindow(Y=128, H=330),
+		Text("TitleFooter", "무료 에셋: KayKit · Kenney (CC0) — CREDITS.md", 14, CanvasSlot((0.5, 1), 0, -10, 0, 0, (0.5, 1), AutoSize=True), TEXT_DIM, "Center"),
+		Widget("Border", "Fade", StretchSlot(Z=10), "Collapsed", Brush=Brush((0.0, 0.0, 0.0, 1.0)), ContentPadding=[0, 0, 0, 0]),
+	]
+
+
+def WriteTitle(Content):
+	Root = Widget("Canvas", "Root", None, "SelfHitTestInvisible", TitleWidgets())
+	Path = os.path.join(Content, *UI_DIR.split("/"), "Title.eui")
+	with open(Path, "w", encoding="utf-8", newline="\n") as File:
+		json.dump({"Version": 2, "DesignSize": [1280, 720], "ScaleMode": "MatchHeight", "Root": Root, "Animations": []}, File, indent=2, ensure_ascii=False)
+		File.write("\n")
 
 
 def WriteHud(Content):

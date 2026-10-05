@@ -7,6 +7,8 @@
     "PerSeason": 4,
     "HpPerDay": 0.03,
     "HpPerSeason": 0.3,
+    "CountPerYear": 0.25,
+    "HpPerYear": 0.35,
     "SpawnWindow": 0.55,
     "EntrancesPerNight": 2,
     "CrystalAlertRadius": 900,

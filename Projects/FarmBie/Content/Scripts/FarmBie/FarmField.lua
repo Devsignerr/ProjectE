@@ -179,6 +179,10 @@ function Field:PlanUse(Key, TX, TY)
 end
 
 -- 실행 (플레이어 도구 동작의 효과 시점에 부른다). 성공하면 true
+-- 밭일 소리: 이름, 음량, 피치
+local ActionSounds = { Till = { "Dig", 0.7, 1.0 }, Clear = { "Dig", 0.5, 1.2 }, Water = { "Water", 0.6, 1.0 }, Plant = { "Plant", 0.6, 1.0 },
+                       Fertilize = { "Plant", 0.5, 0.8 }, Harvest = { "Harvest", 0.7, 1.0 } }
+
 function Field:ApplyUse(Key, TX, TY)
 	local Action, Why = self:PlanUse(Key, TX, TY)
 	if not Action then
@@ -212,6 +216,8 @@ function Field:ApplyUse(Key, TX, TY)
 	end
 	self:RefreshTile(T)
 	if self.SyncCropTiles then self:SyncCropTiles() end
+	local Sound = ActionSounds[Action]
+	if Sound then self:Sfx(Sound[1], Sound[2], Sound[3]) end
 	return true
 end
 

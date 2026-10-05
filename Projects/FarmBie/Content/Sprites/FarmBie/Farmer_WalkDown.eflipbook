@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Farmer.esprite",
+  "Fps": 9.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "WalkDown0"
+    },
+    {
+      "Slice": "WalkDown1"
+    },
+    {
+      "Slice": "WalkDown2"
+    },
+    {
+      "Slice": "WalkDown3"
+    }
+  ]
+}

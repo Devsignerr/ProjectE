@@ -1,0 +1,342 @@
+{
+  "Version": 1,
+  "Actions": [
+    {
+      "Name": "Move",
+      "Type": "Axis2D",
+      "Description": "이동",
+      "ActuationThreshold": 0.1,
+      "Bindings": [
+        {
+          "Source": "W",
+          "Modifiers": [
+            {
+              "Type": "Swizzle"
+            }
+          ]
+        },
+        {
+          "Source": "S",
+          "Modifiers": [
+            {
+              "Type": "Swizzle"
+            },
+            {
+              "Type": "Negate",
+              "X": true,
+              "Y": true
+            }
+          ]
+        },
+        {
+          "Source": "D"
+        },
+        {
+          "Source": "A",
+          "Modifiers": [
+            {
+              "Type": "Negate",
+              "X": true,
+              "Y": true
+            }
+          ]
+        },
+        {
+          "Source": "Up",
+          "Modifiers": [
+            {
+              "Type": "Swizzle"
+            }
+          ]
+        },
+        {
+          "Source": "Down",
+          "Modifiers": [
+            {
+              "Type": "Swizzle"
+            },
+            {
+              "Type": "Negate",
+              "X": true,
+              "Y": true
+            }
+          ]
+        },
+        {
+          "Source": "Right"
+        },
+        {
+          "Source": "Left",
+          "Modifiers": [
+            {
+              "Type": "Negate",
+              "X": true,
+              "Y": true
+            }
+          ]
+        },
+        {
+          "Source": "Gamepad_LeftStick",
+          "Modifiers": [
+            {
+              "Type": "DeadZone",
+              "Lower": 0.25,
+              "Upper": 1.0,
+              "Radial": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "UseTool",
+      "Type": "Button",
+      "Description": "도구 사용 / 공격",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "MouseLeft"
+        },
+        {
+          "Source": "J"
+        },
+        {
+          "Source": "Gamepad_A"
+        }
+      ]
+    },
+    {
+      "Name": "Interact",
+      "Type": "Button",
+      "Description": "상호작용 (심기·수확·상자·문·잠자기)",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "E"
+        },
+        {
+          "Source": "Gamepad_X"
+        }
+      ]
+    },
+    {
+      "Name": "Dodge",
+      "Type": "Button",
+      "Description": "구르기",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "Space"
+        },
+        {
+          "Source": "Gamepad_B"
+        }
+      ]
+    },
+    {
+      "Name": "Inventory",
+      "Type": "Button",
+      "Description": "소지품",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "I"
+        },
+        {
+          "Source": "Tab"
+        },
+        {
+          "Source": "Gamepad_Y"
+        }
+      ]
+    },
+    {
+      "Name": "Build",
+      "Type": "Button",
+      "Description": "건설 모드",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "B"
+        },
+        {
+          "Source": "Gamepad_DPadUp"
+        }
+      ]
+    },
+    {
+      "Name": "Rotate",
+      "Type": "Button",
+      "Description": "건설 회전",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "R"
+        },
+        {
+          "Source": "Gamepad_DPadRight"
+        }
+      ]
+    },
+    {
+      "Name": "Eat",
+      "Type": "Button",
+      "Description": "음식 먹기",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "F"
+        },
+        {
+          "Source": "Gamepad_DPadDown"
+        }
+      ]
+    },
+    {
+      "Name": "SlotNext",
+      "Type": "Button",
+      "Description": "다음 칸",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "Gamepad_RightShoulder"
+        }
+      ]
+    },
+    {
+      "Name": "SlotScroll",
+      "Type": "Axis1D",
+      "Description": "도구 칸 휠",
+      "ActuationThreshold": 0.1,
+      "Bindings": [
+        {
+          "Source": "MouseWheel"
+        }
+      ]
+    },
+    {
+      "Name": "SlotPrev",
+      "Type": "Button",
+      "Description": "이전 칸",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "Gamepad_LeftShoulder"
+        }
+      ]
+    },
+    {
+      "Name": "Pause",
+      "Type": "Button",
+      "Description": "일시정지",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "Escape"
+        },
+        {
+          "Source": "Gamepad_Start"
+        }
+      ]
+    },
+    {
+      "Name": "Slot1",
+      "Type": "Button",
+      "Description": "도구 칸 1",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "1"
+        }
+      ]
+    },
+    {
+      "Name": "Slot2",
+      "Type": "Button",
+      "Description": "도구 칸 2",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "2"
+        }
+      ]
+    },
+    {
+      "Name": "Slot3",
+      "Type": "Button",
+      "Description": "도구 칸 3",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "3"
+        }
+      ]
+    },
+    {
+      "Name": "Slot4",
+      "Type": "Button",
+      "Description": "도구 칸 4",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "4"
+        }
+      ]
+    },
+    {
+      "Name": "Slot5",
+      "Type": "Button",
+      "Description": "도구 칸 5",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "5"
+        }
+      ]
+    },
+    {
+      "Name": "Slot6",
+      "Type": "Button",
+      "Description": "도구 칸 6",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "6"
+        }
+      ]
+    },
+    {
+      "Name": "Slot7",
+      "Type": "Button",
+      "Description": "도구 칸 7",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "7"
+        }
+      ]
+    },
+    {
+      "Name": "Slot8",
+      "Type": "Button",
+      "Description": "도구 칸 8",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "8"
+        }
+      ]
+    },
+    {
+      "Name": "Slot9",
+      "Type": "Button",
+      "Description": "도구 칸 9",
+      "ActuationThreshold": 0.5,
+      "Bindings": [
+        {
+          "Source": "9"
+        }
+      ]
+    }
+  ]
+}

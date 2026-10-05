@@ -1,0 +1,23 @@
+{
+  "Name": "FarmBieLampGlow",
+  "BaseColorFactor": [
+    1.0,
+    0.8,
+    0.5,
+    1.0
+  ],
+  "EmissiveFactor": [
+    1.3,
+    0.8,
+    0.35
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.6,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

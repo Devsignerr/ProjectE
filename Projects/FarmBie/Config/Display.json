@@ -1,0 +1,12 @@
+{
+  "WindowMode": "Windowed",
+  "WindowWidth": 1280,
+  "WindowHeight": 720,
+  "VSync": true,
+  "ResolutionQuality": "Native",
+  "DynamicResolution": false,
+  "DynamicResolutionTargetMs": 16.6,
+  "HdrOutput": "Off",
+  "HdrPaperWhiteNits": 200.0,
+  "HdrMaxNits": 0.0
+}

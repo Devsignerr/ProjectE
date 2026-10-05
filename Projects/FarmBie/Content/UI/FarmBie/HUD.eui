@@ -1,0 +1,588 @@
+{
+  "Version": 2,
+  "DesignSize": [
+    1280,
+    720
+  ],
+  "ScaleMode": "MatchHeight",
+  "Root": {
+    "Type": "Canvas",
+    "Name": "Root",
+    "Enabled": true,
+    "Opacity": 1,
+    "Visibility": "SelfHitTestInvisible",
+    "Children": [
+      {
+        "Type": "Border",
+        "Name": "ClockPanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -16,
+            14,
+            250,
+            0
+          ],
+          "Alignment": [
+            1,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Texture": "UI/FarmBie/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "TextureSize": [
+            48,
+            48
+          ]
+        },
+        "ContentPadding": [
+          24,
+          14,
+          24,
+          14
+        ],
+        "Children": [
+          {
+            "Type": "VerticalBox",
+            "Name": "ClockBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "ClockDate",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    4
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "봄 1일 (월)",
+                "FontSize": 22,
+                "TextColor": [
+                  1.0,
+                  0.86,
+                  0.45,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              },
+              {
+                "Type": "HorizontalBox",
+                "Name": "ClockRow",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "ClockIcon",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        10,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Sun.png"
+                    },
+                    "ImageSize": [
+                      30,
+                      30
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "ClockTime",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "06:00",
+                    "FontSize": 26,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "ClockYear",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    4,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "1년차",
+                "FontSize": 15,
+                "TextColor": [
+                  0.78,
+                  0.74,
+                  0.68,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "VerticalBox",
+        "Name": "Banner",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0
+          ],
+          "AnchorMax": [
+            0.5,
+            0
+          ],
+          "Offsets": [
+            0,
+            96,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 3
+        },
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "BannerTitle",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "",
+            "FontSize": 40,
+            "TextColor": [
+              1.0,
+              0.86,
+              0.45,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 3,
+            "OutlineColor": [
+              0.06,
+              0.03,
+              0.02,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.5
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "BannerSub",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                6,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "",
+            "FontSize": 21,
+            "TextColor": [
+              0.98,
+              0.95,
+              0.88,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.06,
+              0.03,
+              0.02,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.5
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Prompt",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            1
+          ],
+          "AnchorMax": [
+            0.5,
+            1
+          ],
+          "Offsets": [
+            0,
+            -40,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Texture": "UI/FarmBie/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "TextureSize": [
+            36,
+            36
+          ]
+        },
+        "ContentPadding": [
+          20,
+          8,
+          20,
+          10
+        ],
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "PromptText",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "",
+            "FontSize": 21,
+            "TextColor": [
+              0.98,
+              0.95,
+              0.88,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.06,
+              0.03,
+              0.02,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.5
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Fade",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 10
+        },
+        "Brush": {
+          "Color": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "Animations": []
+}

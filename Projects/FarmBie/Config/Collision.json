@@ -1,0 +1,15 @@
+{
+  "Layers": [
+    "Default",
+    "Ground",
+    "Player",
+    "Structure",
+    "Pickup"
+  ],
+  "DisabledPairs": [
+    [
+      "Player",
+      "Pickup"
+    ]
+  ]
+}

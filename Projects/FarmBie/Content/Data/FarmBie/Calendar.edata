@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Calendar.estruct",
+  "Values": {
+    "DayStartHour": 6.0,
+    "NightStartHour": 20.0,
+    "NightEndHour": 2.0,
+    "DayRealMinutes": 8.0,
+    "NightRealMinutes": 3.5,
+    "SeasonDays": 30,
+    "SeasonWarnDays": 3,
+    "BossEveryDays": 10,
+    "SeasonNames": [
+      "봄",
+      "여름",
+      "가을",
+      "겨울"
+    ],
+    "WeekdayNames": [
+      "월",
+      "화",
+      "수",
+      "목",
+      "금",
+      "토",
+      "일"
+    ],
+    "MerchantDays": [
+      2,
+      5
+    ],
+    "SkyDayStart": 6.3,
+    "SkyNightStart": 19.0,
+    "SkyNightEnd": 4.0,
+    "SaveSlots": 3
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "Version": 1,
+  "Name": "DayNightKey",
+  "Description": "낮밤 화면 열쇠 (시각별 하늘빛·색 보정·등불)",
+  "Fields": [
+    {
+      "Name": "Hour",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "시각 (오름차순)"
+    },
+    {
+      "Name": "SkyScale",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "하늘빛 배율"
+    },
+    {
+      "Name": "SunScale",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "해/달빛 배율"
+    },
+    {
+      "Name": "Temperature",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "색온도"
+    },
+    {
+      "Name": "Tint",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "색조"
+    },
+    {
+      "Name": "Saturation",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "채도"
+    },
+    {
+      "Name": "Contrast",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "대비"
+    },
+    {
+      "Name": "Lift",
+      "Type": "Array",
+      "Default": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Description": "어두운 영역 색",
+      "Element": "Float"
+    },
+    {
+      "Name": "Gamma",
+      "Type": "Array",
+      "Default": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Description": "중간 영역 색",
+      "Element": "Float"
+    },
+    {
+      "Name": "Gain",
+      "Type": "Array",
+      "Default": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Description": "밝은 영역 색",
+      "Element": "Float"
+    },
+    {
+      "Name": "Vignette",
+      "Type": "Float",
+      "Default": 0.4,
+      "Description": "비네트 세기"
+    },
+    {
+      "Name": "Fog",
+      "Type": "Array",
+      "Default": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "Description": "안개 색",
+      "Element": "Float"
+    },
+    {
+      "Name": "Inscatter",
+      "Type": "Array",
+      "Default": [
+        0.9,
+        0.8,
+        0.6
+      ],
+      "Description": "해 쪽 안개 산란 색",
+      "Element": "Float"
+    },
+    {
+      "Name": "Exposure",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "밝기 배율 (Gain에 곱함)"
+    },
+    {
+      "Name": "Moon",
+      "Type": "Float",
+      "Default": 0.3,
+      "Description": "달 밝기"
+    },
+    {
+      "Name": "LampScale",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "등불 세기 배율 (0 = 꺼짐)"
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "Version": 1,
+  "Name": "Calendar",
+  "Description": "FarmBie 시간·달력",
+  "Fields": [
+    {
+      "Name": "DayStartHour",
+      "Type": "Float",
+      "Default": 6.0,
+      "Description": "아침 기상 시각 (시)"
+    },
+    {
+      "Name": "NightStartHour",
+      "Type": "Float",
+      "Default": 20.0,
+      "Description": "밤(좀비 습격) 시작 시각"
+    },
+    {
+      "Name": "NightEndHour",
+      "Type": "Float",
+      "Default": 2.0,
+      "Description": "밤 끝 시각 (다음 날 새벽) — 여기서 하루가 끝나고 잠든다"
+    },
+    {
+      "Name": "DayRealMinutes",
+      "Type": "Float",
+      "Default": 8.0,
+      "Description": "낮 길이 (실제 분)"
+    },
+    {
+      "Name": "NightRealMinutes",
+      "Type": "Float",
+      "Default": 3.5,
+      "Description": "밤 길이 (실제 분) = 디펜스 제한 시간"
+    },
+    {
+      "Name": "SeasonDays",
+      "Type": "Int",
+      "Default": 30,
+      "Description": "계절 길이 (일)"
+    },
+    {
+      "Name": "SeasonWarnDays",
+      "Type": "Int",
+      "Default": 3,
+      "Description": "계절 끝 며칠 전부터 작물 사멸 경고"
+    },
+    {
+      "Name": "BossEveryDays",
+      "Type": "Int",
+      "Default": 10,
+      "Description": "중간 보스 주기 (일차가 이 배수인 밤)"
+    },
+    {
+      "Name": "SeasonNames",
+      "Type": "Array",
+      "Default": [
+        "봄",
+        "여름",
+        "가을",
+        "겨울"
+      ],
+      "Description": "계절 이름",
+      "Element": "String"
+    },
+    {
+      "Name": "WeekdayNames",
+      "Type": "Array",
+      "Default": [
+        "월",
+        "화",
+        "수",
+        "목",
+        "금",
+        "토",
+        "일"
+      ],
+      "Description": "요일 이름 (1일 = 첫 요일)",
+      "Element": "String"
+    },
+    {
+      "Name": "MerchantDays",
+      "Type": "Array",
+      "Default": [
+        2,
+        5
+      ],
+      "Description": "보부상 방문 요일 (0 = 첫 요일)",
+      "Element": "Int"
+    },
+    {
+      "Name": "SaveSlots",
+      "Type": "Int",
+      "Default": 3,
+      "Description": "저장 슬롯 수"
+    },
+    {
+      "Name": "SkyDayStart",
+      "Type": "Float",
+      "Default": 6.3,
+      "Description": "아침 기상 때의 하늘 시각"
+    },
+    {
+      "Name": "SkyNightStart",
+      "Type": "Float",
+      "Default": 19.0,
+      "Description": "밤 시작 때의 하늘 시각 (해 진 직후)"
+    },
+    {
+      "Name": "SkyNightEnd",
+      "Type": "Float",
+      "Default": 4.0,
+      "Description": "밤 끝 때의 하늘 시각 (아직 어두움)"
+    }
+  ]
+}

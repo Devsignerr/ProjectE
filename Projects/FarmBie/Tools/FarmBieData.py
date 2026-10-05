@@ -155,7 +155,40 @@ ITEM_ROWS = [
 	("Fiber",       {"DisplayName": "섬유",       "Kind": "Material", "Price": 0, "Description": "질긴 풀 줄기. 덫·밧줄·붕대의 재료."}),
 	("Herb",        {"DisplayName": "약초",       "Kind": "Food", "Price": 0, "Health": 20, "Sanity": 0, "Description": "쓴맛이 나는 숲 약초. 먹으면 상처가 아문다."}),
 	("Mushroom",    {"DisplayName": "몽롱버섯",   "Kind": "Food", "Price": 0, "Health": 4, "Sanity": 8, "Description": "보랏빛 갓의 버섯. 먹으면 머릿속이 조금 고요해진다."}),
+	("Iron",        {"DisplayName": "철",         "Kind": "Material", "Price": 45, "Description": "제련한 쇳덩이. 철벽과 포탑에 쓴다. 보부상이나 탑에서 얻는다."}),
+	("CrystalShard", {"DisplayName": "크리스탈 조각", "Kind": "Material", "Price": 220, "Description": "보랏빛으로 맥동하는 조각. 크리스탈을 강화한다. 탑 깊은 곳에 많다."}),
+	("Mine",        {"DisplayName": "지뢰",       "Kind": "Trap", "Price": 60, "Description": "밟은 좀비 둘레를 날려 버린다. 한 번 쓰면 사라진다. (건설 모드에서 설치)"}),
 ]
+
+# 건설: 종류(Wall 벽 / Gate 문 / Trap 덫 / Turret 포탑), 재료("물건*수,…" — 수리는 잃은 내구도 비율만큼), 내구도, 길 막음, 플레이어 충돌,
+#   덫·포탑 수치(F7 디펜스: 피해·반경·재사용 초·사거리)
+BUILD_ROWS = [
+	("WallWood",  {"DisplayName": "나무 울타리", "Kind": "Wall",   "Cost": "Wood*4",                "Hp": 120, "Blocks": True,  "Solid": True,
+				   "Damage": 0,  "Radius": 0,   "Cooldown": 0,   "Range": 0,   "Description": "통나무를 박은 울타리. 싸고 빨리 세운다."}),
+	("WallStone", {"DisplayName": "돌벽",        "Kind": "Wall",   "Cost": "Stone*5,Wood*1",        "Hp": 320, "Blocks": True,  "Solid": True,
+				   "Damage": 0,  "Radius": 0,   "Cooldown": 0,   "Range": 0,   "Description": "돌을 쌓은 벽. 나무보다 훨씬 오래 버틴다."}),
+	("WallIron",  {"DisplayName": "철벽",        "Kind": "Wall",   "Cost": "Iron*3,Stone*2",        "Hp": 750, "Blocks": True,  "Solid": True,
+				   "Damage": 0,  "Radius": 0,   "Cooldown": 0,   "Range": 0,   "Description": "철판을 두른 벽. 보스도 쉽게 뚫지 못한다."}),
+	("Gate",      {"DisplayName": "나무 문",     "Kind": "Gate",   "Cost": "Wood*6",                "Hp": 160, "Blocks": True,  "Solid": False,
+				   "Damage": 0,  "Radius": 0,   "Cooldown": 0,   "Range": 0,   "Description": "사람은 지나가고 좀비는 막는 문."}),
+	("Spike",     {"DisplayName": "가시덫",      "Kind": "Trap",   "Cost": "Wood*2,Stone*2",        "Hp": 90,  "Blocks": False, "Solid": False,
+				   "Damage": 8,  "Radius": 55,  "Cooldown": 0.5, "Range": 0,   "Description": "위를 지나는 좀비를 계속 찌른다. 조금씩 닳는다."}),
+	("Mine",      {"DisplayName": "지뢰",        "Kind": "Trap",   "Cost": "Mine*1",                "Hp": 1,   "Blocks": False, "Solid": False,
+				   "Damage": 90, "Radius": 180, "Cooldown": 0,   "Range": 0,   "Description": "보부상에게 산 지뢰를 묻는다. 한 번 터진다."}),
+	("Turret",    {"DisplayName": "쇠뇌 포탑",   "Kind": "Turret", "Cost": "Stone*6,Wood*4,Iron*1", "Hp": 260, "Blocks": True,  "Solid": True,
+				   "Damage": 14, "Radius": 0,   "Cooldown": 1.1, "Range": 650, "Description": "가까운 좀비에게 저절로 화살을 쏜다."}),
+]
+
+# 크리스탈 단계: 최대 내구도, 좀비가 알아채는 반경(cm — 작을수록 숨기기 쉽다), 다음 단계로 올리는 재료·돈
+CRYSTAL_ROWS = [
+	("Level1", {"MaxHp": 400,  "DetectRadius": 650, "Cost": "",                           "Gold": 0}),
+	("Level2", {"MaxHp": 600,  "DetectRadius": 580, "Cost": "CrystalShard*1,Stone*10",    "Gold": 300}),
+	("Level3", {"MaxHp": 850,  "DetectRadius": 510, "Cost": "CrystalShard*2,Iron*3",      "Gold": 700}),
+	("Level4", {"MaxHp": 1150, "DetectRadius": 440, "Cost": "CrystalShard*4,Iron*6",      "Gold": 1500}),
+	("Level5", {"MaxHp": 1500, "DetectRadius": 370, "Cost": "CrystalShard*7,Iron*10",     "Gold": 3000}),
+]
+
+GREENHOUSE = {"Cost": "Wood*40,Stone*20", "Gold": 500}
 
 # 숲 자원: 도구(Axe | Pick | Hand), 칠 횟수, 나오는 물건·수량 범위, 다시 자라는 날
 RESOURCE_ROWS = [
@@ -256,6 +289,27 @@ def WriteFarming(Content):
 		Field("Regrow", "Int", 3, "다시 자라는 날 수"),
 	])
 	Table(Content, "Resources", "Resource", RESOURCE_ROWS)
+	Struct(Content, "Buildable", "건설 가능한 설치물", [
+		Field("DisplayName", "String", "", "이름"),
+		Field("Kind", "Enum", "Wall", "종류", Values=["Wall", "Gate", "Trap", "Turret"]),
+		Field("Cost", "String", "", "재료 \"물건*수,…\""),
+		Field("Hp", "Int", 100, "내구도"),
+		Field("Blocks", "Bool", True, "좀비 길을 막음"),
+		Field("Solid", "Bool", True, "플레이어도 막음 (충돌)"),
+		Field("Damage", "Int", 0, "덫·포탑 피해"),
+		Field("Radius", "Int", 0, "덫 범위 (cm)"),
+		Field("Cooldown", "Float", 0.0, "덫·포탑 재사용 (초)"),
+		Field("Range", "Int", 0, "포탑 사거리 (cm)"),
+		Field("Description", "String", "", "설명"),
+	])
+	Table(Content, "Buildables", "Buildable", BUILD_ROWS)
+	Struct(Content, "CrystalLevel", "크리스탈 강화 단계", [
+		Field("MaxHp", "Int", 400, "최대 내구도"),
+		Field("DetectRadius", "Int", 650, "좀비가 알아채는 반경 (cm)"),
+		Field("Cost", "String", "", "이 단계로 올리는 재료"),
+		Field("Gold", "Int", 0, "이 단계로 올리는 돈"),
+	])
+	Table(Content, "CrystalLevels", "CrystalLevel", CRYSTAL_ROWS)
 
 
 # ---- 경제 ---------------------------------------------------------------------------------------------------------------------
@@ -287,6 +341,9 @@ def StockRows():
 		Rows.append((f"RareSeed_{C['Id']}", {"Key": f"Seed:{C['Id']}:1", "Price": C["SeedPrice"] * 8, "Stock": 1, "Always": False, "Weight": 2, "Season": C["Season"]}))
 	Rows.append(("FertBasic", {"Key": "FertBasic", "Price": 0, "Stock": 12, "Always": True, "Weight": 0, "Season": "Any"}))
 	Rows.append(("FertPremium", {"Key": "FertPremium", "Price": 0, "Stock": 4, "Always": False, "Weight": 4, "Season": "Any"}))
+	Rows.append(("Iron", {"Key": "Iron", "Price": 0, "Stock": 6, "Always": True, "Weight": 0, "Season": "Any"}))
+	Rows.append(("Mine", {"Key": "Mine", "Price": 0, "Stock": 3, "Always": True, "Weight": 0, "Season": "Any"}))
+	Rows.append(("CrystalShard", {"Key": "CrystalShard", "Price": 0, "Stock": 1, "Always": False, "Weight": 2, "Season": "Any"}))
 	return Rows
 
 
@@ -317,6 +374,10 @@ def WriteFarmMap(Content, Grid):
 		Field("FarmMaxX", "Float", 0.0, ""),
 		Field("FarmMaxY", "Float", 0.0, ""),
 		Field("Well", "Array", [0.0, 0.0], "우물 위치 (물 채우기)", Element="Float"),
+		Field("Greenhouse", "Array", [0, 0, 1, 1], "온실 부지 칸 (TX, TY, 가로, 세로)", Element="Int"),
+		Field("GreenhouseCost", "String", "", "온실 재료"),
+		Field("GreenhouseGold", "Int", 0, "온실 돈"),
+		Field("CrystalStart", "Array", [0, 0], "크리스탈 처음 칸", Element="Int"),
 	])
 	Values(Content, "FarmMap", "FarmMap", Grid)
 

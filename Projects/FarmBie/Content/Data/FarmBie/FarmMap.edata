@@ -14,6 +14,18 @@
     "Well": [
       -950.0,
       -1250.0
+    ],
+    "Greenhouse": [
+      38,
+      23,
+      6,
+      4
+    ],
+    "GreenhouseCost": "Wood*40,Stone*20",
+    "GreenhouseGold": 500,
+    "CrystalStart": [
+      18,
+      11
     ]
   }
 }

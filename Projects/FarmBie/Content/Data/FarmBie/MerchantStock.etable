@@ -441,6 +441,39 @@
         "Weight": 4,
         "Season": "Any"
       }
+    },
+    {
+      "Name": "Iron",
+      "Values": {
+        "Key": "Iron",
+        "Price": 0,
+        "Stock": 6,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "Mine",
+      "Values": {
+        "Key": "Mine",
+        "Price": 0,
+        "Stock": 3,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "CrystalShard",
+      "Values": {
+        "Key": "CrystalShard",
+        "Price": 0,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Any"
+      }
     }
   ]
 }

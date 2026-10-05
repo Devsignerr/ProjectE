@@ -71,6 +71,7 @@ function Field:CanTill(TX, TY)
 	local C = self:TileCenter(TX, TY)
 	if C.X < M.FarmMinX or C.X > M.FarmMaxX or C.Y < M.FarmMinY or C.Y > M.FarmMaxY then return false end
 	if self:GetTile(TX, TY) then return false end
+	if self.StructureAt and (self:StructureAt(TX, TY) or self:IsCrystalTile(TX, TY) or self:InGreenhouseSite(TX, TY) and not self.bGreenhouse) then return false end
 	-- 놀이 영역 안 지형은 평평(±10cm) — 높이 0 기준 상자 (지면 레이캐스트는 지붕 콜라이더에 먼저 맞을 수 있다)
 	local P = self:Player()
 	local Hits = Physics.OverlapBox(Vector3(C.X, C.Y, 95), Vector3(44, 44, 60), nil, P and P.entity or nil)
@@ -294,8 +295,13 @@ function Field:UpdateCursor(Pos, Facing)
 	end
 	local S = self:SelectedItem()
 	local TX, TY = self:TargetTile(Pos, Facing)
-	local Action = TX and self:PlanUse(S and S.Key, TX, TY)
-	local bShow = TX ~= nil and (S ~= nil or Action == "Harvest") and self.Phase ~= "Sleep"
+	local Action
+	if self.BuildMode then
+		Action = TX and self:PlanBuild(TX, TY)
+	else
+		Action = TX and self:PlanUse(S and S.Key, TX, TY)
+	end
+	local bShow = TX ~= nil and (S ~= nil or Action == "Harvest" or self.BuildMode) and self.Phase ~= "Sleep" and not self.CarryingCrystal
 	self.CursorSprite.Visible = bShow
 	if bShow then
 		local C = self:TileCenter(TX, TY)

@@ -18,11 +18,11 @@ local FarmGame = {
 }
 for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua", "Scripts/FarmBie/FarmInventory.lua", "Scripts/FarmBie/FarmField.lua",
                          "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua", "Scripts/FarmBie/FarmVitals.lua",
-                         "Scripts/FarmBie/FarmForage.lua" }) do
+                         "Scripts/FarmBie/FarmForage.lua", "Scripts/FarmBie/FarmBuild.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do FarmGame[Name] = Fn end
 end
 
-local SaveParts = { "Time", "Inventory", "Field", "Economy", "Vitals", "Forage" }
+local SaveParts = { "Time", "Inventory", "Field", "Economy", "Vitals", "Forage", "Build" }
 local SessionSlot = "FarmBie_Session"
 local SaveVersion = 1
 
@@ -48,6 +48,7 @@ function FarmGame:OnStart()
 	self:InitField()
 	if self.MapId == "Farm" then self:InitEconomy() else self.Economy = Script.Require("Scripts/FarmBie/FarmData.lua").Values("Economy.edata"); self.Gold = 0; self.Shipped = {}; self.Stock = {}; self.StockDay = -1 end
 	self:InitForage()
+	self:InitBuild()
 	self:AddInteractable({ Pos = self.SleepSpot, Radius = 170, Prompt = function()
 		if self.Phase == "Night" then return "E  잠자기 (하루를 마친다)" end
 		return nil
@@ -61,6 +62,7 @@ function FarmGame:OnStart()
 		self:GiveStartItems()
 		self:GiveStartGold()
 	end
+	if self.MapId == "Farm" and not self.Crystal then self:EnsureCrystal() end
 	self:ApplyDayNight(true)
 	self.bReady = true
 end
@@ -95,7 +97,10 @@ function FarmGame:OnUpdate(Dt)
 		return
 	end
 	self:UpdateTime(Dt)
-	if self.MapId == "Farm" then self:UpdateMerchant() end
+	if self.MapId == "Farm" then
+		self:UpdateMerchant()
+		self:UpdateStructures()
+	end
 	self:UpdateVitals(Dt)
 end
 
@@ -118,10 +123,26 @@ function FarmGame:UpdateInteract(Pos)
 	local Best, BestD, BestText = nil, math.huge, nil
 	if self.Phase ~= "Sleep" then
 		for _, It in ipairs(self.Interactables) do
+			if It.Dynamic == "Crystal" then It.Pos = self:CrystalPos() or Vector3(1e6, 1e6, 0) end
 			local Dist = Flat(It.Pos - Pos):Length()
 			if Dist < It.Radius and Dist < BestD then
 				local Text = It.Prompt()
 				if Text then Best, BestD, BestText = It, Dist, Text end
+			end
+		end
+	end
+	-- 발 앞 칸: 크리스탈 내려놓기 / 설치물 수리
+	if not Best and self.Phase ~= "Sleep" and self.MapId == "Farm" then
+		local P = self:Player()
+		local TX, TY = self:TargetTile(Pos, P and P:GetFacingVector() or Vector3(0, 1, 0))
+		if TX and self.CarryingCrystal then
+			BestText = "E  크리스탈 내려놓기"
+			Best = { Act = function() self:PlaceCrystal(TX, TY) end }
+		elseif TX then
+			local Text = self:RepairPrompt(TX, TY)
+			if Text then
+				BestText = Text
+				Best = { Act = function() self:Repair(TX, TY) end }
 			end
 		end
 	end

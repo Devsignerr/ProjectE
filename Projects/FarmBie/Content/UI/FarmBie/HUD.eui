@@ -562,6 +562,52 @@
         "Children": [
           {
             "Type": "Text",
+            "Name": "BuildTitle",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Collapsed",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                4
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "건설 모드  (B 나가기 · R 돌리기 · E 수리/크리스탈 · 도구 = 설치/철거)",
+            "FontSize": 16,
+            "TextColor": [
+              0.7,
+              0.95,
+              1.0,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.06,
+              0.03,
+              0.02,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.5
+            ]
+          },
+          {
+            "Type": "Text",
             "Name": "ItemName",
             "Enabled": true,
             "Opacity": 1,

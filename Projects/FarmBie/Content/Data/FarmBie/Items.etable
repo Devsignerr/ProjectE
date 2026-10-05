@@ -104,6 +104,33 @@
         "Sanity": 8,
         "Description": "보랏빛 갓의 버섯. 먹으면 머릿속이 조금 고요해진다."
       }
+    },
+    {
+      "Name": "Iron",
+      "Values": {
+        "DisplayName": "철",
+        "Kind": "Material",
+        "Price": 45,
+        "Description": "제련한 쇳덩이. 철벽과 포탑에 쓴다. 보부상이나 탑에서 얻는다."
+      }
+    },
+    {
+      "Name": "CrystalShard",
+      "Values": {
+        "DisplayName": "크리스탈 조각",
+        "Kind": "Material",
+        "Price": 220,
+        "Description": "보랏빛으로 맥동하는 조각. 크리스탈을 강화한다. 탑 깊은 곳에 많다."
+      }
+    },
+    {
+      "Name": "Mine",
+      "Values": {
+        "DisplayName": "지뢰",
+        "Kind": "Trap",
+        "Price": 60,
+        "Description": "밟은 좀비 둘레를 날려 버린다. 한 번 쓰면 사라진다. (건설 모드에서 설치)"
+      }
     }
   ]
 }

@@ -5,6 +5,7 @@
 --   Economy: 처음 돈·출하(작물 전부/고른 묶음)·아침 정산·보부상 요일·재고(계절·한정)·사기(돈 부족·품절)·떠남·소지품 창 옮기기·저장
 --   Sanity: 먹기(체력·정신력·희귀 버프)·버프는 아침에 끝·정신력 낮음 속도 감소·잠 회복·정신력 0 쓰러짐(소지금 20%·10시 기상)·저장
 --   Forest(씬 4번): 농장 도구 → 서쪽 입구로 숲 → 나무·바위 캐기·풀 줍기·먹기·시간 이어짐 → 새벽 잠 → 집 침대 → 3일 뒤 숲 자원 다시 자람
+--   Build : 건설 모드·벽(가로/세로)·문 통과·덫·지뢰(물건)·포탑·철거 반환·수리·부서짐 정리·크리스탈 옮기기/강화·온실(계절 넘김에도 삶)·저장
 --   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
@@ -407,7 +408,11 @@ function AutoPilot:RunEconomy()
 		end
 		if E.Key == "FertBasic" then Fert = true end
 	end
-	self:Expect(SpringSeeds == 5 and Fert and #GM.Stock == 5 + 1 + 3, string.format("재고 %d줄 (봄 씨앗 %d)", #GM.Stock, SpringSeeds))
+	local Always = 0
+	for _, Row in ipairs(Data.GetRows("Data/FarmBie/MerchantStock.etable")) do
+		if Row.Always and (Row.Season == "Any" or Row.Season == "Spring") then Always = Always + 1 end
+	end
+	self:Expect(SpringSeeds == 5 and Fert and #GM.Stock == Always + GM.Economy.RandomStockPicks, string.format("재고 %d줄 (봄 씨앗 %d, 고정 %d)", #GM.Stock, SpringSeeds, Always))
 	-- 거래: 천막 앞 → 상점 창 → 뇌양배추 씨앗 사기
 	self:Expect(self:GoTo(GM.MerchantSpot + Vector3(-60, -170, 0), 40, 20), "보부상 앞")
 	self:Wait(0.2)
@@ -659,6 +664,142 @@ function AutoPilot:RunForestForest2()
 		"나무 다시 자람 " .. GM:DateText())
 	Game.SetPersistent("FarmBie_AutoTree", nil)
 	self:Finish()
+end
+
+-- 칸 위쪽에 서서 아래를 보며 건설 막대 번호로 도구 사용
+function AutoPilot:BuildOn(TX, TY, Index)
+	self:StandAbove(TX, TY)
+	self.In.Slot = Index
+	self:Yield()
+	self:Press("UseTool")
+	self:Wait(0.15)
+end
+
+function AutoPilot:RunBuild()
+	local GM, P = self.GM, self.Player
+	local R = GM.Report
+	self:Wait(1.0)
+	GM:Give("Wood", 80, true)
+	GM:Give("Stone", 60, true)
+	GM:Give("Iron", 6, true)
+	GM:Give("Mine", 1, true)
+	GM:Give("CrystalShard", 1, true)
+	GM.Gold = 2000
+	self:Expect(GM.Crystal ~= nil and GM.Crystal.Comp ~= nil and GM.Crystal.Level == 1, "크리스탈 있음")
+	self:Press("Build")
+	self:Expect(GM.BuildMode and GM:Hud().Cache["BuildTitle.Visibility"] == "HitTestInvisible", "건설 모드")
+	-- 나무 울타리 (가로)
+	local TX0, TY = GM:TileOf(Vector3(-1500, 300, 0))
+	local Wood = GM:CountItem("Wood")
+	self:BuildOn(TX0, TY, 1)
+	local S = GM:StructureAt(TX0, TY)
+	self:Expect(S ~= nil and S.Comp ~= nil and S.Comp.Kind == "WallWood" and S.Comp.Hp == 120 and S.Comp.TX == TX0, "울타리 설치")
+	self:Expect(GM:CountItem("Wood") == Wood - 4, "재료 소모")
+	-- 세로 울타리 (R)
+	self:Press("Rotate")
+	self:BuildOn(TX0 + 1, TY, 1)
+	local S2 = GM:StructureAt(TX0 + 1, TY)
+	self:Expect(S2 and S2.Rot == 90, "세로 울타리")
+	self:Press("Rotate")
+	-- 이미 있는 칸에는 못 지음 → 다른 설치물: 문·가시덫·지뢰·포탑
+	self:BuildOn(TX0 + 3, TY, 4)
+	self:BuildOn(TX0 + 4, TY, 5)
+	self:BuildOn(TX0 + 5, TY, 6)
+	self:BuildOn(TX0 + 6, TY, 7)
+	self:Expect(GM:StructureAt(TX0 + 3, TY) and GM:StructureAt(TX0 + 4, TY) and GM:StructureAt(TX0 + 5, TY) and GM:StructureAt(TX0 + 6, TY), "문·덫·지뢰·포탑")
+	self:Expect(GM:CountItem("Mine") == 0 and GM:CountItem("Iron") == 5, "지뢰·철 소모")
+	-- 울타리는 막고 문은 지나간다 (위에서 아래로 걷기)
+	self:Wait(0.3)
+	local C = GM:TileCenter(TX0, TY)
+	self:GoTo(Vector3(C.X, C.Y - 150, 0), 20, 10)
+	self:Walk(Vector3(0, 1, 0), 1.2)
+	self:Expect(self:Pos().Y < C.Y - 30, string.format("울타리에 막힘 %.0f", self:Pos().Y - C.Y))
+	local G = GM:TileCenter(TX0 + 3, TY)
+	self:GoTo(Vector3(G.X, G.Y - 150, 0), 20, 10)
+	self:Walk(Vector3(0, 1, 0), 1.2)
+	self:Expect(self:Pos().Y > G.Y + 40, string.format("문 통과 %.0f", self:Pos().Y - G.Y))
+	-- 철거: 재료 절반
+	Wood = GM:CountItem("Wood")
+	self:BuildOn(TX0 + 1, TY, 1)
+	self:Expect(GM:StructureAt(TX0 + 1, TY) == nil and GM:CountItem("Wood") == Wood + 2, "철거 반환")
+	-- 수리 (건설 모드 밖, 낮)
+	self:Press("Build")
+	S.Comp.Hp = 60
+	self:Wait(0.1)
+	self:StandAbove(TX0, TY)
+	self:Wait(0.2)
+	self:Expect(string.find(GM:Hud().Cache["PromptText.Text"] or "", "수리") ~= nil, "수리 안내 " .. tostring(GM:Hud().Cache["PromptText.Text"]))
+	Wood = GM:CountItem("Wood")
+	self:Press("Interact")
+	self:Expect(S.Comp.Hp == 120 and GM:CountItem("Wood") == Wood - 2, "수리 (나무 2)")
+	-- 부서짐 (디펜스가 켜는 표시) → 정리
+	S.Comp.Destroyed = true
+	self:Wait(0.1)
+	self:Expect(GM:StructureAt(TX0, TY) == nil and R.StructuresLost == 1, "부서진 설치물 정리")
+	-- 크리스탈 옮기기
+	local Cr = GM.Crystal
+	local CP = GM:CrystalPos()
+	self:GoTo(CP + Vector3(0, 110, 0), 30, 15)
+	P.Facing = "Up"
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(GM.CarryingCrystal, "크리스탈 들기")
+	local NX, NY = Cr.TX + 3, Cr.TY + 2
+	self:StandAbove(NX, NY)
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(not GM.CarryingCrystal and Cr.TX == NX and Cr.TY == NY and Cr.Comp.TX == NX, "크리스탈 내려놓기")
+	-- 크리스탈 강화
+	self:Press("Build")
+	self:StandAbove(NX, NY)
+	self.In.Slot = 8
+	self:Yield()
+	self:Press("UseTool")
+	self:Expect(Cr.Level == 2 and Cr.Comp.MaxHp == 600 and GM.Gold == 2000 - 300, "크리스탈 2단계")
+	self:Press("Build")
+	-- 온실 → 계절이 바뀌어도 안쪽 작물은 산다
+	local M = GM.Map
+	local Inside = { M.Greenhouse[1] + 1, M.Greenhouse[2] + 1 }
+	self:GoTo(GM.GreenhouseCenter + Vector3(0, M.Greenhouse[4] * 50 + 100, 0), 40, 20)
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(GM.bGreenhouse and GM:IsGreenhouseTile(Inside[1], Inside[2]), "온실 완성")
+	self:Wait(0.3)
+	self:UseOn(Inside[1], Inside[2], "Hoe")
+	self:UseOn(Inside[1], Inside[2], "Seed:EyeRadish:0")
+	local OX, OY = GM:TileOf(Vector3(-800, 0, 0))
+	self:UseOn(OX, OY, "Hoe")
+	self:UseOn(OX, OY, "Seed:EyeRadish:0")
+	GM.Day = 30
+	self:NextMorning()
+	self:Expect(not GM:GetTile(Inside[1], Inside[2]).Crop.Dead and GM:GetTile(OX, OY).Crop.Dead, "온실 작물 생존")
+	-- 저장/불러오기
+	local Count = 0
+	for _ in pairs(GM.Structures) do Count = Count + 1 end
+	GM:SaveGame()
+	GM:LoadGame()
+	self:Wait(0.3)
+	local Count2 = 0
+	for _, S_ in pairs(GM.Structures) do Count2 = Count2 + 1 end
+	self:Expect(Count2 == Count and GM.Crystal.TX == NX and GM.Crystal.Level == 2 and GM.bGreenhouse and GM.Crystal.Comp ~= nil, "설치물·크리스탈·온실 저장")
+	self:Finish()
+end
+
+function AutoPilot:RunBuildShot()
+	local GM, P = self.GM, self.Player
+	GM:SetHour(16)
+	local TX0, TY = GM:TileOf(Vector3(-500, -350, 0))
+	local Plan = { "WallWood", "WallWood", "WallStone", "WallStone", "WallIron", "Gate", "WallIron" }
+	for I, Id in ipairs(Plan) do GM:PlaceStructure(Id, TX0 + I - 1, TY, 0, nil) end
+	GM:PlaceStructure("Spike", TX0 + 1, TY + 2, 0, nil)
+	GM:PlaceStructure("Spike", TX0 + 2, TY + 2, 0, nil)
+	GM:PlaceStructure("Mine", TX0 + 4, TY + 2, 0, nil)
+	GM:PlaceStructure("Turret", TX0 + 6, TY + 2, 0, nil)
+	GM:PlaceStructure("WallWood", TX0 - 1, TY + 1, 90, nil)
+	GM:PlaceStructure("WallWood", TX0 - 1, TY + 2, 90, nil)
+	P:Teleport(Vector3(-200, -150, P.entity:GetWorldPosition().Z))
+	GM:ToggleBuildMode()
+	while true do self:Yield() end
 end
 
 function AutoPilot:RunTime()

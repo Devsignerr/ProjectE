@@ -1,0 +1,79 @@
+{
+  "Version": 1,
+  "Name": "Buildable",
+  "Description": "건설 가능한 설치물",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "",
+      "Description": "이름"
+    },
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Default": "Wall",
+      "Description": "종류",
+      "Values": [
+        "Wall",
+        "Gate",
+        "Trap",
+        "Turret"
+      ]
+    },
+    {
+      "Name": "Cost",
+      "Type": "String",
+      "Default": "",
+      "Description": "재료 \"물건*수,…\""
+    },
+    {
+      "Name": "Hp",
+      "Type": "Int",
+      "Default": 100,
+      "Description": "내구도"
+    },
+    {
+      "Name": "Blocks",
+      "Type": "Bool",
+      "Default": true,
+      "Description": "좀비 길을 막음"
+    },
+    {
+      "Name": "Solid",
+      "Type": "Bool",
+      "Default": true,
+      "Description": "플레이어도 막음 (충돌)"
+    },
+    {
+      "Name": "Damage",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "덫·포탑 피해"
+    },
+    {
+      "Name": "Radius",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "덫 범위 (cm)"
+    },
+    {
+      "Name": "Cooldown",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "덫·포탑 재사용 (초)"
+    },
+    {
+      "Name": "Range",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "포탑 사거리 (cm)"
+    },
+    {
+      "Name": "Description",
+      "Type": "String",
+      "Default": "",
+      "Description": "설명"
+    }
+  ]
+}

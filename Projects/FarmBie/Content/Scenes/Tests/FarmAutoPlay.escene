@@ -8,7 +8,7 @@
             0.95,
             0.86
           ],
-          "Intensity": 4.6
+          "Intensity": 5.4
         },
         "TransformComponent": {
           "Position": [
@@ -52,11 +52,11 @@
           "TimeOfDay": 10.0,
           "DayLengthMinutes": 0.0,
           "MaxSunElevation": 60.0,
-          "NorthAzimuth": 0.0,
+          "NorthAzimuth": 180.0,
           "AnimateInEditor": false
         },
         "SkyLightComponent": {
-          "Intensity": 2.6
+          "Intensity": 1.9
         },
         "HeightFogComponent": {
           "Color": [
@@ -723,6 +723,118 @@
         }
       },
       "Name": "Sack_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1200.0,
+            300.0,
+            39.017651159229324
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.8
+          ]
+        }
+      },
+      "Name": "GreenhouseStake_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            300.0,
+            41.26576970346387
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.8
+          ]
+        }
+      },
+      "Name": "GreenhouseStake_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1200.0,
+            700.0,
+            37.063157975374985
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.8
+          ]
+        }
+      },
+      "Name": "GreenhouseStake_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            700.0,
+            39.490469616847406
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.8
+          ]
+        }
+      },
+      "Name": "GreenhouseStake_3",
       "Parent": -1
     },
     {
@@ -11201,7 +11313,7 @@
         }
       },
       "Name": "MerchantBody",
-      "Parent": 395
+      "Parent": 399
     },
     {
       "Components": {
@@ -11250,7 +11362,7 @@
         }
       },
       "Name": "MerchantShadow",
-      "Parent": 395
+      "Parent": 399
     },
     {
       "Components": {
@@ -11547,7 +11659,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 405
+          "Root": 409
         },
         "TransformComponent": {
           "Position": [

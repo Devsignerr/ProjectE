@@ -187,6 +187,8 @@ def HudWidgets():
 			Text(f"SlotCount{I}", "", 16, BoxSlot((0, 0, 7, 4), "Right", "Bottom"), TEXT_LIGHT),
 		]))
 	C.append(Widget("VerticalBox", "HotbarBox", CanvasSlot((0.5, 1), 0, -14, 0, 0, (0.5, 1), AutoSize=True, Z=1), "HitTestInvisible", [
+		Text("BuildTitle", "건설 모드  (B 나가기 · R 돌리기 · E 수리/크리스탈 · 도구 = 설치/철거)", 16, BoxSlot((0, 0, 0, 4), HAlign="Center"), (0.7, 0.95, 1.0, 1),
+			 "Center", "Collapsed"),
 		Text("ItemName", "", 20, BoxSlot((0, 0, 0, 6), HAlign="Center"), TEXT_GOLD, "Center"),
 		Widget("HorizontalBox", "Hotbar", BoxSlot(HAlign="Center"), "HitTestInvisible", Slots),
 		Widget("HorizontalBox", "WaterRow", BoxSlot((0, 6, 0, 0), HAlign="Center"), "Collapsed", [

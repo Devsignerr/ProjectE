@@ -8,7 +8,7 @@
             0.95,
             0.86
           ],
-          "Intensity": 4.6
+          "Intensity": 5.4
         },
         "TransformComponent": {
           "Position": [
@@ -52,7 +52,7 @@
           "TimeOfDay": 10.0,
           "DayLengthMinutes": 0.0,
           "MaxSunElevation": 60.0,
-          "NorthAzimuth": 0.0,
+          "NorthAzimuth": 180.0,
           "AnimateInEditor": false
         },
         "SkyLightComponent": {

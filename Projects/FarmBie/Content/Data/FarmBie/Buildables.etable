@@ -1,0 +1,118 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Buildable.estruct",
+  "Rows": [
+    {
+      "Name": "WallWood",
+      "Values": {
+        "DisplayName": "나무 울타리",
+        "Kind": "Wall",
+        "Cost": "Wood*4",
+        "Hp": 120,
+        "Blocks": true,
+        "Solid": true,
+        "Damage": 0,
+        "Radius": 0,
+        "Cooldown": 0,
+        "Range": 0,
+        "Description": "통나무를 박은 울타리. 싸고 빨리 세운다."
+      }
+    },
+    {
+      "Name": "WallStone",
+      "Values": {
+        "DisplayName": "돌벽",
+        "Kind": "Wall",
+        "Cost": "Stone*5,Wood*1",
+        "Hp": 320,
+        "Blocks": true,
+        "Solid": true,
+        "Damage": 0,
+        "Radius": 0,
+        "Cooldown": 0,
+        "Range": 0,
+        "Description": "돌을 쌓은 벽. 나무보다 훨씬 오래 버틴다."
+      }
+    },
+    {
+      "Name": "WallIron",
+      "Values": {
+        "DisplayName": "철벽",
+        "Kind": "Wall",
+        "Cost": "Iron*3,Stone*2",
+        "Hp": 750,
+        "Blocks": true,
+        "Solid": true,
+        "Damage": 0,
+        "Radius": 0,
+        "Cooldown": 0,
+        "Range": 0,
+        "Description": "철판을 두른 벽. 보스도 쉽게 뚫지 못한다."
+      }
+    },
+    {
+      "Name": "Gate",
+      "Values": {
+        "DisplayName": "나무 문",
+        "Kind": "Gate",
+        "Cost": "Wood*6",
+        "Hp": 160,
+        "Blocks": true,
+        "Solid": false,
+        "Damage": 0,
+        "Radius": 0,
+        "Cooldown": 0,
+        "Range": 0,
+        "Description": "사람은 지나가고 좀비는 막는 문."
+      }
+    },
+    {
+      "Name": "Spike",
+      "Values": {
+        "DisplayName": "가시덫",
+        "Kind": "Trap",
+        "Cost": "Wood*2,Stone*2",
+        "Hp": 90,
+        "Blocks": false,
+        "Solid": false,
+        "Damage": 8,
+        "Radius": 55,
+        "Cooldown": 0.5,
+        "Range": 0,
+        "Description": "위를 지나는 좀비를 계속 찌른다. 조금씩 닳는다."
+      }
+    },
+    {
+      "Name": "Mine",
+      "Values": {
+        "DisplayName": "지뢰",
+        "Kind": "Trap",
+        "Cost": "Mine*1",
+        "Hp": 1,
+        "Blocks": false,
+        "Solid": false,
+        "Damage": 90,
+        "Radius": 180,
+        "Cooldown": 0,
+        "Range": 0,
+        "Description": "보부상에게 산 지뢰를 묻는다. 한 번 터진다."
+      }
+    },
+    {
+      "Name": "Turret",
+      "Values": {
+        "DisplayName": "쇠뇌 포탑",
+        "Kind": "Turret",
+        "Cost": "Stone*6,Wood*4,Iron*1",
+        "Hp": 260,
+        "Blocks": true,
+        "Solid": true,
+        "Damage": 14,
+        "Radius": 0,
+        "Cooldown": 1.1,
+        "Range": 650,
+        "Description": "가까운 좀비에게 저절로 화살을 쏜다."
+      }
+    }
+  ]
+}

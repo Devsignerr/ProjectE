@@ -273,3 +273,39 @@ namespace SpriteBatching
 		}
 	}
 } // namespace SpriteBatching
+
+FMatrix4x4 SpriteMath::ComputeBillboardWorld(const FMatrix4x4& World, ESpriteBillboard Mode, const FVector3& CameraRight, const FVector3& CameraForward,
+                                             const FVector3& CameraUp)
+{
+	if (Mode != ESpriteBillboard::Full && Mode != ESpriteBillboard::Vertical)
+	{
+		return World;
+	}
+	const auto RowLength = [&](int32 Row) {
+		return std::sqrt(World.M[Row][0] * World.M[Row][0] + World.M[Row][1] * World.M[Row][1] + World.M[Row][2] * World.M[Row][2]);
+	};
+	FVector3 Right;
+	FVector3 Front;
+	FVector3 Up;
+	if (Mode == ESpriteBillboard::Full)
+	{
+		Right = CameraRight.GetNormalized();
+		Front = -CameraForward.GetNormalized();
+		Up    = CameraUp.GetNormalized();
+	}
+	else
+	{
+		Up = FVector3(0.0f, 0.0f, 1.0f);
+		const FVector3 Flat(CameraRight.X, CameraRight.Y, 0.0f);
+		Right = Flat.LengthSquared() > 1.0e-8f ? Flat.GetNormalized() : FVector3(1.0f, 0.0f, 0.0f);
+		Front = FVector3(-Right.Y, Right.X, 0.0f); // 수평면에서 오른쪽을 왼쪽으로 90도 (카메라 쪽) — Cross(Front(+Y 기준), Right(+X)) = Up과 같은 손
+	}
+	const float ScaleX = RowLength(0);
+	const float ScaleY = RowLength(1);
+	const float ScaleZ = RowLength(2);
+	FMatrix4x4  Result = World;
+	Result.M[0][0] = Right.X * ScaleX; Result.M[0][1] = Right.Y * ScaleX; Result.M[0][2] = Right.Z * ScaleX;
+	Result.M[1][0] = Front.X * ScaleY; Result.M[1][1] = Front.Y * ScaleY; Result.M[1][2] = Front.Z * ScaleY;
+	Result.M[2][0] = Up.X * ScaleZ;    Result.M[2][1] = Up.Y * ScaleZ;    Result.M[2][2] = Up.Z * ScaleZ;
+	return Result;
+}

@@ -313,3 +313,38 @@ E_TEST(SpriteNineSlice_TileRepeatsAndCropsLast)
 	SpriteNineSlice::Build(Input, Pieces);
 	E_EXPECT_EQ(Pieces.size(), static_cast<size_t>(3));
 }
+
+// 빌보드: 위치·스케일 유지, 전체 = 화면과 평행(앞 = 카메라 쪽), 세로축 = 위 +Z 고정·수평 회전, 없음 = 그대로
+E_TEST(SpriteDraw_BillboardWorld)
+{
+	FMatrix4x4 World = FMatrix4x4::Identity;
+	World.M[0][0] = 2.0f; // 스케일 X 2
+	World.M[2][2] = 3.0f; // 스케일 Z 3
+	World.M[3][0] = 10.0f; World.M[3][1] = 20.0f; World.M[3][2] = 30.0f;
+	// 카메라: 위에서 비스듬히 아래로 (앞 = (0, -0.8, -0.6)), 오른쪽 +X
+	const FVector3 Forward(0.0f, -0.8f, -0.6f);
+	const FVector3 Right(1.0f, 0.0f, 0.0f);
+	const FVector3 Up(0.0f, -0.6f, 0.8f); // Cross(Forward, Right)
+	const FMatrix4x4 Same = SpriteMath::ComputeBillboardWorld(World, ESpriteBillboard::None, Right, Forward, Up);
+	E_EXPECT_TRUE(Same.M[0][0] == 2.0f && Same.M[2][2] == 3.0f && Same.M[1][1] == 1.0f);
+
+	const FMatrix4x4 Full = SpriteMath::ComputeBillboardWorld(World, ESpriteBillboard::Full, Right, Forward, Up);
+	E_EXPECT_NEAR(Full.M[1][1], 0.8f, 1.0e-5f);  // 앞 = -Forward
+	E_EXPECT_NEAR(Full.M[1][2], 0.6f, 1.0e-5f);
+	E_EXPECT_NEAR(Full.M[2][1], -0.6f * 3.0f, 1.0e-5f); // 위 = 카메라 위 × 스케일 Z
+	E_EXPECT_NEAR(Full.M[2][2], 0.8f * 3.0f, 1.0e-5f);
+	E_EXPECT_NEAR(Full.M[0][0], 2.0f, 1.0e-5f);
+	E_EXPECT_TRUE(Full.M[3][0] == 10.0f && Full.M[3][1] == 20.0f && Full.M[3][2] == 30.0f);
+
+	const FMatrix4x4 Vertical = SpriteMath::ComputeBillboardWorld(World, ESpriteBillboard::Vertical, Right, Forward, Up);
+	E_EXPECT_NEAR(Vertical.M[2][0], 0.0f, 1.0e-6f); // 위 = +Z 고정
+	E_EXPECT_NEAR(Vertical.M[2][1], 0.0f, 1.0e-6f);
+	E_EXPECT_NEAR(Vertical.M[2][2], 3.0f, 1.0e-6f);
+	E_EXPECT_NEAR(Vertical.M[1][1], 1.0f, 1.0e-6f); // 앞 = 수평으로 카메라 쪽 (+Y)
+	E_EXPECT_NEAR(Vertical.M[1][2], 0.0f, 1.0e-6f);
+	// 카메라가 옆(+X 쪽에서 -X를 봄)으로 돌면 세로축 빌보드의 앞도 +X
+	const FMatrix4x4 Side = SpriteMath::ComputeBillboardWorld(World, ESpriteBillboard::Vertical, FVector3(0.0f, -1.0f, 0.0f), FVector3(-1.0f, 0.0f, 0.0f),
+	                                                          FVector3(0.0f, 0.0f, 1.0f));
+	E_EXPECT_NEAR(Side.M[1][0], 1.0f, 1.0e-6f);
+	E_EXPECT_NEAR(Side.M[0][1], -2.0f, 1.0e-6f); // 오른쪽 = 카메라 오른쪽 × 스케일 X
+}

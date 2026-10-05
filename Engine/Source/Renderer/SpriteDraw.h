@@ -67,8 +67,22 @@ struct FSpriteChunkDraw
 	bool             bStatic       = false;
 };
 
+// 빌보드 (FSpriteComponent::Billboard와 같은 번호, 끝에만 추가)
+enum class ESpriteBillboard : int32
+{
+	None     = 0,
+	Full     = 1, // 사각형이 화면과 평행 (로컬 X = 카메라 오른쪽, 로컬 Z = 카메라 위, 앞 +Y = 카메라 쪽)
+	Vertical = 2, // 위 = 월드 +Z 고정, 좌우로만 돌아 카메라를 향함 (로컬 X = 카메라 오른쪽의 수평 성분)
+};
+
 namespace SpriteMath
 {
+	// 빌보드 월드 행렬: World의 위치(3행)·축 길이(스케일)는 그대로, 축 방향만 카메라 기준으로 바꾼다 (None이면 World 그대로).
+	//   직교·원근 공통으로 카메라 방향만 쓴다(화면과 평행 — 화면 가장자리에서도 같은 모양). 세로축은 카메라 오른쪽의 수평 성분이 0에 가까우면
+	//   (바로 위·아래에서 볼 때) 월드 +X. 행 벡터 규약: 0행 = 로컬 X, 1행 = 로컬 Y(앞), 2행 = 로컬 Z
+	FMatrix4x4 ComputeBillboardWorld(const FMatrix4x4& World, ESpriteBillboard Mode, const FVector3& CameraRight, const FVector3& CameraForward,
+	                                 const FVector3& CameraUp);
+
 	// 월드 사각형 = Origin + U * AxisX + V * AxisZ (U, V ∈ [0, 1], V = 로컬 위쪽)
 	struct FQuad
 	{

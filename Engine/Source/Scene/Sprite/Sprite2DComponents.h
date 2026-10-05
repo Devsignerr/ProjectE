@@ -55,6 +55,7 @@ struct FSpriteComponent
 	ESpriteBlendMode Blend       = ESpriteBlendMode::Alpha; // 끝에 덧붙임 (기본 Alpha = 이전 화면)
 	float            AlphaCutoff = 0.5f;                    // Masked 버림 기준 + 그림자 깊이 clip 기준
 	ESpriteSliceMode SliceMode   = ESpriteSliceMode::Stretch; // 9-슬라이스 슬라이스(Border)를 원래와 다른 Size로 그릴 때 가운데·가장자리 채우기
+	int32            Billboard   = 0; // ESpriteBillboard: 0 없음(엔티티 회전), 1 전체(화면과 평행), 2 세로축(위 = 월드 +Z, 좌우로만 — HD-2D 캐릭터). 끝에만 추가
 
 	FSpriteRuntime Runtime;
 };

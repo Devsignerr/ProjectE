@@ -1547,7 +1547,12 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		{
 			CasterTest = [this](const FBox& Bounds) { return ShadowRenderer.IntersectsCasterVolume(Bounds) || LocalLightRenderer.IntersectsShadowCaster(Bounds); };
 		}
-		SpriteCollector.Collect(Scene, FrozenFrustum, CasterTest, ShadowStaticFrames);
+		FSpriteSceneCollector::FBillboardView BillboardView;
+		BillboardView.Right   = Camera.GetRightVector();
+		BillboardView.Forward = Camera.GetForwardVector();
+		BillboardView.Up      = Camera.GetUpVector();
+		BillboardView.bValid  = true;
+		SpriteCollector.Collect(Scene, FrozenFrustum, CasterTest, ShadowStaticFrames, BillboardView);
 		SpriteShadows.SetBias(ShadowSettings.DepthBias, ShadowSettings.SlopeBias, LocalShadowSettings.DepthBias, LocalShadowSettings.SlopeBias);
 		SpriteShadows.Prepare(SpriteCollector.GetShadowItems(), SpriteCollector.GetShadowChunks(), RendererCVars::SpriteTranslucentShadows.Get());
 	}

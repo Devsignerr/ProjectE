@@ -67,7 +67,16 @@ public:
 	// 게임 스레드. 결과는 다음 Collect까지 유효. ShadowCasterTest = 월드 경계가 그림자 캐스터 볼륨에 드는가 (비면 그림자 목록 없음 —
 	// 여러 스레드에서 불린다: 읽기 전용), StaticFrames = 정적 캐스터가 되는 연속 수집 수 (r.Shadow.Cache.StaticFrames)
 	using FCasterTest = std::function<bool(const FBox&)>;
-	void Collect(FScene& Scene, const FFrustum& Frustum, const FCasterTest& ShadowCasterTest = {}, uint32 StaticFrames = 30);
+	// 빌보드 스프라이트의 기준 카메라 축 (SpriteMath::ComputeBillboardWorld — 비면 빌보드 없이 엔티티 회전)
+	struct FBillboardView
+	{
+		FVector3 Right   = FVector3(1.0f, 0.0f, 0.0f);
+		FVector3 Forward = FVector3(0.0f, -1.0f, 0.0f);
+		FVector3 Up      = FVector3(0.0f, 0.0f, 1.0f);
+		bool     bValid  = false;
+	};
+	void Collect(FScene& Scene, const FFrustum& Frustum, const FCasterTest& ShadowCasterTest = {}, uint32 StaticFrames = 30,
+	             const FBillboardView& Billboard = {});
 	std::span<const FSpriteDrawItem>  GetItems() const { return Items; }
 	std::span<const FSpriteChunkDraw> GetChunks() const { return Chunks; }
 	std::span<const FSpriteDrawItem>  GetShadowItems() const { return ShadowItems; }   // bCastShadows + 캐스터 판정 통과 (bShadowStatic 채움)
@@ -158,7 +167,7 @@ private:
 	FTextureHandle ResolveAssetTexture(const std::shared_ptr<const void>& Owner, const std::string& AssetPath, const std::string& Reference,
 	                                   ESpriteFilter Filter);
 	FTextureHandle LoadPathTexture(const std::string& ContentPath, ESpriteFilter Filter);
-	void           CollectSprites(FScene& Scene, const FFrustum& Frustum, const FCasterTest& CasterTest, uint32 StaticFrames);
+	void           CollectSprites(FScene& Scene, const FFrustum& Frustum, const FCasterTest& CasterTest, uint32 StaticFrames, const FBillboardView& Billboard);
 	void           CollectTilemaps(FScene& Scene, const FFrustum& Frustum, const FCasterTest& CasterTest, uint32 StaticFrames);
 	void           RebuildTilemap(FTilemapCache& Cache, const FTilemapData& Data, bool bForceAll);
 	std::unique_ptr<FChunkGeometry> CreateGeometry(const SpriteTiles::FChunkBuild& Build, int32 ChunkX, int32 ChunkY);

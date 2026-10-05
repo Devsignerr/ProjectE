@@ -163,7 +163,8 @@ FTextureHandle FSpriteSceneCollector::ResolveAssetTexture(const std::shared_ptr<
 	return Entry.Handle;
 }
 
-void FSpriteSceneCollector::Collect(FScene& Scene, const FFrustum& Frustum, const FCasterTest& ShadowCasterTest, uint32 StaticFrames)
+void FSpriteSceneCollector::Collect(FScene& Scene, const FFrustum& Frustum, const FCasterTest& ShadowCasterTest, uint32 StaticFrames,
+                                    const FBillboardView& Billboard)
 {
 	Items.clear();
 	Chunks.clear();
@@ -181,7 +182,7 @@ void FSpriteSceneCollector::Collect(FScene& Scene, const FFrustum& Frustum, cons
 	}
 	// 타일맵 먼저: 애니메이션 타일 항목이 스프라이트 항목보다 제출 순서가 앞 (같은 키면 타일 아래)
 	CollectTilemaps(Scene, Frustum, ShadowCasterTest, StaticFrames);
-	CollectSprites(Scene, Frustum, ShadowCasterTest, StaticFrames);
+	CollectSprites(Scene, Frustum, ShadowCasterTest, StaticFrames, Billboard);
 }
 
 bool FSpriteSceneCollector::PeekSprite(const FSpriteComponent& Sprite, uint32 LibraryGeneration, FSpriteSource& Out)
@@ -206,7 +207,8 @@ bool FSpriteSceneCollector::PeekSprite(const FSpriteComponent& Sprite, uint32 Li
 	return true;
 }
 
-void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustum, const FCasterTest& CasterTest, uint32 StaticFrames)
+void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustum, const FCasterTest& CasterTest, uint32 StaticFrames,
+                                           const FBillboardView& Billboard)
 {
 	FRegistry&                       Registry     = Scene.GetRegistry();
 	const std::vector<FEntity>*      ViewEntities = Registry.View<FSpriteComponent, FTransformComponent>().GetIterationEntities();
@@ -328,6 +330,12 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 			const FSpriteUvRect     Uv     = SpriteMath::ComputeUvRect(Slice, Source.TextureWidth, Source.TextureHeight);
 			FSpriteDrawItem&        Item   = SpriteScratch[Index];
 			Item.World = *Source.World;
+			if (Sprite.Billboard != 0 && Billboard.bValid)
+			{
+				// 빌보드: 위치·스케일은 엔티티, 축 방향은 카메라 (이력 해시·직전 월드도 이 행렬 — 카메라가 돌면 그리는 값이 바뀐 것)
+				Item.World = SpriteMath::ComputeBillboardWorld(*Source.World, static_cast<ESpriteBillboard>(Sprite.Billboard), Billboard.Right, Billboard.Forward,
+				                                               Billboard.Up);
+			}
 			Item.Size  = SpriteMath::ComputeSize(Slice, Asset.UnitsPerPixel, Sprite.Size);
 			// 9-슬라이스 판정 (조각은 아래 4) 순차 단계에서 — 보통 소수)
 			const FVector2 OriginalSize(static_cast<float>(Slice.W) * Asset.UnitsPerPixel, static_cast<float>(Slice.H) * Asset.UnitsPerPixel);

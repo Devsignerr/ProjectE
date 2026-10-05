@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "Name": "Rarity",
+  "Description": "희귀도",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "",
+      "Description": "이름"
+    },
+    {
+      "Name": "PriceMul",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "판매가 배율"
+    },
+    {
+      "Name": "UpChance",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "수확 때 한 단계 위 씨앗 확률"
+    },
+    {
+      "Name": "Color",
+      "Type": "Array",
+      "Default": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Description": "글자 색",
+      "Element": "Float"
+    }
+  ]
+}

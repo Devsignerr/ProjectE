@@ -10,13 +10,16 @@ local FarmGame = {
 		AutoPlay  = "",       -- 자동 검증 시나리오 (FarmAutoPilot.lua)
 		Slot      = "1",      -- 저장 슬롯 ("Test" = 자동 검증 전용 — 시작할 때 지운다)
 		SleepSpot = "0,0",    -- 집 문 앞 "x,y" (잠자기 상호작용·기상 자리)
+		ShipSpot  = "0,0",    -- 출하 상자 "x,y"
+		MerchantSpot = "0,0", -- 보부상 자리 "x,y"
 	},
 }
-for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua" }) do
+for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua", "Scripts/FarmBie/FarmInventory.lua", "Scripts/FarmBie/FarmField.lua",
+                         "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do FarmGame[Name] = Fn end
 end
 
-local SaveParts = { "Time" }
+local SaveParts = { "Time", "Inventory", "Field", "Economy" }
 local SaveVersion = 1
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
@@ -30,14 +33,20 @@ function FarmGame:OnStart()
 	self.Interactables = {}
 	self.SleepSpot = Parse2(self.Properties.SleepSpot)
 	self:InitTime()
+	self:InitInventory()
+	self.RandState = 12345
+	self:InitField()
+	self:InitEconomy()
 	self:AddInteractable({ Pos = self.SleepSpot, Radius = 170, Prompt = function()
 		if self.Phase == "Night" then return "E  잠자기 (하루를 마친다)" end
 		return nil
 	end, Act = function() self:BeginSleep("Bed") end })
 	if self.Properties.Slot == "Test" then
 		SaveGame.Delete(self:SlotName())
-	elseif SaveGame.Exists(self:SlotName()) then
-		self:LoadGame()
+	end
+	if not (SaveGame.Exists(self:SlotName()) and self:LoadGame()) then
+		self:GiveStartItems()
+		self:GiveStartGold()
 	end
 	self:ApplyDayNight(true)
 	self.bReady = true
@@ -61,6 +70,7 @@ end
 
 function FarmGame:OnUpdate(Dt)
 	self:UpdateTime(Dt)
+	self:UpdateMerchant()
 end
 
 -- ---- 상호작용
@@ -94,11 +104,34 @@ function FarmGame:UpdateInteract(Pos)
 end
 
 function FarmGame:Interact()
-	if self.Focus and self.Phase ~= "Sleep" then
+	if self.Phase == "Sleep" then return false end
+	if self.Focus then
 		self.Focus.Act()
 		return true
 	end
+	-- 다 자란 작물 수확 (발 앞 칸)
+	if self.CursorAction == "Harvest" then
+		local P = self:Player()
+		local TX, TY = self:TargetTile(P.entity:GetWorldPosition(), P:GetFacingVector())
+		return self:ApplyUse(nil, TX, TY)
+	end
 	return false
+end
+
+-- ---- 시간 훅 (FarmTime이 부른다)
+function FarmGame:OnDayStart(bNewSeason)
+	local Grown = self:GrowField()
+	local Income = self:SettleShipping()
+	-- 아침 알림 띠 부제에 붙일 글 (FarmTime이 잠 전환 끝에 쓴다)
+	self.MorningNotes = {}
+	if Income > 0 then self.MorningNotes[#self.MorningNotes + 1] = string.format("출하 수입 +%d", Income) end
+	if self:IsMerchantDay() then self.MorningNotes[#self.MorningNotes + 1] = "보부상이 남쪽 천막에 왔다" end
+	Log.Info(string.format("[FarmBie] 아침: 자란 작물 %d, 출하 수입 %d, 돈 %d", Grown, Income, self.Gold))
+end
+
+function FarmGame:OnSeasonChanged(OldSeason)
+	local Count = self:WitherField()
+	if Count > 0 then Log.Info(string.format("[FarmBie] 계절이 바뀌어 작물 %d개가 시듦", Count)) end
 end
 
 -- 잠에서 깸: 집 문 앞으로

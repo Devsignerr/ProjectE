@@ -1,0 +1,18 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Economy.estruct",
+  "Values": {
+    "StartGold": 300,
+    "MerchantOpenHour": 6.0,
+    "MerchantCloseHour": 18.0,
+    "RandomStockPicks": 3,
+    "MerchantLines": [
+      "흐흐… 오늘도 살아 있었군. 뭘 찾나?",
+      "밤이 길어지고 있어. 울타리는 튼튼한가?",
+      "이 씨앗들, 어디서 났는지는 묻지 말게.",
+      "자네 밭에서 이상한 소리가 나더군. 좋은 징조야.",
+      "물건은 한정이야. 망설이면 다른 이가 가져가지.",
+      "크리스탈은 잘 숨겨 두었나? 놈들은 냄새를 맡는다네."
+    ]
+  }
+}

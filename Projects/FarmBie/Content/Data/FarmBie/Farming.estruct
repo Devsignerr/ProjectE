@@ -1,0 +1,62 @@
+{
+  "Version": 1,
+  "Name": "Farming",
+  "Description": "농사 수치",
+  "Fields": [
+    {
+      "Name": "SeedReturnChance",
+      "Type": "Float",
+      "Default": 0.35,
+      "Description": "한 번 열리는 작물 수확 때 같은 단계 씨앗 1개가 돌아올 확률"
+    },
+    {
+      "Name": "ExclusiveChance",
+      "Type": "Float",
+      "Default": 0.012,
+      "Description": "일반 작물 수확 때 계절 전용 희귀종 씨앗 확률"
+    },
+    {
+      "Name": "FertBasicMul",
+      "Type": "Float",
+      "Default": 1.6,
+      "Description": "기본 비료 칸 희귀 확률 배율"
+    },
+    {
+      "Name": "FertPremiumMul",
+      "Type": "Float",
+      "Default": 2.6,
+      "Description": "고급 비료 칸 희귀 확률 배율"
+    },
+    {
+      "Name": "CanCapacity",
+      "Type": "Int",
+      "Default": 40,
+      "Description": "물뿌리개 물 양"
+    },
+    {
+      "Name": "ToolTime",
+      "Type": "Float",
+      "Default": 0.42,
+      "Description": "도구 동작 길이 (초)"
+    },
+    {
+      "Name": "ToolHitTime",
+      "Type": "Float",
+      "Default": 0.2,
+      "Description": "도구 효과가 나는 때 (초)"
+    },
+    {
+      "Name": "ReachDistance",
+      "Type": "Float",
+      "Default": 75.0,
+      "Description": "발 앞 대상 칸 거리 (cm)"
+    },
+    {
+      "Name": "StartItems",
+      "Type": "Array",
+      "Default": [],
+      "Description": "처음 소지품 \"아이템*개수\"",
+      "Element": "String"
+    }
+  ]
+}

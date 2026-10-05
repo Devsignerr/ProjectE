@@ -11100,7 +11100,7 @@
         "ScriptComponent": {
           "ExecutionLocation": 0,
           "ScriptAsset": "Scripts/FarmBie/FarmGame.lua",
-          "PropertyOverrides": "{\"AutoPlay\": \"Time\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"Test\"}"
+          "PropertyOverrides": "{\"AutoPlay\": \"Time\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"Test\", \"ShipSpot\": \"380.0,-950.0\", \"MerchantSpot\": \"520.0,1480.0\"}"
         },
         "TransformComponent": {
           "Position": [
@@ -11122,6 +11122,214 @@
         }
       },
       "Name": "FarmGame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            1480.0,
+            0.18267140091474826
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Merchant",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Peddler.esprite",
+          "Slice": "Idle0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/FarmBie/Peddler_Idle.eflipbook",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "MerchantBody",
+      "Parent": 395
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Fx.esprite",
+          "Slice": "Shadow",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            1.5
+          ],
+          "Rotation": [
+            -0.7071067811865476,
+            0.0,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.1,
+            1.0,
+            1.1
+          ]
+        }
+      },
+      "Name": "MerchantShadow",
+      "Parent": 395
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            35.0,
+            90.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            1480.0,
+            90.18267140091474
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "MerchantCollision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Field.esprite",
+          "Slice": "Cursor",
+          "Color": [
+            1,
+            1,
+            1,
+            0.85
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            3.0
+          ],
+          "Rotation": [
+            -0.7071067811865476,
+            0.0,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "TileCursor",
       "Parent": -1
     },
     {
@@ -11254,7 +11462,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 397
+          "Root": 402
         },
         "TransformComponent": {
           "Position": [

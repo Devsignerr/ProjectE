@@ -148,7 +148,10 @@ function Time_:UpdateSleep(Dt)
 		elseif Left < self.Calendar.SeasonWarnDays then
 			Sub = Left == 0 and "오늘이 계절의 마지막 날 — 작물이 곧 시든다!" or string.format("계절이 %d일 뒤 바뀐다 — 작물 수확을 서두르자", Left)
 		end
-		self:Hud():Announce(self:DateText(), Sub or string.format("%d년차 아침", self.Year), 3.0)
+		local Notes = self.MorningNotes or {}
+		if Sub then table.insert(Notes, 1, Sub) end
+		self:Hud():Announce(self:DateText(), #Notes > 0 and table.concat(Notes, "   ·   ") or string.format("%d년차 아침", self.Year), 3.5)
+		self.MorningNotes = nil
 	end
 end
 

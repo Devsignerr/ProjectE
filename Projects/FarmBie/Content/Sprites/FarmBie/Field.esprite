@@ -1,0 +1,109 @@
+{
+  "Version": 1,
+  "Texture": "Field.png",
+  "TextureWidth": 256,
+  "TextureHeight": 18,
+  "UnitsPerPixel": 6.25,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "Soil0",
+      "X": 1,
+      "Y": 1,
+      "W": 16,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SoilWet0",
+      "X": 18,
+      "Y": 1,
+      "W": 16,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Soil1",
+      "X": 35,
+      "Y": 1,
+      "W": 16,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SoilWet1",
+      "X": 52,
+      "Y": 1,
+      "W": 16,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Soil2",
+      "X": 69,
+      "Y": 1,
+      "W": 16,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "SoilWet2",
+      "X": 86,
+      "Y": 1,
+      "W": 16,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "FertBasic",
+      "X": 103,
+      "Y": 1,
+      "W": 16,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "FertPremium",
+      "X": 120,
+      "Y": 1,
+      "W": 16,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Cursor",
+      "X": 137,
+      "Y": 1,
+      "W": 16,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    }
+  ]
+}

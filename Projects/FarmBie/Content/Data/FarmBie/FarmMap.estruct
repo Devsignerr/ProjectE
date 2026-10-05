@@ -1,0 +1,71 @@
+{
+  "Version": 1,
+  "Name": "FarmMap",
+  "Description": "농장 격자",
+  "Fields": [
+    {
+      "Name": "Tile",
+      "Type": "Float",
+      "Default": 100.0,
+      "Description": "칸 크기 (cm)"
+    },
+    {
+      "Name": "Width",
+      "Type": "Int",
+      "Default": 52,
+      "Description": "가로 칸 수"
+    },
+    {
+      "Name": "Height",
+      "Type": "Int",
+      "Default": 40,
+      "Description": "세로 칸 수"
+    },
+    {
+      "Name": "OriginX",
+      "Type": "Float",
+      "Default": -2600.0,
+      "Description": "격자 왼쪽 위 X"
+    },
+    {
+      "Name": "OriginY",
+      "Type": "Float",
+      "Default": -2000.0,
+      "Description": "격자 왼쪽 위 Y"
+    },
+    {
+      "Name": "FarmMinX",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "밭을 갈 수 있는 영역 (울타리 안)"
+    },
+    {
+      "Name": "FarmMinY",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": ""
+    },
+    {
+      "Name": "FarmMaxX",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": ""
+    },
+    {
+      "Name": "FarmMaxY",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": ""
+    },
+    {
+      "Name": "Well",
+      "Type": "Array",
+      "Default": [
+        0.0,
+        0.0
+      ],
+      "Description": "우물 위치 (물 채우기)",
+      "Element": "Float"
+    }
+  ]
+}

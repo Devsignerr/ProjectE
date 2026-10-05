@@ -1,0 +1,50 @@
+{
+  "Version": 1,
+  "Name": "StockItem",
+  "Description": "보부상 물건",
+  "Fields": [
+    {
+      "Name": "Key",
+      "Type": "String",
+      "Default": "",
+      "Description": "물건 열쇠 (FarmInventory.lua 규약)"
+    },
+    {
+      "Name": "Price",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "값 (0 = 물건 기본값)"
+    },
+    {
+      "Name": "Stock",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "방문마다 들고 오는 수량"
+    },
+    {
+      "Name": "Always",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "늘 들고 옴 (아니면 무작위 후보)"
+    },
+    {
+      "Name": "Weight",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "무작위 후보 가중치"
+    },
+    {
+      "Name": "Season",
+      "Type": "Enum",
+      "Default": "Any",
+      "Description": "파는 계절",
+      "Values": [
+        "Any",
+        "Spring",
+        "Summer",
+        "Autumn",
+        "Winter"
+      ]
+    }
+  ]
+}

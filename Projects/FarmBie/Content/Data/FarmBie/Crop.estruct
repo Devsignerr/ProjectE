@@ -1,0 +1,67 @@
+{
+  "Version": 1,
+  "Name": "Crop",
+  "Description": "작물",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "",
+      "Description": "이름"
+    },
+    {
+      "Name": "Season",
+      "Type": "Enum",
+      "Default": "Spring",
+      "Description": "자라는 계절",
+      "Values": [
+        "Spring",
+        "Summer",
+        "Autumn",
+        "Winter"
+      ]
+    },
+    {
+      "Name": "Days",
+      "Type": "Int",
+      "Default": 4,
+      "Description": "다 자라는 날 수 (물 준 날만 센다)"
+    },
+    {
+      "Name": "Regrow",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "수확 뒤 다시 열리는 날 수 (0 = 한 번)"
+    },
+    {
+      "Name": "Price",
+      "Type": "Int",
+      "Default": 10,
+      "Description": "일반 단계 판매가"
+    },
+    {
+      "Name": "SeedPrice",
+      "Type": "Int",
+      "Default": 10,
+      "Description": "일반 단계 씨앗 값 (0 = 팔지 않음)"
+    },
+    {
+      "Name": "Exclusive",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "계절 전용 희귀종 (수확 때 드물게만 씨앗이 나온다)"
+    },
+    {
+      "Name": "Sanity",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "먹으면 회복하는 정신력 (0 = 정신력 음식 아님)"
+    },
+    {
+      "Name": "Description",
+      "Type": "String",
+      "Default": "",
+      "Description": "설명"
+    }
+  ]
+}

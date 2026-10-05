@@ -1,0 +1,21 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Farming.estruct",
+  "Values": {
+    "SeedReturnChance": 0.35,
+    "ExclusiveChance": 0.012,
+    "FertBasicMul": 1.6,
+    "FertPremiumMul": 2.6,
+    "CanCapacity": 40,
+    "ToolTime": 0.42,
+    "ToolHitTime": 0.2,
+    "ReachDistance": 75.0,
+    "StartItems": [
+      "Hoe*1",
+      "Can*1",
+      "Seed:EyeRadish:0*10",
+      "Seed:TentacleLeek:0*5",
+      "FertBasic*5"
+    ]
+  }
+}

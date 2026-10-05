@@ -112,8 +112,146 @@ DAY_NIGHT_FIELDS = [
 ]
 
 
+# ---- 농사 ---------------------------------------------------------------------------------------------------------------------
+# 희귀도: 판매가 배율, 수확 때 한 단계 위 씨앗이 나올 확률(비료 배율을 곱함)
+RARITY_ROWS = [
+	("Common",    {"DisplayName": "일반",     "PriceMul": 1.0,  "UpChance": 0.10,  "Color": [0.92, 0.9, 0.86, 1.0]}),
+	("Rare",      {"DisplayName": "레어",     "PriceMul": 3.0,  "UpChance": 0.06,  "Color": [0.45, 0.7, 1.0, 1.0]}),
+	("Unique",    {"DisplayName": "유니크",   "PriceMul": 10.0, "UpChance": 0.03,  "Color": [0.8, 0.5, 1.0, 1.0]}),
+	("Legendary", {"DisplayName": "레전더리", "PriceMul": 40.0, "UpChance": 0.0,   "Color": [1.0, 0.82, 0.3, 1.0]}),
+]
+
+FARMING = {
+	"SeedReturnChance": 0.35,       # 한 번 열리는 작물을 수확할 때 같은 단계 씨앗 1개가 돌아올 확률
+	"ExclusiveChance": 0.012,       # 일반 작물 수확 때 그 계절 전용 희귀종(레어) 씨앗이 나올 확률 (비료 배율을 곱함)
+	"FertBasicMul": 1.6, "FertPremiumMul": 2.6,  # 비료를 준 칸의 희귀 확률 배율
+	"CanCapacity": 40,              # 물뿌리개 물 (칸 하나에 1)
+	"ToolTime": 0.42, "ToolHitTime": 0.2,  # 도구 동작 길이 / 효과가 나는 때 (초)
+	"ReachDistance": 75.0,          # 발 앞 대상 칸 거리 (cm)
+	"StartItems": ["Hoe*1", "Can*1", "Seed:EyeRadish:0*10", "Seed:TentacleLeek:0*5", "FertBasic*5"],
+}
+
+FARMING_FIELDS = [
+	Field("SeedReturnChance", "Float", 0.35, "한 번 열리는 작물 수확 때 같은 단계 씨앗 1개가 돌아올 확률"),
+	Field("ExclusiveChance", "Float", 0.012, "일반 작물 수확 때 계절 전용 희귀종 씨앗 확률"),
+	Field("FertBasicMul", "Float", 1.6, "기본 비료 칸 희귀 확률 배율"),
+	Field("FertPremiumMul", "Float", 2.6, "고급 비료 칸 희귀 확률 배율"),
+	Field("CanCapacity", "Int", 40, "물뿌리개 물 양"),
+	Field("ToolTime", "Float", 0.42, "도구 동작 길이 (초)"),
+	Field("ToolHitTime", "Float", 0.2, "도구 효과가 나는 때 (초)"),
+	Field("ReachDistance", "Float", 75.0, "발 앞 대상 칸 거리 (cm)"),
+	Field("StartItems", "Array", [], "처음 소지품 \"아이템*개수\"", Element="String"),
+]
+
+ITEM_ROWS = [
+	("Hoe",         {"DisplayName": "괭이",       "Kind": "Tool", "Price": 0,   "Description": "풀밭을 갈아 밭을 만든다. 시든 작물도 걷어낸다."}),
+	("Can",         {"DisplayName": "물뿌리개",   "Kind": "Tool", "Price": 0,   "Description": "작물에 물을 준다. 물이 떨어지면 우물에서 채운다."}),
+	("FertBasic",   {"DisplayName": "기본 비료",  "Kind": "Fertilizer", "Price": 20, "Description": "간 칸에 뿌리면 그 칸 작물의 희귀 씨앗 확률이 오른다."}),
+	("FertPremium", {"DisplayName": "고급 비료",  "Kind": "Fertilizer", "Price": 60, "Description": "희귀 씨앗 확률이 크게 오른다. 보부상이 가끔 들고 온다."}),
+]
+
+
+def WriteFarming(Content):
+	import FarmBieCrops as FC
+	Struct(Content, "Crop", "작물", [
+		Field("DisplayName", "String", "", "이름"),
+		Field("Season", "Enum", "Spring", "자라는 계절", Values=FC.SEASONS),
+		Field("Days", "Int", 4, "다 자라는 날 수 (물 준 날만 센다)"),
+		Field("Regrow", "Int", 0, "수확 뒤 다시 열리는 날 수 (0 = 한 번)"),
+		Field("Price", "Int", 10, "일반 단계 판매가"),
+		Field("SeedPrice", "Int", 10, "일반 단계 씨앗 값 (0 = 팔지 않음)"),
+		Field("Exclusive", "Bool", False, "계절 전용 희귀종 (수확 때 드물게만 씨앗이 나온다)"),
+		Field("Sanity", "Int", 0, "먹으면 회복하는 정신력 (0 = 정신력 음식 아님)"),
+		Field("Description", "String", "", "설명"),
+	])
+	Table(Content, "Crops", "Crop", [(C["Id"], {"DisplayName": C["Name"], "Season": C["Season"], "Days": C["Days"], "Regrow": C["Regrow"],
+											   "Price": C["Price"], "SeedPrice": C["SeedPrice"], "Exclusive": C["Exclusive"], "Sanity": C["Sanity"],
+											   "Description": C["Desc"]}) for C in FC.CROPS])
+	Struct(Content, "Rarity", "희귀도", [
+		Field("DisplayName", "String", "", "이름"),
+		Field("PriceMul", "Float", 1.0, "판매가 배율"),
+		Field("UpChance", "Float", 0.0, "수확 때 한 단계 위 씨앗 확률"),
+		Field("Color", "Array", [1.0, 1.0, 1.0, 1.0], "글자 색", Element="Float"),
+	])
+	Table(Content, "Rarities", "Rarity", RARITY_ROWS)
+	Struct(Content, "Farming", "농사 수치", FARMING_FIELDS)
+	Values(Content, "Farming", "Farming", FARMING)
+	Struct(Content, "Item", "도구·비료 등 (씨앗·작물은 Crops 표에서 만든다)", [
+		Field("DisplayName", "String", "", "이름"),
+		Field("Kind", "Enum", "Tool", "종류", Values=["Tool", "Fertilizer", "Material", "Food", "Weapon", "Trap"]),
+		Field("Price", "Int", 0, "보부상 값 (0 = 팔지 않음)"),
+		Field("Description", "String", "", "설명"),
+	])
+	Table(Content, "Items", "Item", ITEM_ROWS)
+
+
+# ---- 경제 ---------------------------------------------------------------------------------------------------------------------
+ECONOMY = {
+	"StartGold": 300,
+	"MerchantOpenHour": 6.0, "MerchantCloseHour": 18.0,  # 방문 요일의 머무는 시각
+	"RandomStockPicks": 3,                               # 고정 목록 밖에서 무작위로 고르는 물건 수
+	"MerchantLines": ["흐흐… 오늘도 살아 있었군. 뭘 찾나?", "밤이 길어지고 있어. 울타리는 튼튼한가?", "이 씨앗들, 어디서 났는지는 묻지 말게.",
+					  "자네 밭에서 이상한 소리가 나더군. 좋은 징조야.", "물건은 한정이야. 망설이면 다른 이가 가져가지.", "크리스탈은 잘 숨겨 두었나? 놈들은 냄새를 맡는다네."],
+}
+
+ECONOMY_FIELDS = [
+	Field("StartGold", "Int", 300, "처음 돈"),
+	Field("MerchantOpenHour", "Float", 6.0, "보부상이 오는 시각"),
+	Field("MerchantCloseHour", "Float", 18.0, "보부상이 떠나는 시각"),
+	Field("RandomStockPicks", "Int", 3, "무작위 재고 고르는 수"),
+	Field("MerchantLines", "Array", [], "보부상 인사말 (방문 날마다 돌아가며)", Element="String"),
+]
+
+
+def StockRows():
+	# 보부상 물건: Key(물건 열쇠), Price(0 = 물건 기본값), Stock(방문마다 수량), Always(늘 들고 옴), Weight(무작위 가중치), Season(Any | 계절)
+	import FarmBieCrops as FC
+	Rows = []
+	for C in FC.CROPS:
+		if C["Exclusive"]:
+			continue
+		Rows.append((f"Seed_{C['Id']}", {"Key": f"Seed:{C['Id']}:0", "Price": C["SeedPrice"], "Stock": 15, "Always": True, "Weight": 0, "Season": C["Season"]}))
+		Rows.append((f"RareSeed_{C['Id']}", {"Key": f"Seed:{C['Id']}:1", "Price": C["SeedPrice"] * 8, "Stock": 1, "Always": False, "Weight": 2, "Season": C["Season"]}))
+	Rows.append(("FertBasic", {"Key": "FertBasic", "Price": 0, "Stock": 12, "Always": True, "Weight": 0, "Season": "Any"}))
+	Rows.append(("FertPremium", {"Key": "FertPremium", "Price": 0, "Stock": 4, "Always": False, "Weight": 4, "Season": "Any"}))
+	return Rows
+
+
+def WriteEconomy(Content):
+	Struct(Content, "Economy", "경제 수치", ECONOMY_FIELDS)
+	Values(Content, "Economy", "Economy", ECONOMY)
+	Struct(Content, "StockItem", "보부상 물건", [
+		Field("Key", "String", "", "물건 열쇠 (FarmInventory.lua 규약)"),
+		Field("Price", "Int", 0, "값 (0 = 물건 기본값)"),
+		Field("Stock", "Int", 1, "방문마다 들고 오는 수량"),
+		Field("Always", "Bool", False, "늘 들고 옴 (아니면 무작위 후보)"),
+		Field("Weight", "Int", 1, "무작위 후보 가중치"),
+		Field("Season", "Enum", "Any", "파는 계절", Values=["Any", "Spring", "Summer", "Autumn", "Winter"]),
+	])
+	Table(Content, "MerchantStock", "StockItem", StockRows())
+
+
+def WriteFarmMap(Content, Grid):
+	# 농장 격자 (BuildFarmBie.py 상수 — 생성기와 게임 코드가 같은 값을 쓰도록 여기로 넘긴다)
+	Struct(Content, "FarmMap", "농장 격자", [
+		Field("Tile", "Float", 100.0, "칸 크기 (cm)"),
+		Field("Width", "Int", 52, "가로 칸 수"),
+		Field("Height", "Int", 40, "세로 칸 수"),
+		Field("OriginX", "Float", -2600.0, "격자 왼쪽 위 X"),
+		Field("OriginY", "Float", -2000.0, "격자 왼쪽 위 Y"),
+		Field("FarmMinX", "Float", 0.0, "밭을 갈 수 있는 영역 (울타리 안)"),
+		Field("FarmMinY", "Float", 0.0, ""),
+		Field("FarmMaxX", "Float", 0.0, ""),
+		Field("FarmMaxY", "Float", 0.0, ""),
+		Field("Well", "Array", [0.0, 0.0], "우물 위치 (물 채우기)", Element="Float"),
+	])
+	Values(Content, "FarmMap", "FarmMap", Grid)
+
+
 def WriteAll(Content):
 	Struct(Content, "Calendar", "FarmBie 시간·달력", CALENDAR_FIELDS)
 	Values(Content, "Calendar", "Calendar", CALENDAR)
 	Struct(Content, "DayNightKey", "낮밤 화면 열쇠 (시각별 하늘빛·색 보정·등불)", DAY_NIGHT_FIELDS)
 	Table(Content, "DayNightKeys", "DayNightKey", [(f"K{I:02d}", Row) for I, Row in enumerate(DAY_NIGHT_KEYS)])
+	WriteFarming(Content)
+	WriteEconomy(Content)

@@ -2,6 +2,8 @@
 --   시나리오는 코루틴 하나(Run<이름>) — 도우미(GoTo/Press/Wait)가 프레임마다 입력을 채우고 yield 한다. 시간은 실제 시간(메뉴로 게임이 멈춰도 흐른다).
 --   확인은 Expect로 쌓고 끝에 관리자 ReportAutoPlay → 로그 "[FarmBie] 결과: 실패 N건".
 --   Basic: 이동(사방)·방향 플립북·구르기·카메라 추적·집/울타리 충돌
+--   Economy: 처음 돈·출하(작물 전부/고른 묶음)·아침 정산·보부상 요일·재고(계절·한정)·사기(돈 부족·품절)·떠남·소지품 창 옮기기·저장
+--   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
 local AutoPilot = {}
@@ -42,6 +44,7 @@ function AutoPilot:Step(UDt)
 	self.Time = self.Time + UDt
 	self.Frame = self.Frame + 1
 	self.In = { Move = Vector3(0, 0, 0) }
+	-- 창 입력은 확인/취소 표준 이름으로도 (FarmPlayer:MenuNavigation과 같게)
 	if self.Co and coroutine.status(self.Co) ~= "dead" then
 		local bOk, Err = coroutine.resume(self.Co)
 		if not bOk then
@@ -51,7 +54,10 @@ function AutoPilot:Step(UDt)
 			self:Finish()
 		end
 	end
-	return self.In
+	local In = self.In
+	In.Confirm = In.Confirm or In.Interact or In.UseTool
+	In.Cancel = In.Cancel or In.Pause or In.Dodge
+	return In
 end
 
 function AutoPilot:Finish()
@@ -161,11 +167,291 @@ function AutoPilot:RunShot()
 	while true do self:Yield() end
 end
 
+-- 스크린샷용 밭: 플레이어 아래쪽에 봄 작물 단계·희귀도 줄 (괭이 든 채)
+function AutoPilot:RunFieldShot()
+	local GM, P = self.GM, self.Player
+	GM:SetHour(10)
+	local Crops = { "EyeRadish", "BrainCabbage", "TentacleLeek", "WhisperPotato", "FingerBean", "Mandrake" }
+	local X0, Y0 = GM:TileOf(Vector3(-450, -350, 0))
+	for Row, Id in ipairs(Crops) do
+		for Col = 0, 6 do
+			local TX, TY = X0 + Col, Y0 + Row - 1
+			local T = { TX = TX, TY = TY, Wet = Col % 2 == 0, Fert = Col == 6 and 2 or 0 }
+			local Days = ({ EyeRadish = 4, BrainCabbage = 6, TentacleLeek = 5, WhisperPotato = 6, FingerBean = 7, Mandrake = 8 })[Id]
+			local Age = ({ 0, 1, Days - 1, Days, Days, Days, Days })[Col + 1]
+			T.Crop = { Id = Id, R = math.max(0, Col - 3), Age = Age, Dead = false }
+			GM.Tiles[GM:TileIndex(TX, TY)] = T
+			GM:RefreshTile(T)
+		end
+	end
+	P:Teleport(Vector3(-100, -480, P.entity:GetWorldPosition().Z))
+	P.Facing = "Down"
+	self.In.Slot = 1
+	self:Yield()
+	GM:Hud():Toast("UI/FarmBie/Icons/Crop_EyeRadish_1.png", "+1 눈알무 (레어)", { 0.45, 0.7, 1.0, 1.0 })
+	while true do self:Yield() end
+end
+
 -- 잠이 끝나 다음 날 아침이 될 때까지
 function AutoPilot:WaitMorning(Timeout)
 	local GM = self.GM
 	self:WaitUntil(function() return GM.Phase == "Sleep" end, 3)
 	return self:WaitUntil(function() return GM.Phase == "Day" end, Timeout or 8)
+end
+
+-- 칸에 서서 아래를 보게 (칸 위쪽 가장자리 근처에 서면 발 앞 칸 = 그 칸)
+function AutoPilot:StandAbove(TX, TY)
+	local GM, P = self.GM, self.Player
+	local C = GM:TileCenter(TX, TY)
+	local Ok = self:GoTo(Vector3(C.X, C.Y - GM.Farming.ReachDistance, 0), 12, 12)
+	P.Facing = "Down"
+	self:Wait(0.1)
+	return Ok
+end
+
+function AutoPilot:SelectKey(Key)
+	local GM = self.GM
+	for I = 1, 9 do
+		local S = GM.Bag[I]
+		if S and S.Key == Key then
+			self.In.Slot = I
+			self:Yield()
+			return true
+		end
+	end
+	return false
+end
+
+-- 대상 칸에 도구 한 번 (동작이 끝날 때까지)
+function AutoPilot:UseOn(TX, TY, Key)
+	self:StandAbove(TX, TY)
+	if Key then self:SelectKey(Key) end
+	self:Press("UseTool")
+	self:Wait(self.GM.Farming.ToolTime + 0.1)
+end
+
+function AutoPilot:NextMorning()
+	self.GM:SetHour(25.98)
+	return self:WaitMorning()
+end
+
+function AutoPilot:RunFarm()
+	local GM, P = self.GM, self.Player
+	local R = GM.Report
+	self:Wait(1.0)
+	self:Expect(GM:CountItem("Hoe") == 1 and GM:CountItem("Can") == 1 and GM:CountItem("Seed:EyeRadish:0") == 10, "처음 소지품")
+	local TY = select(2, GM:TileOf(Vector3(0, 100, 0)))
+	local Cols = {}
+	for I = 0, 3 do Cols[#Cols + 1] = select(1, GM:TileOf(Vector3(-800 + I * 100, 0, 0))) end
+	-- 갈기 4칸
+	for _, TX in ipairs(Cols) do self:UseOn(TX, TY, "Hoe") end
+	self:Expect(R.Tilled == 4, "괭이 4칸 " .. tostring(R.Tilled))
+	self:Expect(GM:GetTile(Cols[1], TY) and GM:GetTile(Cols[1], TY).Soil ~= nil, "흙 칸 그림")
+	-- 길 위 건물 쪽은 못 간다 (집 앞 콜라이더)
+	local HX, HY = GM:TileOf(Vector3(0, -1350, 0))
+	self:Expect(not GM:CanTill(HX, HY), "집 자리는 못 갊")
+	-- 비료(4번째 칸) → 물 → 심기
+	self:UseOn(Cols[4], TY, "FertBasic")
+	self:Expect(GM:GetTile(Cols[4], TY).Fert == 1 and GM:CountItem("FertBasic") == 4, "비료")
+	local Water0 = GM.Water
+	for _, TX in ipairs(Cols) do self:UseOn(TX, TY, "Can") end
+	self:Expect(R.Watered == 4 and GM.Water == Water0 - 4, "물 주기 " .. tostring(R.Watered))
+	self:Expect(GM:GetTile(Cols[1], TY).SoilSprite.Slice:find("SoilWet") ~= nil, "젖은 흙 그림")
+	for _, TX in ipairs(Cols) do self:UseOn(TX, TY, "Seed:EyeRadish:0") end
+	self:Expect(R.Planted == 4 and GM:CountItem("Seed:EyeRadish:0") == 6, "심기 " .. tostring(R.Planted))
+	-- 제철 아님: 여름 작물은 봄에 못 심는다
+	GM:Give("Seed:FangCorn:0", 1, true)
+	local T5 = select(1, GM:TileOf(Vector3(-400, 0, 0)))
+	self:UseOn(T5, TY, "Hoe")
+	self:UseOn(T5, TY, "Seed:FangCorn:0")
+	self:Expect(R.Planted == 4 and string.find(GM:Hud().LastToast or "", "계절") ~= nil, "제철 아님 거절 " .. tostring(GM:Hud().LastToast))
+	-- 자라기: 눈알무 4일. 셋째 칸은 둘째 날 물을 안 준다 → 하루 늦음
+	for Day = 1, 4 do
+		self:NextMorning()
+		for I, TX in ipairs(Cols) do
+			if Day < 4 and not (Day == 1 and I == 3) then GM:ApplyUse("Can", TX, TY) end
+		end
+	end
+	local A1, A3 = GM:GetTile(Cols[1], TY).Crop.Age, GM:GetTile(Cols[3], TY).Crop.Age
+	self:Expect(A1 == 4 and A3 == 3, string.format("물 준 날만 자람 %d / %d", A1, A3))
+	self:Expect(GM:GetTile(Cols[1], TY).PlantSprite.Slice == "EyeRadish_0", "다 자란 그림 " .. GM:GetTile(Cols[1], TY).PlantSprite.Slice)
+	-- 수확 (상호작용)
+	self:StandAbove(Cols[1], TY)
+	self:Expect(GM.CursorAction == "Harvest", "수확 표시")
+	self:Press("Interact")
+	self:Wait(0.2)
+	self:Expect(GM:CountItem("Crop:EyeRadish:0") == 1 and GM:GetTile(Cols[1], TY).Crop == nil, "수확 눈알무")
+	-- 다시 열리는 작물: 촉수부추 (5일, 3일마다)
+	self:UseOn(Cols[1], TY, "Seed:TentacleLeek:0")
+	local Leek = GM:GetTile(Cols[1], TY).Crop
+	Leek.Age = 5
+	GM:RefreshTile(GM:GetTile(Cols[1], TY))
+	self:StandAbove(Cols[1], TY)
+	self:Press("Interact")
+	self:Expect(GM:CountItem("Crop:TentacleLeek:0") == 1 and GM:GetTile(Cols[1], TY).Crop ~= nil and GM:GetTile(Cols[1], TY).Crop.Age == 2, "부추 다시 자람")
+	-- 희귀 씨앗 확률 (고급 비료 칸에서 수확 400번 — 결정적 난수)
+	local Up0, Ex0 = R.UpSeeds or 0, R.ExclusiveSeeds or 0
+	local Fake = { TX = 0, TY = 0, Fert = 2 }
+	for _ = 1, 400 do
+		Fake.Crop = { Id = "EyeRadish", R = 0, Age = 4, Dead = false }
+		Fake.Fert = 2
+		GM:Harvest(Fake)
+	end
+	local Up, Ex = (R.UpSeeds or 0) - Up0, (R.ExclusiveSeeds or 0) - Ex0
+	self:Expect(Up >= 70 and Up <= 140, string.format("레어 씨앗 %d / 400 (기대 104)", Up))
+	self:Expect(Ex >= 3 and Ex <= 30, string.format("전용 희귀종 씨앗 %d / 400 (기대 12)", Ex))
+	self:Expect(GM:CountItem("Seed:EyeRadish:1") >= 70 and GM:CountItem("Seed:Mandrake:1") >= 3, "희귀 씨앗 소지")
+	-- 레어 씨앗 심기 → 다 자란 레어 그림
+	self:UseOn(Cols[3], TY, "Hoe") -- 다 안 자란 작물이 있으면 괭이는 아무것도 하지 않는다
+	local T3 = GM:GetTile(Cols[3], TY)
+	T3.Crop = { Id = "EyeRadish", R = 1, Age = 4, Dead = false }
+	GM:RefreshTile(T3)
+	self:Expect(T3.PlantSprite.Slice == "EyeRadish_1", "레어 그림")
+	-- 우물: 물을 비우고 채우기
+	GM.Water = 0
+	self:SelectKey("Can")
+	self:Expect(self:GoTo(Vector3(-950, -1000, 0), 40, 15), "우물 앞")
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(GM.Water == GM.Farming.CanCapacity, "물 채움 " .. GM.Water)
+	-- 저장 → 바꿈 → 불러오기
+	GM:SaveGame()
+	local Count = 0
+	for _ in pairs(GM.Tiles) do Count = Count + 1 end
+	GM.Tiles[GM:TileIndex(Cols[2], TY)].Crop.Age = 0
+	self:Expect(GM:LoadGame(), "불러오기")
+	local Count2 = 0
+	for _ in pairs(GM.Tiles) do Count2 = Count2 + 1 end
+	self:Expect(Count2 == Count and GM:GetTile(Cols[2], TY).Crop.Age == 4 and GM:CountItem("Crop:EyeRadish:0") >= 1, "밭·소지품 복원")
+	-- 계절이 바뀌면 시든다 → 괭이로 걷기
+	GM.Day = 30
+	self:NextMorning()
+	local T2 = GM:GetTile(Cols[2], TY)
+	self:Expect(GM.Season == 1 and T2.Crop.Dead and T2.PlantSprite.Slice == "Withered", "여름: 시든 작물")
+	self:UseOn(Cols[2], TY, "Hoe")
+	self:Expect(GM:GetTile(Cols[2], TY).Crop == nil, "시든 작물 걷기")
+	self:Finish()
+end
+
+function AutoPilot:RunEconomy()
+	local GM, P = self.GM, self.Player
+	local R = GM.Report
+	local Hud = GM:Hud()
+	self:Wait(1.0)
+	self:Expect(GM.Gold == 300 and Hud.Cache["GoldText.Text"] == "300", "처음 돈 300")
+	-- 출하: 작물 전부 (고른 칸 = 괭이)
+	GM:Give("Crop:EyeRadish:0", 3, true)
+	GM:Give("Crop:EyeRadish:1", 1, true)
+	GM:Give("Crop:BrainCabbage:0", 2, true)
+	self.In.Slot = 1
+	self:Yield()
+	self:Expect(self:GoTo(GM.ShipSpot + Vector3(0, 200, 0), 40, 12), "출하 상자 앞")
+	self:Wait(0.2)
+	self:Expect(GM.Focus ~= nil and string.find(Hud.Cache["PromptText.Text"] or "", "작물 전부") ~= nil, "출하 안내 " .. tostring(Hud.Cache["PromptText.Text"]))
+	self:Press("Interact")
+	local Expected = 3 * 35 + 105 + 2 * 55
+	self:Expect(GM:CountItem("Crop:EyeRadish:0") == 0 and GM:PendingShipValue() == Expected, "출하 값 " .. GM:PendingShipValue())
+	-- 고른 묶음만: 작물 칸을 고르고 넣기
+	GM:Give("Crop:TentacleLeek:0", 4, true)
+	GM:Give("Crop:EyeRadish:2", 1, true)
+	for I = 1, 9 do
+		if GM.Bag[I] and GM.Bag[I].Key == "Crop:TentacleLeek:0" then self.In.Slot = I end
+	end
+	self:Yield()
+	self:Wait(0.1)
+	self:Press("Interact")
+	self:Expect(GM:CountItem("Crop:TentacleLeek:0") == 0 and GM:CountItem("Crop:EyeRadish:2") == 1, "고른 묶음만 출하")
+	Expected = Expected + 4 * 30
+	-- 아침 정산 (월 → 화)
+	self:NextMorning()
+	self:Expect(GM.Gold == 300 + Expected, string.format("아침 정산 %d (기대 %d)", GM.Gold, 300 + Expected))
+	self:Expect(string.find(Hud.Cache["BannerSub.Text"] or "", "출하 수입") ~= nil, "정산 알림 " .. tostring(Hud.Cache["BannerSub.Text"]))
+	-- 보부상: 화요일엔 없다 → 수요일 아침에 온다
+	self:Expect(not GM:IsMerchantHere() and not GM.MerchantSprites[1].Visible, "화요일 보부상 없음")
+	self:NextMorning()
+	self:Wait(0.2)
+	self:Expect(GM:Weekday() == 2 and GM:IsMerchantHere() and GM.MerchantSprites[1].Visible, "수요일 보부상 옴")
+	self:Expect(string.find(Hud.Cache["BannerSub.Text"] or "", "보부상") ~= nil, "보부상 알림")
+	local SpringSeeds, Fert = 0, false
+	for _, E in ipairs(GM.Stock) do
+		local Info = GM:ItemInfo(E.Key)
+		if Info.Kind == "Seed" and Info.Rarity == 0 then
+			SpringSeeds = SpringSeeds + 1
+			self:Expect(Info.Crop.Season == "Spring", "봄 씨앗만 " .. E.Key)
+		end
+		if E.Key == "FertBasic" then Fert = true end
+	end
+	self:Expect(SpringSeeds == 5 and Fert and #GM.Stock == 5 + 1 + 3, string.format("재고 %d줄 (봄 씨앗 %d)", #GM.Stock, SpringSeeds))
+	-- 거래: 천막 앞 → 상점 창 → 뇌양배추 씨앗 사기
+	self:Expect(self:GoTo(GM.MerchantSpot + Vector3(-60, -170, 0), 40, 20), "보부상 앞")
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(GM.Menu == "Shop" and Game.GetTimeScale() == 0, "상점 창 (시간 멈춤)")
+	local Target
+	for I, E in ipairs(GM.Stock) do if E.Key == "Seed:BrainCabbage:0" then Target = I end end
+	while GM.MenuIndex < Target do self:Press("MenuDown") end
+	local Gold0, Stock0 = GM.Gold, GM.Stock[Target].Stock
+	self:Press("Confirm")
+	self:Expect(GM.Gold == Gold0 - 25 and GM.Stock[Target].Stock == Stock0 - 1 and GM:CountItem("Seed:BrainCabbage:0") == 1, "사기 25골드")
+	-- 돈 부족
+	local Saved = GM.Gold
+	GM.Gold = 10
+	self:Press("Confirm")
+	self:Expect(GM:CountItem("Seed:BrainCabbage:0") == 1 and Hud.LastToast == "돈이 모자라다", "돈 부족 " .. tostring(Hud.LastToast))
+	GM.Gold = Saved
+	-- 품절
+	GM.Stock[Target].Stock = 1
+	self:Press("Confirm")
+	self:Press("Confirm")
+	self:Expect(GM.Stock[Target].Stock == 0 and Hud.LastToast == "다 팔렸다" and Hud.Cache["ShopStock" .. (Target - 1 - GM.MenuOffset) .. ".Text"] == "품절", "품절")
+	self:Press("Cancel")
+	self:Expect(GM.Menu == nil and Game.GetTimeScale() == 1, "상점 닫힘")
+	-- 저장/불러오기: 재고 그대로 (되살아나지 않음)
+	GM:SaveGame()
+	GM.Stock[Target].Stock = 9
+	GM:LoadGame()
+	self:Expect(GM.Stock[Target].Stock == 0 and GM.StockDay == GM:TotalDays(), "재고 저장")
+	-- 저녁이면 떠난다
+	GM:SetHour(18.2)
+	self:Wait(0.2)
+	self:Expect(not GM:IsMerchantHere() and not GM.MerchantSprites[1].Visible and GM.Focus == nil, "보부상 떠남")
+	-- 소지품 창: 1번 칸(괭이)을 10번 칸으로
+	self:Press("Inventory")
+	self:Expect(GM.Menu == "Bag", "소지품 창")
+	self:Press("Confirm")
+	self:Press("MenuDown") -- 한 줄 아래 = +9칸
+	self:Press("Confirm")
+	self:Expect(GM.Bag[1] == nil or GM.Bag[1].Key ~= "Hoe", "괭이 옮김")
+	self:Expect(GM.Bag[10] and GM.Bag[10].Key == "Hoe", "10번 칸 괭이")
+	self:Press("Inventory")
+	self:Expect(GM.Menu == nil, "소지품 닫힘")
+	self:Finish()
+end
+
+function AutoPilot:RunShopShot()
+	local GM, P = self.GM, self.Player
+	while GM:Weekday() ~= 2 do GM.Day = GM.Day + 1 end
+	GM:SetHour(9)
+	GM:Give("Crop:EyeRadish:1", 2, true)
+	self:Wait(0.3)
+	P:Teleport(GM.MerchantSpot + Vector3(-60, -170, P.entity:GetWorldPosition().Z))
+	GM:OpenShop()
+	GM.MenuIndex = 3
+	GM:RefreshMenu()
+	while true do self:Yield() end
+end
+
+function AutoPilot:RunBagShot()
+	local GM = self.GM
+	GM:Give("Crop:EyeRadish:0", 7, true)
+	GM:Give("Crop:EyeRadish:3", 1, true)
+	GM:Give("Seed:Mandrake:1", 2, true)
+	GM:Give("Crop:BrainCabbage:2", 3, true)
+	self:Wait(0.3)
+	GM:OpenBag()
+	GM.MenuIndex = 7
+	GM:RefreshMenu()
+	while true do self:Yield() end
 end
 
 function AutoPilot:RunTime()

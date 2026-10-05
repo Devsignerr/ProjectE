@@ -33,6 +33,12 @@
       "Default": [],
       "Description": "보부상 인사말 (방문 날마다 돌아가며)",
       "Element": "String"
+    },
+    {
+      "Name": "IntroText",
+      "Type": "String",
+      "Default": "",
+      "Description": "새 게임 첫 화면 배경 이야기"
     }
   ]
 }

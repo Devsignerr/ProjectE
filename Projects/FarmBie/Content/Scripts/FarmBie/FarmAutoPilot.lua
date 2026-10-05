@@ -10,9 +10,12 @@
 --   Boss: 10일차 중간 보스 등장·크리스탈 사냥·어그로·처치 보상 → 20일차 패배 쓰러짐 / SeasonBoss: 30일차 중간+계절 보스·오라·소환·계절 보스 처치(다음 계절 씨앗)·중간 보스 패배
 --   Tower(씬 3번): 탑 문 → 1층(적 처치·보물상자·계단) → 5층 수호자·체크포인트·크리스탈 조각 → 쓰러짐(전리품 절반) → 집 → 다시 들어가면 5층
 --   Title(타이틀 씬에서 시작 — FarmTitle.lua가 앞뒤 단계): RunTitleFarm = 고른 슬롯 새 게임·환경음·저장·일시정지(계속하기/타이틀로 확인)
+--   Year : 1년(120일)을 하루씩 넘김 — 계절 순서·날짜·보부상 요일 수·계절 재고 씨앗·보스 밤(10·20·30일, 계절 보스)·밤 좀비 수 증가·2년차 난이도·연도 저장/불러오기
 --   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
+local D = Script.Require("Scripts/FarmBie/FarmData.lua")
+
 local AutoPilot = {}
 AutoPilot.__index = AutoPilot
 
@@ -1241,6 +1244,9 @@ function AutoPilot:RunTitleFarm()
 	self:Wait(1.0)
 	self:Expect(GM.Properties.Slot == "TitleTest1" and GM.Year == 1 and GM.Season == 0 and GM.Day == 1, "슬롯 TitleTest1 새 게임 " .. tostring(GM.Properties.Slot))
 	self:Expect(GM.AmbientDay ~= nil and GM.AmbientNight ~= nil and GM.Settings ~= nil, "환경음·설정")
+	self:Expect(GM.Menu == "Intro" and Game.GetTimeScale() == 0 and Hud.Cache["GameOverTitle.Text"] == "할아버지의 농장", "새 게임 배경 이야기")
+	self:Press("Confirm")
+	self:Expect(GM.Menu == nil and Hud.Cache["GameOverWindow.Visibility"] == "Collapsed", "이야기 닫기")
 	self:Wait(3.5)
 	self:Expect(GM.AmbientDay:GetComponent("AudioSourceComponent").Volume > 0.2 and GM.AmbientNight:GetComponent("AudioSourceComponent").Volume < 0.01,
 		"낮 환경음 음량")
@@ -1263,6 +1269,68 @@ function AutoPilot:RunTitleFarm()
 	self:Wait(5)
 	self:Expect(false, "타이틀로 가지 못함")
 	self:Finish()
+end
+
+-- 1년 넘기기: 하루씩 AdvanceDay (밤 전투 없이 달력·일정만). 계절마다 요약 로그 = 밸런스 확인용
+function AutoPilot:RunYear()
+	local GM = self.GM
+	local C = GM.Calendar
+	local SeasonIds = { "Spring", "Summer", "Autumn", "Winter" }
+	self:Wait(1.0)
+	-- 그 날 밤 실제 좀비 수 (평화로운 밤 설정을 잠깐 끄고 계획만 세움)
+	local function RealCount()
+		GM.bPeacefulNights = false
+		local N = #GM:PlanNight().Spawns
+		GM.bPeacefulNights = true
+		GM:PlanNight()
+		return N
+	end
+	local Year1Spring1 = RealCount()
+	local Seen = {}
+	for Day = 1, 4 * C.SeasonDays do
+		local S = GM.Season
+		local Stat = Seen[S + 1] or { Days = 0, Merchant = 0, SeasonSeeds = 0, Bosses = {}, Counts = {} }
+		Seen[S + 1] = Stat
+		Stat.Days = Stat.Days + 1
+		if not (GM.Day == (Day - 1) % C.SeasonDays + 1 and S == (Day - 1) // C.SeasonDays) then self:Expect(false, string.format("%d번째 날 날짜 %s", Day, GM:DateText())) end
+		if GM:IsMerchantDay() then
+			Stat.Merchant = Stat.Merchant + 1
+			GM:Restock()
+			for _, E in ipairs(GM.Stock) do
+				local Info = GM:ItemInfo(E.Key)
+				if Info.Kind == "Seed" and Info.Crop.Season == SeasonIds[S + 1] then Stat.SeasonSeeds = Stat.SeasonSeeds + 1 end
+				if Info.Kind == "Seed" and Info.Crop.Season ~= SeasonIds[S + 1] then self:Expect(false, "제철 아닌 씨앗 재고 " .. E.Key) end
+			end
+		end
+		for _, Row in ipairs(GM:BossesTonight()) do Stat.Bosses[#Stat.Bosses + 1] = GM.Day .. ":" .. Row.Name end
+		if GM.Day == 1 or GM.Day % 10 == 0 then Stat.Counts[#Stat.Counts + 1] = GM.Day .. "일 " .. RealCount() end
+		GM:AdvanceDay()
+		self:Yield()
+	end
+	for I, Stat in ipairs(Seen) do
+		local Season = SeasonIds[I]
+		local Want = { "10:", "20:", "30:" }
+		local bBoss = #Stat.Bosses == 4
+		for J, W in ipairs(Want) do bBoss = bBoss and string.sub(Stat.Bosses[J] or "", 1, #W) == W end
+		local SeasonBoss = Stat.Bosses[4] and D.ByName("Bosses.etable")[string.match(Stat.Bosses[4], ":(%a+)$")]
+		bBoss = bBoss and SeasonBoss ~= nil and SeasonBoss.Kind == "Season" and SeasonBoss.Season == Season
+		self:Expect(Stat.Days == C.SeasonDays and Stat.Merchant >= 8 and Stat.Merchant <= 9 and Stat.SeasonSeeds >= Stat.Merchant and bBoss,
+			string.format("%s: %d일 · 보부상 %d번 · 제철 씨앗 재고 %d · 보스 %s · 밤 좀비 %s", GM:SeasonName(I - 1), Stat.Days, Stat.Merchant, Stat.SeasonSeeds,
+				table.concat(Stat.Bosses, " "), table.concat(Stat.Counts, ", ")))
+	end
+	self:Expect(GM.Year == 2 and GM.Season == 0 and GM.Day == 1, string.format("2년차 봄 1일 (%d년차 %s)", GM.Year, GM:DateText()))
+	local Year2Spring1 = RealCount()
+	self:Expect(Year2Spring1 > Year1Spring1, string.format("2년차 밤이 더 어렵다 %d → %d마리", Year1Spring1, Year2Spring1))
+	GM:SaveGame()
+	GM.Year, GM.Day = 1, 9
+	self:Expect(GM:LoadGame() and GM.Year == 2 and GM.Day == 1, "2년차 저장/불러오기")
+	self:Finish()
+end
+
+function AutoPilot:RunIntroShot()
+	self:Wait(0.5)
+	self.GM:OpenIntro()
+	while true do self:Yield() end
 end
 
 function AutoPilot:RunNightShot()

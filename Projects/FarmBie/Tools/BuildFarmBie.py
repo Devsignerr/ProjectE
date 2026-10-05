@@ -889,6 +889,7 @@ def Main():
 	BuildScene(Height, AutoPlay="Sanity").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmSanity.escene"))
 	BuildScene(Height, AutoPlay="Economy").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmEconomy.escene"))
 	BuildScene(Height, AutoPlay="Farm").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmFarming.escene"))
+	BuildScene(Height, AutoPlay="Year").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmYear.escene"))
 	BuildTitleScene(Height).Save(os.path.join(CONTENT, "Scenes", "Title.escene"))
 	BuildTitleScene(Height, AutoPlay="Title").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmTitle.escene"))
 	if "--views" in sys.argv:
@@ -899,6 +900,7 @@ def Main():
 		BuildForestScene(ForestHeight, "Shot10").Save(os.path.join(CONTENT, "Scenes", "_ForestShot.escene"))
 		# 확인용 (커밋하지 않음): 시각별 화면
 		BuildScene(Height, AutoPlay="ShopShot").Save(os.path.join(CONTENT, "Scenes", "_FarmShopShot.escene"))
+		BuildScene(Height, AutoPlay="IntroShot").Save(os.path.join(CONTENT, "Scenes", "_FarmIntroShot.escene"))
 		BuildScene(Height, AutoPlay="BagShot").Save(os.path.join(CONTENT, "Scenes", "_FarmBagShot.escene"))
 		BuildScene(Height, AutoPlay="FieldShot").Save(os.path.join(CONTENT, "Scenes", "_FarmFieldShot.escene"))
 		for Hour in ("9", "17.5", "21.5"):

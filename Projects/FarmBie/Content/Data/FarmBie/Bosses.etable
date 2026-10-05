@@ -170,7 +170,7 @@
         "DisplayName": "서리 거상",
         "Kind": "Season",
         "Season": "Winter",
-        "Hp": 2600,
+        "Hp": 2100,
         "Speed": 60,
         "Damage": 40,
         "Interval": 1.8,

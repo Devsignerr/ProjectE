@@ -25,7 +25,7 @@ function Boss:BossesTonight()
 	for _, Row in ipairs(D.Rows("Bosses.etable")) do
 		if Row.Kind == "Mid" then Mids[#Mids + 1] = Row end
 	end
-	local Index = (self.Season * 3 + math.floor(self.Day / self.Calendar.BossEveryDays) - 1) % #Mids + 1
+	local Index = (self.Season + math.floor(self.Day / self.Calendar.BossEveryDays) - 1) % #Mids + 1 -- 계절마다 순서가 한 칸씩 돈다
 	List[#List + 1] = Mids[Index]
 	if self:IsSeasonBossNight() then
 		for _, Row in ipairs(D.Rows("Bosses.etable")) do

@@ -11126,6 +11126,55 @@
     },
     {
       "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Field.esprite",
+          "Slice": "Cursor",
+          "Color": [
+            1,
+            1,
+            1,
+            0.85
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            3.0
+          ],
+          "Rotation": [
+            -0.7071067811865476,
+            0.0,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "TileCursor",
+      "Parent": -1
+    },
+    {
+      "Components": {
         "UIComponent": {
           "Asset": "UI/FarmBie/HUD.eui",
           "ZOrder": 0,
@@ -11254,7 +11303,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 397
+          "Root": 398
         },
         "TransformComponent": {
           "Position": [

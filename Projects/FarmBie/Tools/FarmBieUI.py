@@ -60,8 +60,24 @@ def DrawMoon():
 	return C
 
 
+def DrawSlot(bSelected):
+	# 핫바 칸 20x20 9-슬라이스 (선택 = 금빛 굵은 테)
+	C = FCanvas(24, 24)
+	C.Rect(2, 2, 21, 21, (52, 36, 28), 248)
+	Edge = (250, 210, 90) if bSelected else WOOD
+	Light = (255, 240, 170) if bSelected else WOOD_L
+	for (X0, Y0, X1, Y1, Col) in ((1, 1, 22, 2, Edge), (1, 21, 22, 22, Edge), (1, 1, 2, 22, Edge), (21, 1, 22, 22, Edge), (2, 1, 21, 1, Light), (1, 2, 1, 21, Light)):
+		C.Rect(X0, Y0, X1, Y1, Col)
+	C.Outline((24, 14, 8))
+	return C
+
+
 def WriteTextures(Content):
 	Folder = os.path.join(Content, *UI_DIR.split("/"))
+	UpscaleSave(DrawSlot(False), os.path.join(Folder, "Slot.png"))
+	UpscaleSave(DrawSlot(True), os.path.join(Folder, "SlotSel.png"))
+	import FarmBieCrops
+	FarmBieCrops.WriteIcons(os.path.join(Folder, "Icons"), UpscaleSave)
 	UpscaleSave(DrawWoodFrame9(), os.path.join(Folder, "Frame.png"))
 	UpscaleSave(DrawSun(), os.path.join(Folder, "Sun.png"))
 	UpscaleSave(DrawMoon(), os.path.join(Folder, "Moon.png"))
@@ -137,6 +153,32 @@ def HudWidgets():
 	C.append(Widget("Border", "Prompt", CanvasSlot((0.5, 1), 0, -40, 0, 0, (0.5, 1), AutoSize=True, Z=2), "Collapsed", [
 		Text("PromptText", "", 21, BoxSlot(HAlign="Center"), TEXT_LIGHT, "Center"),
 	], Brush=FrameBrush(36), ContentPadding=[20, 8, 20, 10]))
+	# 아래 가운데: 핫바 9칸 (아이콘·개수·번호) + 위에 고른 물건 이름, 물뿌리개 물 막대
+	Slots = []
+	for I in range(9):
+		Slots.append(Widget("Overlay", f"Slot{I}", BoxSlot((2, 0, 2, 0)), "HitTestInvisible", [
+			Widget("Image", f"SlotBg{I}", BoxSlot(), "HitTestInvisible", Brush=Brush(Texture=f"{UI_DIR}/Slot.png", NineSlice=True, TextureSize=48), ImageSize=[64, 64]),
+			Widget("Image", f"SlotIcon{I}", BoxSlot((8, 8, 8, 8), "Center", "Center"), "Collapsed", Brush=Brush(), ImageSize=[48, 48]),
+			Text(f"SlotNum{I}", str(I + 1), 13, BoxSlot((7, 3, 0, 0), "Left", "Top"), TEXT_DIM),
+			Text(f"SlotCount{I}", "", 16, BoxSlot((0, 0, 7, 4), "Right", "Bottom"), TEXT_LIGHT),
+		]))
+	C.append(Widget("VerticalBox", "HotbarBox", CanvasSlot((0.5, 1), 0, -14, 0, 0, (0.5, 1), AutoSize=True, Z=1), "HitTestInvisible", [
+		Text("ItemName", "", 20, BoxSlot((0, 0, 0, 6), HAlign="Center"), TEXT_GOLD, "Center"),
+		Widget("HorizontalBox", "Hotbar", BoxSlot(HAlign="Center"), "HitTestInvisible", Slots),
+		Widget("HorizontalBox", "WaterRow", BoxSlot((0, 6, 0, 0), HAlign="Center"), "Collapsed", [
+			Text("WaterLabel", "물", 14, BoxSlot((0, 0, 8, 0), VAlign="Center"), (0.6, 0.85, 1.0, 1)),
+			Widget("ProgressBar", "WaterBar", BoxSlot(VAlign="Center"), MinSize=[200, 10], Brush=Brush((0.05, 0.04, 0.08, 0.9), 2, 1, (0, 0, 0, 1)),
+				   FillBrush=Brush((0.4, 0.75, 1.0, 1), 1), Percent=1.0, FillDirection="LeftToRight"),
+		]),
+	]))
+	# 왼쪽 아래: 획득 알림 3줄 (아이콘 + 글)
+	Toasts = []
+	for I in range(3):
+		Toasts.append(Widget("HorizontalBox", f"Toast{I}", BoxSlot((0, 0, 0, 4)), "Collapsed", [
+			Widget("Image", f"ToastIcon{I}", BoxSlot((0, 0, 8, 0), VAlign="Center"), "HitTestInvisible", Brush=Brush(), ImageSize=[32, 32]),
+			Text(f"ToastText{I}", "", 18, BoxSlot(VAlign="Center"), TEXT_LIGHT),
+		]))
+	C.append(Widget("VerticalBox", "Toasts", CanvasSlot((0, 1), 20, -20, 0, 0, (0, 1), AutoSize=True, Z=1), "HitTestInvisible", Toasts))
 	# 화면 전체 어둡게 (잠들기·새 날 전환)
 	C.append(Widget("Border", "Fade", StretchSlot(Z=10), "Collapsed", Brush=Brush((0.0, 0.0, 0.0, 1.0)), ContentPadding=[0, 0, 0, 0]))
 	return C

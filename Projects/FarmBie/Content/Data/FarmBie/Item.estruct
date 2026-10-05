@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Name": "Item",
+  "Description": "도구·비료 등 (씨앗·작물은 Crops 표에서 만든다)",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "",
+      "Description": "이름"
+    },
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Default": "Tool",
+      "Description": "종류",
+      "Values": [
+        "Tool",
+        "Fertilizer",
+        "Material",
+        "Food",
+        "Weapon",
+        "Trap"
+      ]
+    },
+    {
+      "Name": "Price",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "보부상 값 (0 = 팔지 않음)"
+    },
+    {
+      "Name": "Description",
+      "Type": "String",
+      "Default": "",
+      "Description": "설명"
+    }
+  ]
+}

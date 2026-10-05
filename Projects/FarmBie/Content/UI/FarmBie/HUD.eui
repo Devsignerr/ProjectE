@@ -532,6 +532,2404 @@
         ]
       },
       {
+        "Type": "VerticalBox",
+        "Name": "HotbarBox",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            1
+          ],
+          "AnchorMax": [
+            0.5,
+            1
+          ],
+          "Offsets": [
+            0,
+            -14,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 1
+        },
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "ItemName",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                6
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "",
+            "FontSize": 20,
+            "TextColor": [
+              1.0,
+              0.86,
+              0.45,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.06,
+              0.03,
+              0.02,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.5
+            ]
+          },
+          {
+            "Type": "HorizontalBox",
+            "Name": "Hotbar",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Overlay",
+                "Name": "Slot0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    2,
+                    0,
+                    2,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "SlotBg0",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333
+                      ],
+                      "TextureSize": [
+                        48,
+                        48
+                      ]
+                    },
+                    "ImageSize": [
+                      64,
+                      64
+                    ]
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "SlotIcon0",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        8,
+                        8,
+                        8,
+                        8
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "ImageSize": [
+                      48,
+                      48
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotNum0",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        7,
+                        3,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Left",
+                      "VAlign": "Top",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "1",
+                    "FontSize": 13,
+                    "TextColor": [
+                      0.78,
+                      0.74,
+                      0.68,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotCount0",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        7,
+                        4
+                      ],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 16,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Slot1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    2,
+                    0,
+                    2,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "SlotBg1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333
+                      ],
+                      "TextureSize": [
+                        48,
+                        48
+                      ]
+                    },
+                    "ImageSize": [
+                      64,
+                      64
+                    ]
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "SlotIcon1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        8,
+                        8,
+                        8,
+                        8
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "ImageSize": [
+                      48,
+                      48
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotNum1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        7,
+                        3,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Left",
+                      "VAlign": "Top",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "2",
+                    "FontSize": 13,
+                    "TextColor": [
+                      0.78,
+                      0.74,
+                      0.68,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotCount1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        7,
+                        4
+                      ],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 16,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Slot2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    2,
+                    0,
+                    2,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "SlotBg2",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333
+                      ],
+                      "TextureSize": [
+                        48,
+                        48
+                      ]
+                    },
+                    "ImageSize": [
+                      64,
+                      64
+                    ]
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "SlotIcon2",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        8,
+                        8,
+                        8,
+                        8
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "ImageSize": [
+                      48,
+                      48
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotNum2",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        7,
+                        3,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Left",
+                      "VAlign": "Top",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "3",
+                    "FontSize": 13,
+                    "TextColor": [
+                      0.78,
+                      0.74,
+                      0.68,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotCount2",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        7,
+                        4
+                      ],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 16,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Slot3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    2,
+                    0,
+                    2,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "SlotBg3",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333
+                      ],
+                      "TextureSize": [
+                        48,
+                        48
+                      ]
+                    },
+                    "ImageSize": [
+                      64,
+                      64
+                    ]
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "SlotIcon3",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        8,
+                        8,
+                        8,
+                        8
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "ImageSize": [
+                      48,
+                      48
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotNum3",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        7,
+                        3,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Left",
+                      "VAlign": "Top",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "4",
+                    "FontSize": 13,
+                    "TextColor": [
+                      0.78,
+                      0.74,
+                      0.68,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotCount3",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        7,
+                        4
+                      ],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 16,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Slot4",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    2,
+                    0,
+                    2,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "SlotBg4",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333
+                      ],
+                      "TextureSize": [
+                        48,
+                        48
+                      ]
+                    },
+                    "ImageSize": [
+                      64,
+                      64
+                    ]
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "SlotIcon4",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        8,
+                        8,
+                        8,
+                        8
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "ImageSize": [
+                      48,
+                      48
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotNum4",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        7,
+                        3,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Left",
+                      "VAlign": "Top",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "5",
+                    "FontSize": 13,
+                    "TextColor": [
+                      0.78,
+                      0.74,
+                      0.68,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotCount4",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        7,
+                        4
+                      ],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 16,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Slot5",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    2,
+                    0,
+                    2,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "SlotBg5",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333
+                      ],
+                      "TextureSize": [
+                        48,
+                        48
+                      ]
+                    },
+                    "ImageSize": [
+                      64,
+                      64
+                    ]
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "SlotIcon5",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        8,
+                        8,
+                        8,
+                        8
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "ImageSize": [
+                      48,
+                      48
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotNum5",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        7,
+                        3,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Left",
+                      "VAlign": "Top",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "6",
+                    "FontSize": 13,
+                    "TextColor": [
+                      0.78,
+                      0.74,
+                      0.68,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotCount5",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        7,
+                        4
+                      ],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 16,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Slot6",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    2,
+                    0,
+                    2,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "SlotBg6",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333
+                      ],
+                      "TextureSize": [
+                        48,
+                        48
+                      ]
+                    },
+                    "ImageSize": [
+                      64,
+                      64
+                    ]
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "SlotIcon6",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        8,
+                        8,
+                        8,
+                        8
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "ImageSize": [
+                      48,
+                      48
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotNum6",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        7,
+                        3,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Left",
+                      "VAlign": "Top",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "7",
+                    "FontSize": 13,
+                    "TextColor": [
+                      0.78,
+                      0.74,
+                      0.68,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotCount6",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        7,
+                        4
+                      ],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 16,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Slot7",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    2,
+                    0,
+                    2,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "SlotBg7",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333
+                      ],
+                      "TextureSize": [
+                        48,
+                        48
+                      ]
+                    },
+                    "ImageSize": [
+                      64,
+                      64
+                    ]
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "SlotIcon7",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        8,
+                        8,
+                        8,
+                        8
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "ImageSize": [
+                      48,
+                      48
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotNum7",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        7,
+                        3,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Left",
+                      "VAlign": "Top",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "8",
+                    "FontSize": 13,
+                    "TextColor": [
+                      0.78,
+                      0.74,
+                      0.68,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotCount7",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        7,
+                        4
+                      ],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 16,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Slot8",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    2,
+                    0,
+                    2,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "SlotBg8",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/FarmBie/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333,
+                        0.3333333333333333
+                      ],
+                      "TextureSize": [
+                        48,
+                        48
+                      ]
+                    },
+                    "ImageSize": [
+                      64,
+                      64
+                    ]
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "SlotIcon8",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        8,
+                        8,
+                        8,
+                        8
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "ImageSize": [
+                      48,
+                      48
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotNum8",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        7,
+                        3,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Left",
+                      "VAlign": "Top",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "9",
+                    "FontSize": 13,
+                    "TextColor": [
+                      0.78,
+                      0.74,
+                      0.68,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "SlotCount8",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        7,
+                        4
+                      ],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 16,
+                    "TextColor": [
+                      0.98,
+                      0.95,
+                      0.88,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "HorizontalBox",
+            "Name": "WaterRow",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Collapsed",
+            "Slot": {
+              "Padding": [
+                0,
+                6,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "WaterLabel",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    8,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "물",
+                "FontSize": 14,
+                "TextColor": [
+                  0.6,
+                  0.85,
+                  1.0,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              },
+              {
+                "Type": "ProgressBar",
+                "Name": "WaterBar",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "MinSize": [
+                  200,
+                  10
+                ],
+                "Brush": {
+                  "Color": [
+                    0.05,
+                    0.04,
+                    0.08,
+                    0.9
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 1,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "FillBrush": {
+                  "Color": [
+                    0.4,
+                    0.75,
+                    1.0,
+                    1
+                  ],
+                  "CornerRadius": 1,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "Percent": 1.0,
+                "FillDirection": "LeftToRight"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "VerticalBox",
+        "Name": "Toasts",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            1
+          ],
+          "AnchorMax": [
+            0,
+            1
+          ],
+          "Offsets": [
+            20,
+            -20,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 1
+        },
+        "Children": [
+          {
+            "Type": "HorizontalBox",
+            "Name": "Toast0",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Collapsed",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                4
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "ToastIcon0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    8,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ImageSize": [
+                  32,
+                  32
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "ToastText0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 18,
+                "TextColor": [
+                  0.98,
+                  0.95,
+                  0.88,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "HorizontalBox",
+            "Name": "Toast1",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Collapsed",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                4
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "ToastIcon1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    8,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ImageSize": [
+                  32,
+                  32
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "ToastText1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 18,
+                "TextColor": [
+                  0.98,
+                  0.95,
+                  0.88,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "HorizontalBox",
+            "Name": "Toast2",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Collapsed",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                4
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "ToastIcon2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    8,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ImageSize": [
+                  32,
+                  32
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "ToastText2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 18,
+                "TextColor": [
+                  0.98,
+                  0.95,
+                  0.88,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
         "Type": "Border",
         "Name": "Fade",
         "Enabled": true,

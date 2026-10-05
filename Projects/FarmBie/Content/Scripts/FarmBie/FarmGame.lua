@@ -12,11 +12,11 @@ local FarmGame = {
 		SleepSpot = "0,0",    -- 집 문 앞 "x,y" (잠자기 상호작용·기상 자리)
 	},
 }
-for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua" }) do
+for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua", "Scripts/FarmBie/FarmInventory.lua", "Scripts/FarmBie/FarmField.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do FarmGame[Name] = Fn end
 end
 
-local SaveParts = { "Time" }
+local SaveParts = { "Time", "Inventory", "Field" }
 local SaveVersion = 1
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
@@ -30,14 +30,18 @@ function FarmGame:OnStart()
 	self.Interactables = {}
 	self.SleepSpot = Parse2(self.Properties.SleepSpot)
 	self:InitTime()
+	self:InitInventory()
+	self.RandState = 12345
+	self:InitField()
 	self:AddInteractable({ Pos = self.SleepSpot, Radius = 170, Prompt = function()
 		if self.Phase == "Night" then return "E  잠자기 (하루를 마친다)" end
 		return nil
 	end, Act = function() self:BeginSleep("Bed") end })
 	if self.Properties.Slot == "Test" then
 		SaveGame.Delete(self:SlotName())
-	elseif SaveGame.Exists(self:SlotName()) then
-		self:LoadGame()
+	end
+	if not (SaveGame.Exists(self:SlotName()) and self:LoadGame()) then
+		self:GiveStartItems()
 	end
 	self:ApplyDayNight(true)
 	self.bReady = true
@@ -94,11 +98,29 @@ function FarmGame:UpdateInteract(Pos)
 end
 
 function FarmGame:Interact()
-	if self.Focus and self.Phase ~= "Sleep" then
+	if self.Phase == "Sleep" then return false end
+	if self.Focus then
 		self.Focus.Act()
 		return true
 	end
+	-- 다 자란 작물 수확 (발 앞 칸)
+	if self.CursorAction == "Harvest" then
+		local P = self:Player()
+		local TX, TY = self:TargetTile(P.entity:GetWorldPosition(), P:GetFacingVector())
+		return self:ApplyUse(nil, TX, TY)
+	end
 	return false
+end
+
+-- ---- 시간 훅 (FarmTime이 부른다)
+function FarmGame:OnDayStart(bNewSeason)
+	local Grown = self:GrowField()
+	Log.Info(string.format("[FarmBie] 아침: 자란 작물 %d", Grown))
+end
+
+function FarmGame:OnSeasonChanged(OldSeason)
+	local Count = self:WitherField()
+	if Count > 0 then Log.Info(string.format("[FarmBie] 계절이 바뀌어 작물 %d개가 시듦", Count)) end
 end
 
 -- 잠에서 깸: 집 문 앞으로

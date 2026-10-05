@@ -18,6 +18,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "Tools", "DemoMap"))
 sys.path.insert(0, HERE)
 import FarmBieArt  # noqa: E402
+import FarmBieCrops  # noqa: E402
 import FarmBieData  # noqa: E402
 import FarmBieUI  # noqa: E402
 import ModelBounds  # noqa: E402
@@ -334,7 +335,7 @@ def AddTrees(B):
 def AddFarmstead(B):
 	X, Y = HOUSE
 	B.Place("House", "building_home_A_blue", X, Y, -90.0, KS, Collide=True, Shrink=0.95)
-	B.Place("Well", "building_well_blue", -950.0, -1250.0, -90.0, KS * 0.7, Collide=True)
+	B.Place("Well", "building_well_blue", WELL[0], WELL[1], -90.0, KS * 0.7, Collide=True)
 	B.Place("Barn", "building_home_B_red", 1150.0, -1350.0, -90.0, KS * 0.9, Collide=True, Shrink=0.95)
 	B.Place("ShippingBin", "crate_A_big", 380.0, -950.0, 10.0, KS * 1.6, Collide=True)
 	B.Place("Lumber", "resource_lumber", -500.0, -1100.0, 90.0, KS * 0.9, Collide=True)
@@ -396,6 +397,7 @@ def AddCamera(B, Start):
 	}, tuple(Focus[I] - Forward[I] * CAMERA_DISTANCE for I in range(3)), QuatFromEuler(Pitch=CAMERA_PITCH, Yaw=-90.0))
 
 
+WELL = (-950.0, -1250.0)
 SLEEP_SPOT = (HOUSE[0], HOUSE[1] + 260.0)  # 집 문 앞 (잠자기 상호작용)
 LAMPS = [(-420.0, -1000.0), (420.0, -1200.0), (-1300.0, -600.0), (1300.0, -600.0), (-900.0, 500.0), (900.0, 500.0), (0.0, 1250.0), (-2000.0, 150.0), (2000.0, -300.0)]
 
@@ -417,6 +419,9 @@ def AddLamps(B):
 def AddGame(B, AutoPlay):
 	B.S.Add("FarmGame", {"ScriptComponent": Script(f"{SCRIPTS}/FarmGame.lua", 0, AutoPlay=AutoPlay,
 												   SleepSpot=f"{SLEEP_SPOT[0]},{SLEEP_SPOT[1]}", Slot="Test" if AutoPlay else "1")})
+	# 대상 칸 표시 (바닥에 눕힌 흰 모서리 — FarmField.lua가 옮기고 켠다)
+	B.S.Add("TileCursor", {"SpriteComponent": Sprite(f"{SPRITES}/Field.esprite", "Cursor", Lit=False, Shadows=False, Blend=0, Visible=False,
+													 Color=(1, 1, 1, 0.85))}, (0, 0, 3.0), FLAT)
 	B.S.Add("Hud", {"UIComponent": {"Asset": f"{FarmBieUI.UI_DIR}/HUD.eui", "ZOrder": 0, "Visible": True, "ReceiveInput": False, "KeyboardFocus": False},
 					"ScriptComponent": Script(f"{SCRIPTS}/FarmHud.lua", 2)})
 
@@ -449,6 +454,10 @@ def Main():
 	FarmBieArt.WriteSprites(os.path.join(CONTENT, *SPRITES.split("/")))
 	WriteMaterials()
 	FarmBieData.WriteAll(CONTENT)
+	FarmBieCrops.WriteSprites(os.path.join(CONTENT, *SPRITES.split("/")))
+	X0, Y0 = PLAY_MIN[0] + FENCE_INSET + 60.0, PLAY_MIN[1] + FENCE_INSET + 60.0
+	FarmBieData.WriteFarmMap(CONTENT, {"Tile": TILE, "Width": GRID_W, "Height": GRID_H, "OriginX": GRID_ORIGIN[0], "OriginY": GRID_ORIGIN[1],
+									   "FarmMinX": X0, "FarmMinY": Y0, "FarmMaxX": -X0, "FarmMaxY": -Y0, "Well": [WELL[0], WELL[1]]})
 	FarmBieUI.WriteHud(CONTENT)
 	_, _, H, Weights = BuildTerrain()
 	WriteTerrain(os.path.join(CONTENT, "Terrain", "FarmBie", "Farm.eterrain"), H, Weights)
@@ -459,8 +468,10 @@ def Main():
 	os.makedirs(os.path.join(CONTENT, "Scenes", "Tests"), exist_ok=True)
 	BuildScene(Height, AutoPlay="Basic").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmAutoPlay.escene"))
 	BuildScene(Height, AutoPlay="Time").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmTime.escene"))
+	BuildScene(Height, AutoPlay="Farm").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmFarming.escene"))
 	if "--views" in sys.argv:
 		# 확인용 (커밋하지 않음): 시각별 화면
+		BuildScene(Height, AutoPlay="FieldShot").Save(os.path.join(CONTENT, "Scenes", "_FarmFieldShot.escene"))
 		for Hour in ("9", "17.5", "21.5"):
 			BuildScene(Height, AutoPlay=f"Shot{Hour}").Save(os.path.join(CONTENT, "Scenes", f"_FarmShot{Hour.replace('.', '_')}.escene"))
 	print(f"FarmBie 생성: 엔티티 {len(Scene.Entities)}개, 지형 {TERRAIN_RES}² 높이 {H.min():.0f}~{H.max():.0f}cm")

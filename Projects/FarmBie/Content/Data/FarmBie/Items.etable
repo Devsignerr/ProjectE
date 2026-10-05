@@ -1,0 +1,42 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Item.estruct",
+  "Rows": [
+    {
+      "Name": "Hoe",
+      "Values": {
+        "DisplayName": "괭이",
+        "Kind": "Tool",
+        "Price": 0,
+        "Description": "풀밭을 갈아 밭을 만든다. 시든 작물도 걷어낸다."
+      }
+    },
+    {
+      "Name": "Can",
+      "Values": {
+        "DisplayName": "물뿌리개",
+        "Kind": "Tool",
+        "Price": 0,
+        "Description": "작물에 물을 준다. 물이 떨어지면 우물에서 채운다."
+      }
+    },
+    {
+      "Name": "FertBasic",
+      "Values": {
+        "DisplayName": "기본 비료",
+        "Kind": "Fertilizer",
+        "Price": 20,
+        "Description": "간 칸에 뿌리면 그 칸 작물의 희귀 씨앗 확률이 오른다."
+      }
+    },
+    {
+      "Name": "FertPremium",
+      "Values": {
+        "DisplayName": "고급 비료",
+        "Kind": "Fertilizer",
+        "Price": 60,
+        "Description": "희귀 씨앗 확률이 크게 오른다. 보부상이 가끔 들고 온다."
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/FarmMap.estruct",
+  "Values": {
+    "Tile": 100.0,
+    "Width": 52,
+    "Height": 40,
+    "OriginX": -2600.0,
+    "OriginY": -2000.0,
+    "FarmMinX": -2390.0,
+    "FarmMinY": -1790.0,
+    "FarmMaxX": 2390.0,
+    "FarmMaxY": 1790.0,
+    "Well": [
+      -950.0,
+      -1250.0
+    ]
+  }
+}

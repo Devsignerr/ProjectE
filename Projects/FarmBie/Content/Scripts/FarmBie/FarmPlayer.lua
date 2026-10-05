@@ -68,8 +68,14 @@ function FarmPlayer:GatherInput()
 		return self.Pilot:Step(Time.GetUnscaledDelta())
 	end
 	local MX, MY = Input.GetAction("Move")
-	return { Move = Vector3(MX, -MY, 0), Dodge = Input.WasActionPressed("Dodge"), Interact = Input.WasActionPressed("Interact"),
-	         UseTool = Input.WasActionPressed("UseTool"), Pause = Input.WasActionPressed("Pause") }
+	local In = { Move = Vector3(MX, -MY, 0), Dodge = Input.WasActionPressed("Dodge"), Interact = Input.WasActionPressed("Interact"),
+	             UseTool = Input.WasActionPressed("UseTool"), Pause = Input.WasActionPressed("Pause") }
+	for I = 1, 9 do
+		if Input.WasActionPressed("Slot" .. I) then In.Slot = I end
+	end
+	local Wheel = Input.GetAction("SlotScroll")
+	if Wheel and math.abs(Wheel) > 0.1 then In.SlotStep = Wheel > 0 and -1 or 1 end
+	return In
 end
 
 function FarmPlayer:OnUpdate(Dt)
@@ -84,11 +90,30 @@ function FarmPlayer:OnUpdate(Dt)
 		self:UpdateAnimation(Vector3(0, 0, 0))
 		return
 	end
-	self.GM:UpdateInteract(Pos)
-	if In.Interact then self.GM:Interact() end
+	local GM = self.GM
+	GM:UpdateInteract(Pos)
+	if In.Slot then GM:SelectSlot(In.Slot) end
+	if In.SlotStep then GM:SelectSlot(GM.Selected + In.SlotStep) end
+	GM:UpdateCursor(Pos, self:GetFacingVector())
 	local Move = In.Move
 	if Move:Length() > 1 then Move = Move:Normalized() end
 	self.DodgeCooldown = math.max(0.0, self.DodgeCooldown - Dt)
+	-- 도구 동작 중: 이동 없음, 효과 시점에 밭에 적용
+	if self.ToolTimer and self.ToolTimer > 0 then
+		local Before = self.ToolTimer
+		self.ToolTimer = self.ToolTimer - Dt
+		local F = GM.Farming
+		if Before > F.ToolTime - F.ToolHitTime and self.ToolTimer <= F.ToolTime - F.ToolHitTime then
+			GM:ApplyUse(self.ToolKey, self.ToolTX, self.ToolTY)
+		end
+		self:UpdateAnimation(Vector3(0, 0, 0))
+		return
+	end
+	if In.Interact then
+		GM:Interact()
+	elseif In.UseTool then
+		self:StartUse()
+	end
 	if self.DodgeTimer > 0 then
 		self.DodgeTimer = self.DodgeTimer - Dt
 	elseif In.Dodge and self.DodgeCooldown <= 0 then
@@ -104,10 +129,31 @@ function FarmPlayer:OnUpdate(Dt)
 	self:UpdateAnimation(E:GetMovementVelocity())
 end
 
+-- 도구 사용 시작: 괭이·물뿌리개는 동작(ToolTime) 중간에 효과, 씨앗·비료·수확은 바로
+function FarmPlayer:StartUse()
+	local GM = self.GM
+	local S = GM:SelectedItem()
+	local Key = S and S.Key or nil
+	local TX, TY = GM:TargetTile(self.entity:GetWorldPosition(), self:GetFacingVector())
+	local Action = GM:PlanUse(Key, TX, TY)
+	self.ToolKey, self.ToolTX, self.ToolTY = Key, TX, TY
+	if (Key == "Hoe" or Key == "Can") and Action ~= "Harvest" then
+		self.ToolAnim = Key
+		self.ToolTimer = GM.Farming.ToolTime
+	else
+		self.ToolAnim = nil
+		self.ToolTimer = 0
+		GM:ApplyUse(Key, TX, TY)
+	end
+	self.Stats.Uses = (self.Stats.Uses or 0) + 1
+end
+
 function FarmPlayer:UpdateAnimation(Velocity)
 	local Dd = Dirs[self.Facing]
 	local Want
-	if Velocity.X * Velocity.X + Velocity.Y * Velocity.Y > 40 * 40 then
+	if self.ToolTimer and self.ToolTimer > 0 and self.ToolAnim then
+		Want = "Farmer_" .. self.ToolAnim .. Dd.Anim
+	elseif Velocity.X * Velocity.X + Velocity.Y * Velocity.Y > 40 * 40 then
 		Want = "Farmer_Walk" .. Dd.Anim
 	else
 		Want = "Farmer_Idle" .. Dd.Anim

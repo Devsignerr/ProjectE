@@ -162,6 +162,76 @@ def DrawFarmer(Dir, Pose, Frame):
 
 FARMER_POSES = {"Idle": (2, 2.5), "Walk": (4, 9.0)}  # 프레임 수, 초당 프레임
 
+# 도구 동작 (32x40 칸 — 발은 위에서 31줄, 아래 8줄은 앞으로 내리친 도구 자리. 피벗 = 발 = 아래에서 8/40)
+USE_H = 40
+USE_PIVOT = (0.5, (USE_H - 32) / USE_H)
+HANDLE, HANDLE_D = (150, 104, 60), (108, 72, 42)
+METAL, METAL_D = (186, 192, 202), (128, 134, 146)
+CAN, CAN_L, CAN_D = (86, 136, 186), (140, 186, 230), (60, 96, 140)
+WATER = (150, 210, 255)
+
+
+def _Hoe(C, X0, Y0, X1, Y1, BladeX, BladeY, BladeW, BladeH):
+	C.Line(X0, Y0, X1, Y1, HANDLE)
+	C.Line(X0 + 1, Y0, X1 + 1, Y1, HANDLE_D)
+	C.Rect(BladeX, BladeY, BladeX + BladeW - 1, BladeY + BladeH - 1, METAL)
+	C.Rect(BladeX, BladeY + BladeH - 1, BladeX + BladeW - 1, BladeY + BladeH - 1, METAL_D)
+
+
+def _Can(C, X, Y, bTilt, Drops):
+	C.Rect(X, Y, X + 6, Y + 4, CAN)
+	C.Rect(X + 1, Y + 1, X + 2, Y + 3, CAN_L)
+	C.Rect(X, Y + 4, X + 6, Y + 4, CAN_D)
+	if bTilt:
+		C.Line(X + 6, Y + 2, X + 9, Y + 5, CAN_D)
+	else:
+		C.Line(X + 6, Y + 1, X + 9, Y - 1, CAN_D)
+	for DX, DY in Drops:
+		C.Px(DX, DY, WATER)
+
+
+def DrawFarmerUse(Dir, Tool, Frame):
+	Body = DrawFarmer(Dir, "Walk" if Frame == 1 else "Idle", 1 if Frame == 1 else 0)
+	C = FCanvas(CELL, USE_H)
+	Tools = FCanvas(CELL, USE_H)
+	if Tool == "Hoe":
+		if Dir == "Down":
+			if Frame == 0:
+				_Hoe(Tools, 22, 22, 25, 9, 23, 6, 5, 3)
+			else:
+				_Hoe(Tools, 18, 24, 17, 35, 14, 35, 7, 3)
+		elif Dir == "Up":
+			if Frame == 0:
+				_Hoe(Tools, 10, 22, 7, 9, 5, 6, 5, 3)
+			else:
+				_Hoe(Tools, 16, 16, 16, 4, 13, 1, 7, 3)
+		else:
+			if Frame == 0:
+				_Hoe(Tools, 15, 21, 8, 9, 5, 6, 5, 3)
+			else:
+				_Hoe(Tools, 18, 22, 27, 30, 26, 30, 4, 6)
+	elif Tool == "Can":
+		if Dir == "Down":
+			_Can(Tools, 19, 23 if Frame == 0 else 29, Frame == 1, [] if Frame == 0 else [(29, 36), (27, 38), (30, 39)])
+		elif Dir == "Up":
+			_Can(Tools, 13, 10 if Frame == 0 else 4, Frame == 1, [] if Frame == 0 else [(23, 10), (24, 12), (22, 13)])
+		else:
+			_Can(Tools, 19, 20 if Frame == 0 else 23, Frame == 1, [] if Frame == 0 else [(29, 30), (30, 32), (28, 33)])
+	Tools.Outline(OUTLINE)
+	# 위를 볼 때 도구는 몸 앞(카메라 반대쪽) → 몸을 나중에, 그 밖에는 도구를 나중에
+	Layers = [Tools.P, None] if Dir == "Up" else [None, Tools.P]
+	for Layer in Layers:
+		if Layer is None:
+			Mask = Body.P[..., 3] > 0
+			C.P[:CELL][Mask] = Body.P[Mask]
+		else:
+			Mask = Layer[..., 3] > 0
+			C.P[Mask] = Layer[Mask]
+	return C
+
+
+USE_POSES = {"Hoe": [0.2, 0.22], "Can": [0.16, 0.3]}  # 도구 → 프레임 길이
+
 
 def DrawShadow():
 	C = FCanvas(24, 10)
@@ -171,15 +241,21 @@ def DrawShadow():
 
 
 def WriteSprites(Folder):
-	Atlas = FAtlas(512)
+	Atlas = FAtlas(768)
 	for Dir in ("Down", "Up", "Side"):
 		for Pose, (Count, _) in FARMER_POSES.items():
 			for Frame in range(Count):
 				Atlas.Add(f"{Pose}{Dir}{Frame}", DrawFarmer(Dir, Pose, Frame))
+	for Dir in ("Down", "Up", "Side"):
+		for Tool, Times in USE_POSES.items():
+			for Frame in range(len(Times)):
+				Atlas.Add(f"{Tool}{Dir}{Frame}", DrawFarmerUse(Dir, Tool, Frame), USE_PIVOT)
 	Atlas.Save(Folder, "Farmer")
 	for Dir in ("Down", "Up", "Side"):
 		for Pose, (Count, Fps) in FARMER_POSES.items():
 			WriteFlipbook(Folder, f"Farmer_{Pose}{Dir}", "Farmer.esprite", [f"{Pose}{Dir}{I}" for I in range(Count)], Fps)
+		for Tool, Times in USE_POSES.items():
+			WriteFlipbook(Folder, f"Farmer_{Tool}{Dir}", "Farmer.esprite", [f"{Tool}{Dir}{I}" for I in range(len(Times))], 0, "Once", Times)
 	Fx = FAtlas(128)
 	Fx.Add("Shadow", DrawShadow(), (0.5, 0.5))
 	Fx.Save(Folder, "Fx")

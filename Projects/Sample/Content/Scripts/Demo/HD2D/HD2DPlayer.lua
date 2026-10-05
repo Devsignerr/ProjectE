@@ -194,9 +194,8 @@ function HD2DPlayer:GatherInput()
 		return self.Pilot:Step(Time.GetUnscaledDelta())
 	end
 	local MX, MY = Input.GetAction("Move")
-	local bEscape = Input.IsKeyPressed("Escape") -- ESC는 Inventory 액션에도 덧붙어 있다 (HD2DMeta — 개발 실행 종료 방지)
-	local In = { Move = Vector3(MX, -MY, 0), Attack = Input.WasActionPressed("Attack"), Dash = Input.WasActionPressed("Dodge"), Pause = bEscape,
-	             Interact = Input.WasActionPressed("Interact"), Inventory = Input.WasActionPressed("Inventory") and not bEscape, Switch = Input.WasActionPressed("Skill2"),
+	local In = { Move = Vector3(MX, -MY, 0), Attack = Input.WasActionPressed("Attack"), Dash = Input.WasActionPressed("Dodge"), Pause = Input.WasActionPressed("Pause"),
+	             Interact = Input.WasActionPressed("Interact"), Inventory = Input.WasActionPressed("Inventory"), Switch = Input.WasActionPressed("Skill2"),
 	             Use1 = Input.WasActionPressed("UsePotion1"), Use2 = Input.WasActionPressed("UsePotion2"), Boost = Input.WasActionPressed("Skill1") }
 	local DirX = MX > 0.5 and 1 or (MX < -0.5 and -1 or 0)
 	if DirX ~= 0 and DirX ~= self.MenuHeldX then

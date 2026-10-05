@@ -39,14 +39,6 @@ function Hud:OnStart()
 	end
 end
 
-function Hud:OnDestroy()
-	-- 데모가 덧붙인 ESC 바인딩을 되돌린다 (다른 데모·다음 실행에 남지 않게)
-	if self.GM and self.GM.bEscapeBound then
-		Input.ResetBindings("Inventory")
-		self.GM.bEscapeBound = false
-	end
-end
-
 function Hud:HasMap() return self.Bounds ~= nil end
 
 function Hud:W(Name) return self.entity:GetWidget(Name) end

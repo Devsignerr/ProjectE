@@ -6,7 +6,7 @@
 --   재료 드랍: MaterialDrops 표 — 별도 난수열(MetaSeed)로 굴려 기존 전리품 난수 순서를 바꾸지 않는다.
 --   무기 강화: Upgrades[무기] = 단계 → GetWeapon이 공격력 보너스를 더한 대리 표(UpgradedWeapon)를 준다 (표 행은 읽기 전용이라 고치지 않는다).
 --   저장 슬롯: "HD2D_1"~"HD2D_3" (예전 단일 슬롯 "HD2D"는 슬롯 1이 비어 있으면 그리로 옮긴다), 퀘스트 추적(Tracked = "Main" | 서브 퀘스트 id).
---   ESC: 개발 실행에서 ESC가 바인딩 안 돼 있으면 엔진이 종료하므로, 이 데모가 도는 동안만 Inventory 액션에 Escape를 덧붙인다(MetaHud OnDestroy에서 되돌림).
+--   ESC: 프로젝트 입력 설정의 Pause 액션(Escape·게임패드 Start). Escape가 바인딩돼 있으므로 개발 실행도 ESC로 종료하지 않는다.
 local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
 local M = Script.Require("Scripts/Demo/HD2D/HD2DMetaData.lua")
 
@@ -37,7 +37,6 @@ function Meta:InitMeta()
 	self:LoadSettings()
 	self:InstallVolumeHook()
 	self:MigrateLegacySave()
-	self:InstallEscapeBinding()
 	for Id in pairs(self.Items) do self.ItemsSeen[Id] = true end
 end
 
@@ -163,17 +162,6 @@ function Meta:InstallVolumeHook()
 			return Raw(Path, (A or 1.0) * Scale, B or 1.0)
 		end
 		return Raw(Path, A, (B or 1.0) * Scale, C or 1.0)
-	end
-end
-
-function Meta:InstallEscapeBinding()
-	local Bound = Input.GetBindings("Inventory") or {}
-	for _, Source in ipairs(Bound) do
-		if Source == "Escape" then return end
-	end
-	if Input.Rebind("Inventory", nil, "Escape") then
-		self.bEscapeBound = true
-		Log.Info("[HD2D] ESC = 일시정지 메뉴 (데모 실행 중 Inventory 액션에 Escape 덧붙임 — 개발 실행 ESC 종료 방지)")
 	end
 end
 

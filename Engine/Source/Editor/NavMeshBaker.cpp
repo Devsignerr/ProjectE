@@ -41,6 +41,30 @@ FNavMeshBuildInput FNavMeshBaker::CollectInput(FScene& Scene, FResourceManager& 
 			AppendMesh(Mesh->GetCpuPositions(), Mesh->GetCpuIndices(), Transform.WorldMatrix, Input);
 			++MeshCount;
 		});
+	// 콜라이더 (트리거 제외, 움직이는 물체 제외). 메시와 겹쳐도 무해 — 보이는 메시 없는 막는 벽(보이지 않는 경계·소품 근사 콜라이더)이 빠지지 않게
+	FRegistry& Registry = Scene.GetRegistry();
+	Registry.View<FTransformComponent, FBoxColliderComponent>().Each([&](FEntity Entity, FTransformComponent& Transform, FBoxColliderComponent& Box) {
+		if (!Box.bIsTrigger && !IsMovingObject(Scene, Entity))
+		{
+			AppendBox(Box.Offset, Box.HalfExtents, Transform.WorldMatrix, Input);
+			++MeshCount;
+		}
+	});
+	Registry.View<FTransformComponent, FSphereColliderComponent>().Each([&](FEntity Entity, FTransformComponent& Transform, FSphereColliderComponent& Sphere) {
+		if (!Sphere.bIsTrigger && !IsMovingObject(Scene, Entity))
+		{
+			AppendBox(Sphere.Offset, FVector3(Sphere.Radius, Sphere.Radius, Sphere.Radius), Transform.WorldMatrix, Input);
+			++MeshCount;
+		}
+	});
+	Registry.View<FTransformComponent, FCapsuleColliderComponent>().Each([&](FEntity Entity, FTransformComponent& Transform, FCapsuleColliderComponent& Capsule) {
+		if (!Capsule.bIsTrigger && !IsMovingObject(Scene, Entity))
+		{
+			AppendBox(Capsule.Offset, FVector3(Capsule.Radius, Capsule.Radius, Capsule.HalfHeight + Capsule.Radius), Transform.WorldMatrix, Input);
+			++MeshCount;
+		}
+	});
+
 	std::vector<FTerrainInstance> Terrains;
 	GatherTerrains(Scene, Terrains);
 	for (const FTerrainInstance& Terrain : Terrains)
@@ -74,6 +98,26 @@ void FNavMeshBaker::AppendMesh(const std::vector<FVector3>& Positions, const std
 		Input.Indices.push_back(Base + Indices[Index + (bFlip ? 2 : 1)]);
 		Input.Indices.push_back(Base + Indices[Index + (bFlip ? 1 : 2)]);
 	}
+}
+
+void FNavMeshBaker::AppendBox(const FVector3& LocalCenter, const FVector3& HalfExtents, const FMatrix4x4& World, FNavMeshBuildInput& Input)
+{
+	// 꼭짓점 번호 = X 비트 0, Y 비트 1, Z 비트 2 (1이면 +). 면마다 바깥 법선 쪽에서 Cross(P1 - P0, P2 - P0)가 바깥을 향하게 고른 순서
+	static const uint32 BoxIndices[36] = {
+		0, 3, 1, 0, 2, 3, // -Z (아래)
+		4, 5, 7, 4, 7, 6, // +Z (위)
+		0, 1, 5, 0, 5, 4, // -Y
+		2, 6, 7, 2, 7, 3, // +Y
+		0, 4, 6, 0, 6, 2, // -X
+		1, 3, 7, 1, 7, 5, // +X
+	};
+	std::vector<FVector3> Positions(8);
+	for (uint32 Corner = 0; Corner < 8; ++Corner)
+	{
+		Positions[Corner] = LocalCenter + FVector3((Corner & 1) ? HalfExtents.X : -HalfExtents.X, (Corner & 2) ? HalfExtents.Y : -HalfExtents.Y,
+		                                           (Corner & 4) ? HalfExtents.Z : -HalfExtents.Z);
+	}
+	AppendMesh(Positions, std::vector<uint32>(std::begin(BoxIndices), std::end(BoxIndices)), World, Input);
 }
 
 void FNavMeshBaker::AppendTerrain(const FTerrainData& Data, const FTerrainFrame& Frame, FNavMeshBuildInput& Input)

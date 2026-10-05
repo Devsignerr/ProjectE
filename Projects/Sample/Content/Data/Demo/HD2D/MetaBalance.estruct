@@ -1,0 +1,26 @@
+{
+  "Version": 1,
+  "Name": "MetaBalance",
+  "Description": "HD2D 메타 시스템 값 (Meta.edata 하나)",
+  "Fields": [
+    {
+      "Name": "ForgeLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "대장장이 말: 들어옴 / 강화 / 조합 / 재료 부족 / 골드 부족 / 최대 단계 / 나감",
+      "Element": "String"
+    },
+    {
+      "Name": "TitleScene",
+      "Type": "String",
+      "Default": "Scenes/Demo/HD2D.escene",
+      "Description": "일시정지 메뉴 \"타이틀로\"가 여는 씬 (타이틀이 있는 맵)"
+    },
+    {
+      "Name": "SaveRadius",
+      "Type": "Float",
+      "Default": 320.0,
+      "Description": "일시정지 메뉴에서 기록할 수 있는 게시판까지 거리 (cm)"
+    }
+  ]
+}

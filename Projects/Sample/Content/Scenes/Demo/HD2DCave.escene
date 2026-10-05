@@ -14988,6 +14988,42 @@
     },
     {
       "Components": {
+        "UIComponent": {
+          "Asset": "UI/Demo/HD2D/Meta.eui",
+          "ZOrder": 1,
+          "Visible": true,
+          "ReceiveInput": true,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/HD2D/HD2DMetaHud.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"Map\": \"Cave\", \"MapImage\": \"UI/Demo/HD2D/Maps/Cave.png\", \"MapBounds\": \"-3800,-1650,4800,850\", \"MapTitle\": \"폭포 옆 동굴 유적\", \"Landmarks\": \"입구 홀,-2650,-640,Place;갈림길,-850,330,Place;보물 단,-620,-1420,Place;함정 복도,820,260,Place;수정 호수,2650,-700,Place;여왕의 둥지,3900,260,Place;마을로,-3480,-120,Exit\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "MetaUI",
+      "Parent": -1
+    },
+    {
+      "Components": {
         "NavMeshComponent": {
           "AgentRadius": 35.0,
           "AgentHeight": 150.0,
@@ -15113,7 +15149,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 524
+          "Root": 525
         },
         "TransformComponent": {
           "Position": [

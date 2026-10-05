@@ -87,6 +87,31 @@ function Combat:CombatSignature()
 	return table.concat(Keys, ",") .. (self.CompanionRecruited and "+Ella" or "")
 end
 
+-- 도감 약점 칸 (HD2DMeta.lua 훅을 덮어쓴다): 공개한 약점은 이름, 아직 모르는 칸은 "？" — 하나도 모르면 nil(도감이 "？？？")
+--   보스는 1단계 / 2단계("<행>#2")를 나눠 보인다
+function Combat:BestiaryWeakness(Kind)
+	local Row = D.Enemy(Kind)
+	if not Row then return nil end
+	local bAny = false
+	local function Line(Key, List)
+		local Parts = {}
+		for _, Elem in ipairs(List or {}) do
+			if self:IsRevealed(Key, Elem) then
+				Parts[#Parts + 1] = Combat.ElementNames[Elem] or Elem
+				bAny = true
+			else
+				Parts[#Parts + 1] = "？"
+			end
+		end
+		return table.concat(Parts, " · ")
+	end
+	local Text = Line(Kind, Row.Weakness)
+	if (Row.Shield2 or 0) > 0 and #(Row.Weakness2 or {}) > 0 then
+		Text = "1단계 " .. Text .. "  /  2단계 " .. Line(Kind .. "#2", Row.Weakness2)
+	end
+	return bAny and string.format("%s  (실드 %d)", Text, Row.Shield or 0) or nil
+end
+
 function Combat:IsRevealed(Key, Elem)
 	local Set = self.Revealed[Key]
 	return Set ~= nil and Set[Elem] == true

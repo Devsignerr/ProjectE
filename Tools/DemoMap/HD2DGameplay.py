@@ -367,7 +367,7 @@ def WriteData(Content):
 		_Field("SpeedBonus", "Float", 0, "이동 속도 배율 + (0.1 = 10%)"),
 		_Field("CritBonus", "Float", 0, "치명타 확률 +"),
 	])
-	_Table(Content, "Items", "Item", ITEMS)
+	_Table(Content, "Items", "Item", ITEMS + HD2DMetaGen.EXTRA_ITEMS)  # 재료 행은 메타 시스템(HD2DMetaGen)이 끝에 붙인다
 
 	_Struct(Content, "Enemy", "HD2D 적 (Enemies.etable, 행 이름 = 적 종류 = 프리팹 이름)", [
 		_Field("DisplayName", "String", "마물", "표시 이름"),
@@ -639,7 +639,7 @@ def WriteUi(Content):
 			Img("WeaponIcon", Icon("Sword"), 52, BoxSlot((0, 0, 14, 0), VAlign="Center")),
 			Widget("VerticalBox", "WeaponTexts", BoxSlot(VAlign="Center"), "HitTestInvisible", [
 				Text("WeaponName", "여행자의 검", 22, BoxSlot(), TEXT_GOLD),
-				Text("WeaponHint", "J 공격 · R 무기 교체 · Space 회피 · I 소지품", 15, BoxSlot((0, 4, 0, 0)), TEXT_DIM),
+				Text("WeaponHint", "J 공격 · R 무기 교체 · Space 회피 · I 소지품 · ESC 메뉴", 15, BoxSlot((0, 4, 0, 0)), TEXT_DIM),
 			]),
 		]),
 	], Brush=FrameBrush(), ContentPadding=[20, 14, 24, 14]))
@@ -910,10 +910,10 @@ NAV_SETTINGS = {"AgentRadius": 35.0, "AgentHeight": 150.0, "AgentMaxClimb": 40.0
 
 
 def AddGame(S, Height, Path, AutoPlay=False, Layout=None, Title=None, NavMesh="Scenes/Demo/HD2D.enav",
-			TravelTestScene="Scenes/Demo/_HD2DAutoPlay.escene"):
+			TravelTestScene="Scenes/Demo/_HD2DAutoPlay.escene", Minimap=None):
 	# 게임 관리자(맵 id + 적·보물상자·마을 사람·소품·보스 자리 + 길) + HUD + 내비메시 엔티티.
 	#   AutoPlay: False | True(= "Full") | 시나리오 이름 (HD2DAutoPilot.lua). Title: 타이틀 화면을 띄우는가 (None = 맵 설정 && 사람/Full 실행)
-	#   NavMesh: 구운 .enav (Content 기준, None = 없음 — 적은 곧장 걷는다)
+	#   NavMesh: 구운 .enav (Content 기준, None = 없음 — 적은 곧장 걷는다), Minimap: HD2DMapArt.Info(...) (지도 화면·미니맵 — 없으면 지도 없음)
 	L = Layout or VILLAGE
 
 	def P3(X, Y, Lift):
@@ -944,6 +944,7 @@ def AddGame(S, Height, Path, AutoPlay=False, Layout=None, Title=None, NavMesh="S
 		"PropertyOverrides": json.dumps(Overrides, ensure_ascii=False)}})
 	S.Add("HUD", {"UIComponent": {"Asset": f"{UI_DIR}/HUD.eui", "ZOrder": 0, "Visible": True, "ReceiveInput": True, "KeyboardFocus": False},
 				  "ScriptComponent": {"ScriptAsset": "Scripts/Demo/HD2D/HD2DHud.lua", "ExecutionLocation": 0, "PropertyOverrides": ""}})
+	HD2DMetaGen.AddMeta(S, L, Minimap)  # 일시정지 메뉴·저장 슬롯·대장간·미니맵 UI (MetaUI 엔티티)
 	if NavMesh:
 		S.Add("NavMesh", {"NavMeshComponent": dict(NAV_SETTINGS, NavMeshAsset=NavMesh)})
 	if Scenario == "Full":
@@ -1008,6 +1009,7 @@ def WriteAll(Content, CameraDistance, PlayMin, PlayMax):
 	WriteData(Content)
 	WriteUi(Content)
 	WritePrefabs(Content, CameraDistance, PlayMin, PlayMax)
+	HD2DMetaGen.WriteAll(Content)  # 메타 시스템: 재료·강화·조합·도감 표 + Meta.eui(일시정지 메뉴·저장 슬롯·대장간·미니맵)
 	HD2DCombatGen.WriteAll(Content, sys.modules[__name__])  # 전투 효과·아이콘·동료 도트 아트 + 동료 프리팹
 
 
@@ -1015,6 +1017,12 @@ def WriteNavBake(Content, Scene, Height, PlayMin, PlayMax, Path, Name="_HD2DNavB
 	Doc, Count = WriteNavBakeScene(Scene, Height, PlayMin, PlayMax, Path, Cell)
 	_WriteJson(os.path.join(Content, "Scenes", "Demo", f"{Name}.escene"), Doc)
 	print(f"내비메시 굽기용 씬: Scenes/Demo/{Name}.escene (바닥 판 {Count}개) - 머리 주석의 순서로 굽는다")
+
+
+# 메타 시스템 (일시정지 메뉴·저장 슬롯·대장간·도감·지도) — 위 도우미를 쓰므로 맨 끝에서 가져온다
+import HD2DMetaGen  # noqa: E402
+
+SHOT_SCENES.update(HD2DMetaGen.SHOT_SCENES)
 
 
 if __name__ == "__main__":

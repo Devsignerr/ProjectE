@@ -1039,7 +1039,7 @@
                       "SizeRule": "Auto",
                       "FillWeight": 1
                     },
-                    "Text": "J 공격 · R 무기 교체 · Space 회피 · I 소지품",
+                    "Text": "J 공격 · R 무기 교체 · Space 회피 · I 소지품 · ESC 메뉴",
                     "FontSize": 15,
                     "TextColor": [
                       0.72,

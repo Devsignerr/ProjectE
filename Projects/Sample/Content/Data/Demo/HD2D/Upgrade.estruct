@@ -1,0 +1,38 @@
+{
+  "Version": 1,
+  "Name": "Upgrade",
+  "Description": "HD2D 무기 강화 단계 (Upgrades.etable, 행 이름 = <무기>_<단계>)",
+  "Fields": [
+    {
+      "Name": "Weapon",
+      "Type": "String",
+      "Default": "",
+      "Description": "무기 id (Weapons.etable)"
+    },
+    {
+      "Name": "Level",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "강화 단계 (+1~+3)"
+    },
+    {
+      "Name": "Damage",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "이 단계의 공격력 보너스 (기본 피해에 더함 — 누적 값)"
+    },
+    {
+      "Name": "Gold",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "비용 골드"
+    },
+    {
+      "Name": "Materials",
+      "Type": "Array",
+      "Default": [],
+      "Description": "재료 (아이템*개수)",
+      "Element": "String"
+    }
+  ]
+}

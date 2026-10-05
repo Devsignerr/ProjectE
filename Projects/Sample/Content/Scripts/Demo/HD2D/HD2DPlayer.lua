@@ -1,6 +1,6 @@
 -- HD-2D 데모 플레이어 (Prefabs/Demo/HD2D/Player.eprefab — 캡슐 이동기 + Visual > Body 도트 스프라이트·Shadow).
 --   조작 (입력 액션): Move(WASD/왼쪽 스틱) 이동, Attack(J/마우스 왼쪽) 공격, Dodge(Space) 회피 대시, Interact(E) 대화·상자,
---             Inventory(I/Tab) 소지품, Skill2(R) 무기 교체, UsePotion1(1) 회복약, UsePotion2(2) 마나 물약.
+--             Inventory(I/Tab) 소지품, Skill2(R) 무기 교체, UsePotion1(1) 회복약, UsePotion2(2) 마나 물약, ESC 일시정지 메뉴(HD2DPause — 메뉴 안에서는 뒤로).
 --   메뉴(대화·인벤토리·상점)가 열려 있으면 입력을 관리자(HD2DGame:MenuInput)에 넘긴다 — W/S 고르기, E·J 확인, I·Space 닫기.
 --   이동은 이동기가 한다 (스크립트는 AddMovementInput만). 방향 = 마지막 입력/조준의 주된 축 → 아래/위/옆 3방향 플립북, 왼쪽은 좌우 반전.
 --   무기 (Data/Demo/HD2D/Weapons.etable — 관리자의 장비 무기):
@@ -197,8 +197,9 @@ function HD2DPlayer:GatherInput()
 		return self.Pilot:Step(Time.GetUnscaledDelta())
 	end
 	local MX, MY = Input.GetAction("Move")
-	local In = { Move = Vector3(MX, -MY, 0), Attack = Input.WasActionPressed("Attack"), Dash = Input.WasActionPressed("Dodge"),
-	             Interact = Input.WasActionPressed("Interact"), Inventory = Input.WasActionPressed("Inventory"), Switch = Input.WasActionPressed("Skill2"),
+	local bEscape = Input.IsKeyPressed("Escape") -- ESC는 Inventory 액션에도 덧붙어 있다 (HD2DMeta — 개발 실행 종료 방지)
+	local In = { Move = Vector3(MX, -MY, 0), Attack = Input.WasActionPressed("Attack"), Dash = Input.WasActionPressed("Dodge"), Pause = bEscape,
+	             Interact = Input.WasActionPressed("Interact"), Inventory = Input.WasActionPressed("Inventory") and not bEscape, Switch = Input.WasActionPressed("Skill2"),
 	             Use1 = Input.WasActionPressed("UsePotion1"), Use2 = Input.WasActionPressed("UsePotion2"), Boost = Input.WasActionPressed("Skill1") }
 	local DirX = MX > 0.5 and 1 or (MX < -0.5 and -1 or 0)
 	if DirX ~= 0 and DirX ~= self.MenuHeldX then
@@ -206,7 +207,7 @@ function HD2DPlayer:GatherInput()
 	end
 	self.MenuHeldX = DirX
 	In.Confirm = In.Interact or In.Attack
-	In.Cancel = In.Dash
+	In.Cancel = In.Dash or In.Pause
 	-- 메뉴 위/아래: 누른 순간 + 누르고 있으면 반복
 	local Dir = MY > 0.5 and 1 or (MY < -0.5 and -1 or 0)
 	local UDt = Time.GetUnscaledDelta()
@@ -250,6 +251,11 @@ function HD2DPlayer:OnUpdate(Dt)
 	self.NoManaTimer = math.max(0.0, self.NoManaTimer - Dt)
 	self.Mana = math.min(self.MaxMana, self.Mana + D.Balance().ManaRegen * Dt)
 
+	if In.Pause and self.GM:CanOpenPause() then
+		self.GM:OpenPause()
+		self:UpdateHud()
+		return
+	end
 	if In.Inventory then
 		self.GM:OpenInventory()
 		self:UpdateHud()

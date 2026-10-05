@@ -165,6 +165,13 @@ function AutoPilot:Route(From, To)
 	return Points
 end
 
+-- 순간이동 자리의 바닥 높이 (위에서 아래로 레이캐스트 — 단·벼랑처럼 높이가 다른 곳에 지금 높이로 놓으면 지형 속에 끼어 떨어졌다)
+function AutoPilot:GroundZ(Target, FallbackZ)
+	local Hit = Physics.Raycast(Vector3(Target.X, Target.Y, FallbackZ + 1500), Vector3(0, 0, -1), 4000)
+	if Hit then return Hit.position.Z end
+	return FallbackZ - 60
+end
+
 -- 한 프레임 이동 입력 (막히면 옆으로 비켜 보고, 오래 막히면 순간이동)
 function AutoPilot:MoveToward(Target, Scale)
 	local Pos = self:Pos()
@@ -187,7 +194,7 @@ function AutoPilot:MoveToward(Target, Scale)
 	if (self.StuckTotal or 0) > 4.5 then
 		self:Note(string.format("막힘 → 순간이동 (%.0f, %.0f)", Target.X, Target.Y))
 		self.Teleports = self.Teleports + 1
-		self.Player:Teleport(Vector3(Target.X, Target.Y, Pos.Z + 30))
+		self.Player:Teleport(Vector3(Target.X, Target.Y, self:GroundZ(Target, Pos.Z) + 90))
 		self.StuckTotal = 0
 		return
 	end
@@ -204,7 +211,8 @@ function AutoPilot:GoTo(Target, Radius, Timeout, Label)
 	local Nav0 = self.NavRoutes or 0
 	local Route = self:Route(self:Pos(), Target)
 	if self.Scenario == "Cave" and Label then
-		self:Note(string.format("길 %s: %d점 (%s)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path"))
+		local From = self:Pos()
+		self:Note(string.format("길 %s: %d점 (%s, 출발 %.0f, %.0f, %.0f)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path", From.X, From.Y, From.Z))
 	end
 	local Index = 1
 	self.StuckTotal, self.StuckClock, self.StuckFrom = 0, 0, nil
@@ -824,7 +832,6 @@ function AutoPilot:RunCaveRun()
 		string.format("동굴 배치 (적 %d, 상자 %d, 함정 %d, 문 %s)", #GM.Slots, #GM.Chests, #GM.Traps, tostring(GM.Gate ~= nil)))
 	self:Expect(GM.QuestStage == 0 and not GM:IsBossDefeated(), "세션 없이 열면 기본 상태")
 	self:CaveLoadout()
-	self:MetaCaveChecks()
 
 	-- 1 입구 홀 (약한 적) → 2 갈림길 (궁수·독버섯) → 보물 단 (궁수 + 숨은 상자: 수정 검)
 	self:ClearArea(Vector3(-2400, -150, 0), 900, 70, "Sword", "입구 홀")
@@ -892,6 +899,7 @@ function AutoPilot:RunCaveRun()
 	self:Expect(GM:Count("CrystalCharm") == 1, "수정 부적 획득 (제단 옆 상자)")
 	self:EquipFromMenu("CrystalCharm")
 	self:Expect(GM.Report.Chests == 4, "동굴 상자 4개 (보물 3 + 보상)")
+	self:MetaCaveChecks() -- 동굴 지도·미니맵 (앞 구간 길찾기 타이밍을 바꾸지 않게 보스 뒤에)
 
 	-- 6 출구로: 함정을 다시 건너 입구 홀 서쪽 이동 트리거 → 메인 맵
 	self:CrossTraps(-1)

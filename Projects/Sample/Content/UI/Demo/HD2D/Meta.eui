@@ -5720,15 +5720,15 @@
                     ]
                   },
                   {
-                    "Type": "Text",
-                    "Name": "ForgeCmp0",
+                    "Type": "HorizontalBox",
+                    "Name": "ForgeCmpRow0",
                     "Enabled": true,
                     "Opacity": 1,
                     "Visibility": "Collapsed",
                     "Slot": {
                       "Padding": [
                         0,
-                        2,
+                        4,
                         0,
                         0
                       ],
@@ -5737,44 +5737,105 @@
                       "SizeRule": "Auto",
                       "FillWeight": 1
                     },
-                    "Text": "",
-                    "FontSize": 18,
-                    "TextColor": [
-                      0.96,
-                      0.93,
-                      0.86,
-                      1
-                    ],
-                    "Justify": "Left",
-                    "Wrap": false,
-                    "OutlineWidth": 2,
-                    "OutlineColor": [
-                      0.03,
-                      0.02,
-                      0.06,
-                      1
-                    ],
-                    "ShadowOffset": [
-                      0,
-                      2
-                    ],
-                    "ShadowColor": [
-                      0,
-                      0,
-                      0,
-                      0.55
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "ForgeCmpIcon0",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            10,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Icons/Jelly.png"
+                        },
+                        "ImageSize": [
+                          32,
+                          32
+                        ]
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "ForgeCmp0",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Text": "",
+                        "FontSize": 18,
+                        "TextColor": [
+                          0.96,
+                          0.93,
+                          0.86,
+                          1
+                        ],
+                        "Justify": "Left",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [
+                          0.03,
+                          0.02,
+                          0.06,
+                          1
+                        ],
+                        "ShadowOffset": [
+                          0,
+                          2
+                        ],
+                        "ShadowColor": [
+                          0,
+                          0,
+                          0,
+                          0.55
+                        ]
+                      }
                     ]
                   },
                   {
-                    "Type": "Text",
-                    "Name": "ForgeCmp1",
+                    "Type": "HorizontalBox",
+                    "Name": "ForgeCmpRow1",
                     "Enabled": true,
                     "Opacity": 1,
                     "Visibility": "Collapsed",
                     "Slot": {
                       "Padding": [
                         0,
-                        2,
+                        4,
                         0,
                         0
                       ],
@@ -5783,44 +5844,105 @@
                       "SizeRule": "Auto",
                       "FillWeight": 1
                     },
-                    "Text": "",
-                    "FontSize": 18,
-                    "TextColor": [
-                      0.96,
-                      0.93,
-                      0.86,
-                      1
-                    ],
-                    "Justify": "Left",
-                    "Wrap": false,
-                    "OutlineWidth": 2,
-                    "OutlineColor": [
-                      0.03,
-                      0.02,
-                      0.06,
-                      1
-                    ],
-                    "ShadowOffset": [
-                      0,
-                      2
-                    ],
-                    "ShadowColor": [
-                      0,
-                      0,
-                      0,
-                      0.55
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "ForgeCmpIcon1",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            10,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Icons/Jelly.png"
+                        },
+                        "ImageSize": [
+                          32,
+                          32
+                        ]
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "ForgeCmp1",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Text": "",
+                        "FontSize": 18,
+                        "TextColor": [
+                          0.96,
+                          0.93,
+                          0.86,
+                          1
+                        ],
+                        "Justify": "Left",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [
+                          0.03,
+                          0.02,
+                          0.06,
+                          1
+                        ],
+                        "ShadowOffset": [
+                          0,
+                          2
+                        ],
+                        "ShadowColor": [
+                          0,
+                          0,
+                          0,
+                          0.55
+                        ]
+                      }
                     ]
                   },
                   {
-                    "Type": "Text",
-                    "Name": "ForgeCmp2",
+                    "Type": "HorizontalBox",
+                    "Name": "ForgeCmpRow2",
                     "Enabled": true,
                     "Opacity": 1,
                     "Visibility": "Collapsed",
                     "Slot": {
                       "Padding": [
                         0,
-                        2,
+                        4,
                         0,
                         0
                       ],
@@ -5829,44 +5951,105 @@
                       "SizeRule": "Auto",
                       "FillWeight": 1
                     },
-                    "Text": "",
-                    "FontSize": 18,
-                    "TextColor": [
-                      0.96,
-                      0.93,
-                      0.86,
-                      1
-                    ],
-                    "Justify": "Left",
-                    "Wrap": false,
-                    "OutlineWidth": 2,
-                    "OutlineColor": [
-                      0.03,
-                      0.02,
-                      0.06,
-                      1
-                    ],
-                    "ShadowOffset": [
-                      0,
-                      2
-                    ],
-                    "ShadowColor": [
-                      0,
-                      0,
-                      0,
-                      0.55
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "ForgeCmpIcon2",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            10,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Icons/Jelly.png"
+                        },
+                        "ImageSize": [
+                          32,
+                          32
+                        ]
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "ForgeCmp2",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Text": "",
+                        "FontSize": 18,
+                        "TextColor": [
+                          0.96,
+                          0.93,
+                          0.86,
+                          1
+                        ],
+                        "Justify": "Left",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [
+                          0.03,
+                          0.02,
+                          0.06,
+                          1
+                        ],
+                        "ShadowOffset": [
+                          0,
+                          2
+                        ],
+                        "ShadowColor": [
+                          0,
+                          0,
+                          0,
+                          0.55
+                        ]
+                      }
                     ]
                   },
                   {
-                    "Type": "Text",
-                    "Name": "ForgeCmp3",
+                    "Type": "HorizontalBox",
+                    "Name": "ForgeCmpRow3",
                     "Enabled": true,
                     "Opacity": 1,
                     "Visibility": "Collapsed",
                     "Slot": {
                       "Padding": [
                         0,
-                        2,
+                        4,
                         0,
                         0
                       ],
@@ -5875,32 +6058,93 @@
                       "SizeRule": "Auto",
                       "FillWeight": 1
                     },
-                    "Text": "",
-                    "FontSize": 18,
-                    "TextColor": [
-                      0.96,
-                      0.93,
-                      0.86,
-                      1
-                    ],
-                    "Justify": "Left",
-                    "Wrap": false,
-                    "OutlineWidth": 2,
-                    "OutlineColor": [
-                      0.03,
-                      0.02,
-                      0.06,
-                      1
-                    ],
-                    "ShadowOffset": [
-                      0,
-                      2
-                    ],
-                    "ShadowColor": [
-                      0,
-                      0,
-                      0,
-                      0.55
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "ForgeCmpIcon3",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            10,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Icons/Jelly.png"
+                        },
+                        "ImageSize": [
+                          32,
+                          32
+                        ]
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "ForgeCmp3",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Text": "",
+                        "FontSize": 18,
+                        "TextColor": [
+                          0.96,
+                          0.93,
+                          0.86,
+                          1
+                        ],
+                        "Justify": "Left",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [
+                          0.03,
+                          0.02,
+                          0.06,
+                          1
+                        ],
+                        "ShadowOffset": [
+                          0,
+                          2
+                        ],
+                        "ShadowColor": [
+                          0,
+                          0,
+                          0,
+                          0.55
+                        ]
+                      }
                     ]
                   }
                 ]
@@ -6305,7 +6549,7 @@
                     0.015,
                     0.012,
                     0.05,
-                    0.42
+                    0.86
                   ],
                   "CornerRadius": 6,
                   "BorderWidth": 0,
@@ -6769,8 +7013,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Resume.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -7072,8 +7316,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Items.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -7375,8 +7619,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Equip.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -7678,8 +7922,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Journal.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -7981,8 +8225,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Map.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -8284,8 +8528,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Bestiary.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -8587,8 +8831,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Records.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -8890,8 +9134,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Settings.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -9193,8 +9437,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Save.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -9496,8 +9740,8 @@
                                   "Texture": "UI/Demo/HD2D/Meta/Title.png"
                                 },
                                 "ImageSize": [
-                                  28,
-                                  28
+                                  32,
+                                  32
                                 ]
                               },
                               {
@@ -10020,7 +10264,7 @@
                     0.015,
                     0.012,
                     0.05,
-                    0.42
+                    0.86
                   ],
                   "CornerRadius": 6,
                   "BorderWidth": 0,
@@ -13970,8 +14214,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Crown.png"
                                     },
                                     "ImageSize": [
-                                      26,
-                                      26
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -14319,8 +14563,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Crown.png"
                                     },
                                     "ImageSize": [
-                                      26,
-                                      26
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -14668,8 +14912,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Crown.png"
                                     },
                                     "ImageSize": [
-                                      26,
-                                      26
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -15017,8 +15261,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Crown.png"
                                     },
                                     "ImageSize": [
-                                      26,
-                                      26
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -15366,8 +15610,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Crown.png"
                                     },
                                     "ImageSize": [
-                                      26,
-                                      26
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -15715,8 +15959,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Crown.png"
                                     },
                                     "ImageSize": [
-                                      26,
-                                      26
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -16064,8 +16308,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Crown.png"
                                     },
                                     "ImageSize": [
-                                      26,
-                                      26
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -16413,8 +16657,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Crown.png"
                                     },
                                     "ImageSize": [
-                                      26,
-                                      26
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -20084,8 +20328,8 @@
                       "Offsets": [
                         0,
                         0,
-                        30,
-                        30
+                        24,
+                        24
                       ],
                       "Alignment": [
                         0.5,
@@ -20112,8 +20356,8 @@
                       "Texture": "UI/Demo/HD2D/Meta/MkPlayer.png"
                     },
                     "ImageSize": [
-                      30,
-                      30
+                      24,
+                      24
                     ]
                   },
                   {
@@ -21457,8 +21701,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Lock.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -21806,8 +22050,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Lock.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -22155,8 +22399,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Lock.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -22504,8 +22748,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Lock.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -22853,8 +23097,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Lock.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -23202,8 +23446,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Lock.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -23551,8 +23795,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Lock.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -23900,8 +24144,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Lock.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -24249,8 +24493,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Lock.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -28599,8 +28843,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Sound.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -29122,8 +29366,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Sound.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -29645,8 +29889,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Sound.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -30168,8 +30412,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Sound.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -30691,8 +30935,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Sound.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {
@@ -31214,8 +31458,8 @@
                                       "Texture": "UI/Demo/HD2D/Meta/Sound.png"
                                     },
                                     "ImageSize": [
-                                      28,
-                                      28
+                                      32,
+                                      32
                                     ]
                                   },
                                   {

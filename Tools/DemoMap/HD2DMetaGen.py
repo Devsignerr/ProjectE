@@ -159,6 +159,7 @@ def WriteData(Content):
 	for Kind, Habitat, Desc in BESTIARY:
 		Look = Rows[Kind]["Look"] or Kind
 		W, H = HD2DMetaArt.WritePicture(os.path.join(Content, *UI_DIR.split("/"), "Bestiary", f"{Kind}.png"), Look, Rows[Kind]["Tint"])
+		HD2DMetaArt.WriteListIcon(os.path.join(Content, *UI_DIR.split("/"), "Bestiary", f"{Kind}_Icon.png"), Look, Rows[Kind]["Tint"])
 		Pictures.append((Kind, {"Habitat": Habitat, "Description": Desc, "Picture": f"{UI_DIR}/Bestiary/{Kind}.png", "PictureW": W, "PictureH": H}))
 	G._Struct(Content, "BestiaryEntry", "HD2D 도감 (Bestiary.etable, 행 이름 = 적 종류 — 순서 = 도감 순서)", [
 		F("Habitat", "String", "", "서식지"),
@@ -192,7 +193,7 @@ def At(X, Y, Wd=0, Hd=0, Anchor=(0, 0), Align=(0, 0), Auto=None, Z=1):
 	return G.CanvasSlot(Anchor, X, Y, Wd, Hd, Align, (Wd == 0 and Hd == 0) if Auto is None else Auto, Z)
 
 
-def Underlay(Name, Alpha=0.42):
+def Underlay(Name, Alpha=0.86):
 	# 창틀(반투명 남색) 아래 한 겹 더 — 메뉴 뒤 장면·타이틀 글자가 비쳐 읽기 어렵지 않게 (창틀 가장자리 8px 안쪽)
 	return W("Border", Name, G.CanvasSlot((0, 0), 0, 0, 0, 0, (0, 0), False, 0) | {"AnchorMax": [1, 1], "Offsets": [8, 8, 8, 8]}, "HitTestInvisible",
 			 Brush=G.Brush((0.015, 0.012, 0.05, Alpha), 6), ContentPadding=[0, 0, 0, 0])
@@ -287,7 +288,7 @@ def PageHome():
 
 def PageJournal():
 	Rows = [RowButton(f"JRow{I}", [
-		Img(f"JRowIcon{I}", MetaIcon("Crown"), 26, G.BoxSlot((0, 0, 10, 0), VAlign="Center")),
+		Img(f"JRowIcon{I}", MetaIcon("Crown"), 32, G.BoxSlot((0, 0, 10, 0), VAlign="Center")),
 		T(f"JRowName{I}", "", 19, G.BoxSlot(VAlign="Center", Size="Fill")),
 		T(f"JRowTag{I}", "", 15, G.BoxSlot((8, 0, 0, 0), VAlign="Center"), TG, "Right"),
 	], 372, 44) for I in range(JOURNAL_ROWS)]
@@ -330,8 +331,8 @@ def PageMap():
 	for I in range(MAP_MARKERS):
 		Children.append(W("Image", f"MapMk{I}", At(0, 0, 22, 22, Align=(0.5, 0.5), Z=5), "Collapsed", Brush=G.Brush(Texture=MetaIcon("MkNpc")),
 						  ImageSize=[22, 22]))
-	Children.append(W("Image", "MapPlayer", At(0, 0, 30, 30, Align=(0.5, 0.85), Z=6), "Collapsed", Brush=G.Brush(Texture=MetaIcon("MkPlayer")),
-					  ImageSize=[30, 30]))
+	Children.append(W("Image", "MapPlayer", At(0, 0, 24, 24, Align=(0.5, 0.85), Z=6), "Collapsed", Brush=G.Brush(Texture=MetaIcon("MkPlayer")),
+					  ImageSize=[24, 24]))
 	Legend = []
 	for K, (Icon, Name) in enumerate((("MkPlayer", "현재 위치"), ("MkGoal", "목표"), ("MkNpcQuest", "의뢰"), ("MkNpc", "마을 사람"),
 									   ("MkChest", "보물상자"), ("MkSave", "기록 장소"), ("MkExit", "출구"), ("MkBoss", "강적"))):
@@ -349,7 +350,7 @@ def PageMap():
 
 def PageBestiary():
 	Rows = [RowButton(f"BRow{I}", [
-		Img(f"BRowIcon{I}", MetaIcon("Lock"), 28, G.BoxSlot((0, 0, 10, 0), VAlign="Center")),
+		Img(f"BRowIcon{I}", MetaIcon("Lock"), 32, G.BoxSlot((0, 0, 10, 0), VAlign="Center")),
 		T(f"BRowName{I}", "", 19, G.BoxSlot(VAlign="Center", Size="Fill")),
 		T(f"BRowCount{I}", "", 16, G.BoxSlot((8, 0, 0, 0), VAlign="Center"), TG, "Right"),
 	], 322, 42) for I in range(BEST_ROWS)]
@@ -398,7 +399,7 @@ def PageRecords():
 
 def PageSettings():
 	Rows = [RowButton(f"SRow{I}", [
-		Img(f"SRowIcon{I}", MetaIcon("Sound"), 28, G.BoxSlot((0, 0, 12, 0), VAlign="Center")),
+		Img(f"SRowIcon{I}", MetaIcon("Sound"), 32, G.BoxSlot((0, 0, 12, 0), VAlign="Center")),
 		T(f"SRowName{I}", "", 21, G.BoxSlot(VAlign="Center", Size="Fill")),
 		T(f"SRowL{I}", "◀", 18, G.BoxSlot((0, 0, 10, 0), VAlign="Center"), TG),
 		W("Overlay", f"SRowValBox{I}", G.BoxSlot(VAlign="Center"), "HitTestInvisible", [
@@ -418,7 +419,7 @@ def PageSettings():
 
 def PauseScreen():
 	Nav = [RowButton(f"PNav{I}", [
-		Img(f"PNavIcon{I}", MetaIcon(Icon), 28, G.BoxSlot((0, 0, 12, 0), VAlign="Center")),
+		Img(f"PNavIcon{I}", MetaIcon(Icon), 32, G.BoxSlot((0, 0, 12, 0), VAlign="Center")),
 		T(f"PNavText{I}", Name, 21, G.BoxSlot(VAlign="Center", Size="Fill")),
 	], 268, 40) for I, (Icon, Name) in enumerate(NAV)]
 	Info = [W("HorizontalBox", f"PInfo{K}", At(30, 516 + K * 30), "HitTestInvisible", [
@@ -546,12 +547,28 @@ def Minimap():
 	])
 
 
+def _ForgeCostRows(Forge):
+	# 대장간 설명 창의 비교 줄 4칸(ForgeCmp<K> 글자) → ForgeCmpRow<K> = 재료 아이콘(32) + 같은 이름 글자
+	def Visit(Wd):
+		Kids = Wd.get("Children", [])
+		for I, C in enumerate(Kids):
+			if C.get("Name", "").startswith("ForgeCmp") and C["Type"] == "Text":
+				K = C["Name"][len("ForgeCmp"):]
+				Text = dict(C, Slot=G.BoxSlot(VAlign="Center"), Visibility="HitTestInvisible")
+				Kids[I] = W("HorizontalBox", f"ForgeCmpRow{K}", G.BoxSlot((0, 4, 0, 0)), "Collapsed", [
+					Img(f"ForgeCmpIcon{K}", G.Icon("Jelly"), 32, G.BoxSlot((0, 0, 10, 0), VAlign="Center")), Text])
+			else:
+				Visit(C)
+	Visit(Forge)
+
+
 def WriteUi(Content):
 	Folder = os.path.join(Content, *UI_DIR.split("/"))
 	HD2DMetaArt.WriteIcons(Folder)
 	HD2DMetaArt.WriteOpenFrame(os.path.join(Folder, "FrameOpen.png"))
 	Forge = G.MenuWindow("Forge", "브론의 대장간", "A/D 탭     W/S 선택     E · J 결정     ESC · Space 나가기", 16, Tabs=["무기 강화", "물약 조합"])
 	Forge["Children"].insert(0, Underlay("ForgeUnder", 0.6))
+	_ForgeCostRows(Forge)
 	Root = W("Canvas", "MetaRoot", None, "SelfHitTestInvisible", [
 		Minimap(),
 		W("Border", "ForgeShade", G.StretchSlot(15), "Collapsed", Brush=G.Brush((0.01, 0.0, 0.04, 0.55)), ContentPadding=[0, 0, 0, 0]),

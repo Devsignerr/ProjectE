@@ -511,6 +511,25 @@ PICTURES = {  # 적 종류 → 그리기 (도감 그림 — 대기 자세 첫 �
 }
 
 
+def WriteListIcon(Path, Look, Tint=(1, 1, 1, 1), Size=32):
+	# 도감 목록 아이콘: Size x Size 투명 칸 가운데에 도트를 정수배로 (넘치면 최근접 축소) — 화면에 1:1로 그려 선명하게
+	from PIL import Image
+	C = _Crop(PICTURES[Look]())
+	if tuple(Tint[:3]) != (1, 1, 1):
+		C = _Tint(C, Tint)
+	Img = Image.fromarray(C.P, "RGBA")
+	Scale = Size // max(C.W, C.H)
+	if Scale >= 1:
+		Img = Img.resize((C.W * Scale, C.H * Scale), Image.NEAREST)
+	else:
+		F = Size / max(C.W, C.H)
+		Img = Img.resize((max(1, int(C.W * F)), max(1, int(C.H * F))), Image.NEAREST)
+	Out = Image.new("RGBA", (Size, Size), (0, 0, 0, 0))
+	Out.paste(Img, ((Size - Img.width) // 2, Size - Img.height - (Size - Img.height) // 2))
+	os.makedirs(os.path.dirname(Path), exist_ok=True)
+	Out.save(Path, optimize=True)
+
+
 def WritePicture(Path, Look, Tint=(1, 1, 1, 1), Box=150):
 	# 도트를 정수배로 키워 Box 안에 (그림 크기 반환 — 도감 칸 ImageSize)
 	C = _Crop(PICTURES[Look]())

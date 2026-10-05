@@ -168,7 +168,7 @@ function Hud:DrawMapPage(Markers, PlayerPos)
 		if M then
 			local X, Y = ToMap(M.Pos)
 			self:Set("MapMk" .. I, "Texture", "UI/Demo/HD2D/Meta/Mk" .. M.Kind .. ".png")
-			local Size = (M.Kind == "Goal" or M.Kind == "Boss") and 26 or 22
+			local Size = 24 -- 48px 원본의 정확한 절반 (선명하게)
 			self:SetSize("MapMk" .. I, Size, Size)
 			self:SetPos("MapMk" .. I, X, Y)
 		end

@@ -449,7 +449,7 @@ function Pause:DrawBestiary()
 			local Icon, Title, Count = MetaIcon("Lock"), "？？？", ""
 			if E.bKnown then
 				if E.Kind == "Enemy" then
-					Icon = E.Row.Picture
+					Icon = (string.gsub(E.Row.Picture, "%.png$", "_Icon.png")) -- 목록용 32px 1:1 아이콘 (HD2DMetaArt.WriteListIcon)
 					Title = D.Enemy(E.Id).DisplayName
 					Count = "처치 " .. (self.Bestiary.Kills[E.Id] or 0)
 				else

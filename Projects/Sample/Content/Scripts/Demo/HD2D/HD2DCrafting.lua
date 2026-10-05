@@ -136,15 +136,18 @@ function Forge:RefreshForge()
 		for _, C in ipairs(Cost or {}) do
 			local Item = D.Item(C.Id)
 			local Have = self:Count(C.Id)
-			Cmp[#Cmp + 1] = { Text = string.format("%s ×%d     (가진 것 %d)", Item and Item.DisplayName or C.Id, C.N, Have), Color = Have >= C.N and Green or Red }
+			Cmp[#Cmp + 1] = { Text = string.format("%s ×%d     (가진 것 %d)", Item and Item.DisplayName or C.Id, C.N, Have), Color = Have >= C.N and Green or Red,
+			                  Icon = Item and Item.Icon or nil }
 		end
 		if Cost and #Cmp == 0 then Cmp[1] = { Text = "재료 없이 만들 수 있다", Color = White } end
 	end
 	for K = 0, 3 do
 		local L = Cmp[K + 1]
-		H:Show("ForgeCmp" .. K, L ~= nil)
+		H:Show("ForgeCmpRow" .. K, L ~= nil)
 		if L then
-			H:Set("ForgeCmp" .. K, "Text", "·  " .. L.Text)
+			H:Set("ForgeCmpIcon" .. K, "Visibility", L.Icon and "HitTestInvisible" or "Collapsed")
+			if L.Icon then H:Set("ForgeCmpIcon" .. K, "Texture", L.Icon) end
+			H:Set("ForgeCmp" .. K, "Text", L.Text)
 			H:SetColor("ForgeCmp" .. K, L.Color[1], L.Color[2], L.Color[3], L.Color[4])
 		end
 	end

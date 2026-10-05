@@ -1,0 +1,23 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Vitals.estruct",
+  "Values": {
+    "MaxHealth": 100,
+    "MaxSanity": 100,
+    "StartSanity": 80,
+    "FoodHealthBase": 8,
+    "FoodHealthPerPrice": 0.1,
+    "BedSanity": 8,
+    "DawnSanity": 4,
+    "LowSanity": 50,
+    "CriticalSanity": 25,
+    "LowStatMul": 0.9,
+    "CriticalStatMul": 0.75,
+    "CollapseGoldLoss": 0.2,
+    "CollapseWakeHour": 10.0,
+    "CollapseSanity": 30,
+    "CollapseHealth": 50,
+    "DeathSanityLoss": 12,
+    "RoundLossSanity": 8
+  }
+}

@@ -15,7 +15,9 @@
       "Can*1",
       "Seed:EyeRadish:0*10",
       "Seed:TentacleLeek:0*5",
-      "FertBasic*5"
+      "FertBasic*5",
+      "Axe*1",
+      "Pick*1"
     ]
   }
 }

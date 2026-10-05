@@ -350,7 +350,7 @@ def AddFarmstead(B):
 	B.Place("MerchantCrate", "crate_B_small", 450.0, 1720.0, 15.0, KS * 1.4)
 
 
-def AddEnvironment(B, TimeOfDay):
+def AddEnvironment(B, TimeOfDay, TerrainAsset="Terrain/FarmBie/Farm.eterrain", Min=PLAY_MIN, Max=PLAY_MAX):
 	S = B.S
 	S.Add("Sun", {"DirectionalLightComponent": {"Color": [1.0, 0.95, 0.86], "Intensity": 4.6}}, (0, 0, 3000), QuatFromEuler(Pitch=-50, Yaw=60.0))
 	S.Add("Sky", {
@@ -364,16 +364,16 @@ def AddEnvironment(B, TimeOfDay):
 			"VolumetricDirectionalScale": 0.5, "VolumetricLocalLightScale": 0.35},
 	})
 	S.Add("Terrain", {"TerrainComponent": {
-		"Asset": "Terrain/FarmBie/Farm.eterrain", "Size": [TERRAIN_SIZE, TERRAIN_SIZE], "HeightRange": HEIGHT_RANGE,
+		"Asset": TerrainAsset, "Size": [TERRAIN_SIZE, TERRAIN_SIZE], "HeightRange": HEIGHT_RANGE,
 		"Layer0Material": f"{MATS}/GroundGrass.emat", "Layer1Material": f"{MATS}/GroundPath.emat",
 		"Layer2Material": f"{MATS}/GroundSoil.emat", "Layer3Material": f"{MATS}/GroundStone.emat",
 		"Layer0Tiling": 500.0, "Layer1Tiling": 400.0, "Layer2Tiling": 400.0, "Layer3Tiling": 450.0,
 		"CastShadows": True, "Collision": True}})
 	# 놀이 영역 밖으로 나가지 않는 보이지 않는 벽 (입구 길은 맵 이동 트리거가 맡는다 — F5)
-	for Name, Center, Half in (("Bound_N", (0, PLAY_MIN[1] - 50, 200), (PLAY_MAX[0] + 200, 50, 300)),
-							   ("Bound_S", (0, PLAY_MAX[1] + 50, 200), (PLAY_MAX[0] + 200, 50, 300)),
-							   ("Bound_W", (PLAY_MIN[0] - 50, 0, 200), (50, PLAY_MAX[1] + 200, 300)),
-							   ("Bound_E", (PLAY_MAX[0] + 50, 0, 200), (50, PLAY_MAX[1] + 200, 300))):
+	for Name, Center, Half in (("Bound_N", (0, Min[1] - 50, 200), (Max[0] + 200, 50, 300)),
+							   ("Bound_S", (0, Max[1] + 50, 200), (Max[0] + 200, 50, 300)),
+							   ("Bound_W", (Min[0] - 50, 0, 200), (50, Max[1] + 200, 300)),
+							   ("Bound_E", (Max[0] + 50, 0, 200), (50, Max[1] + 200, 300))):
 		B.BoxCollider(Name, Center, Half)
 
 
@@ -418,8 +418,24 @@ def AddLamps(B):
 		B.Reserve(X, Y, 60.0)
 
 
-def AddGame(B, AutoPlay):
-	B.S.Add("FarmGame", {"ScriptComponent": Script(f"{SCRIPTS}/FarmGame.lua", 0, AutoPlay=AutoPlay,
+def AddTravel(B, Name, X, Y, Target, Spawn, Half=(60.0, 230.0, 150.0)):
+	# 맵 이동 트리거 (FarmTravel.lua) — 도착 씬에는 Spawn_<이름> 빈 엔티티(발 자리)
+	B.S.Add(Name, {"BoxColliderComponent": {"HalfExtents": [float(V) for V in Half], "IsTrigger": True},
+				   "ScriptComponent": Script(f"{SCRIPTS}/FarmTravel.lua", 0, TargetScene=Target, SpawnName=Spawn)},
+			(X, Y, B.Height(X, Y) + Half[2] * 0.5))
+
+
+def AddSpawn(B, Name, X, Y):
+	B.S.Add(f"Spawn_{Name}", {}, (X, Y, B.Height(X, Y)))
+
+
+def CameraBounds(Min, Max):
+	return f"{Min[0] + 900.0},{Min[1] + 300.0},{Max[0] - 900.0},{Max[1] - 500.0}"
+
+
+def AddGame(B, AutoPlay, Map="Farm", Bounds=None):
+	B.S.Add("FarmGame", {"ScriptComponent": Script(f"{SCRIPTS}/FarmGame.lua", 0, AutoPlay=AutoPlay, Map=Map,
+												   CameraBounds=Bounds or CameraBounds(PLAY_MIN, PLAY_MAX),
 												   SleepSpot=f"{SLEEP_SPOT[0]},{SLEEP_SPOT[1]}", Slot="Test" if AutoPlay else "1",
 												   ShipSpot=f"{SHIPPING_BIN[0]},{SHIPPING_BIN[1]}", MerchantSpot=f"{MERCHANT_SPOT[0]},{MERCHANT_SPOT[1]}")})
 	# 보부상 (천막 앞 — FarmEconomy.lua가 방문 날만 보이게)
@@ -457,8 +473,112 @@ def BuildScene(Height, AutoPlay=""):
 	AddFence(B)
 	AddTrees(B)
 	AddGame(B, AutoPlay)
+	AddTravel(B, "Travel_Forest", PLAY_MIN[0] + 60.0, ENTRANCES["West"][1], "Scenes/Forest.escene", "FromFarm")
+	AddSpawn(B, "FromForest", PLAY_MIN[0] + 300.0, ENTRANCES["West"][1])
+	AddSpawn(B, "Bed", SLEEP_SPOT[0], SLEEP_SPOT[1] + 60.0)
 	AddCamera(B, PLAYER_START)
 	AddPlayer(B, PLAYER_START)
+	return B.S
+
+
+# ================================================================ 숲 (채집 맵 — F5)
+FOREST_MIN = (-2200.0, -1600.0)
+FOREST_MAX = (2200.0, 1600.0)
+FOREST_PATH = [(FOREST_MAX[0] + 600.0, 0.0), (1400.0, 60.0), (300.0, -120.0), (-600.0, 120.0), (-1500.0, -200.0)]
+FOREST_START = (1900.0, 0.0)
+
+
+def BuildForestTerrain():
+	Axis = np.linspace(-TERRAIN_SIZE * 0.5, TERRAIN_SIZE * 0.5, TERRAIN_RES)
+	X, Y = np.meshgrid(Axis, Axis)
+	OutX = np.maximum(0.0, np.abs(X) - (FOREST_MAX[0] + 250.0))
+	OutY = np.maximum(0.0, np.abs(Y) - (FOREST_MAX[1] + 250.0))
+	Out = np.hypot(OutX, OutY)
+	PathD = SegmentDistance(X, Y, FOREST_PATH)
+	Valley = Smoothstep(500.0, 250.0, PathD) * (X > 0)
+	H = Smoothstep(0.0, 1600.0, Out) * (500.0 + Noise2(X, Y, 800.0, 21) * 400.0) * (1.0 - Valley * 0.85)
+	H += (Noise2(X, Y, 380.0, 23) - 0.5) * 16.0
+	N = Noise2(X, Y, 160.0, 29)
+	Path = Smoothstep(110.0 + N * 40.0, 60.0 + N * 40.0, PathD)
+	Moss = Smoothstep(0.55, 0.7, Noise2(X, Y, 420.0, 31)) * (1.0 - Path)        # 흙(낙엽) 얼룩 = 레이어 2
+	Stone = Smoothstep(0.7, 0.8, Noise2(X, Y, 300.0, 37)) * (1.0 - Path) * (1.0 - Moss)
+	Grass = np.clip(1.0 - Path - Moss - Stone, 0.0, 1.0)
+	Stack = np.stack([Grass, Path, Moss, Stone], axis=-1)
+	Stack /= np.maximum(Stack.sum(axis=-1, keepdims=True), 1e-6)
+	Bytes = np.floor(Stack * 255.0 + 0.5).astype(np.int32)
+	Bytes[..., 0] += 255 - Bytes.sum(axis=-1)
+	Bytes = np.clip(Bytes, 0, 255).astype(np.uint32)
+	return H, Bytes[..., 0] | (Bytes[..., 1] << 8) | (Bytes[..., 2] << 16) | (Bytes[..., 3] << 24)
+
+
+def AddNode(B, Type, Index, X, Y, Rng):
+	# 숲 자원: 루트(이름 Node_<종류>_<번호> — FarmForage.lua가 찾는다) > Model(모델/스프라이트) [+ Stump] [+ Collision]
+	Z = B.Height(X, Y)
+	Root = B.S.Add(f"Node_{Type}_{Index}", {}, (X, Y, Z))
+	if Type == "Tree":
+		Id = Rng.choice(["tree_single_A", "tree_single_B"])
+		S = KS * Rng.uniform(0.95, 1.15)
+		Yaw = Rng.uniform(0, 360)
+		B.S.Add("Model", {"ModelComponent": {"AssetPath": f"{KK}/{Id}.gltf"}}, (0, 0, -10.0), QuatFromEuler(Yaw=Yaw), (S, S, S), Parent=Root)
+		B.S.Add("Stump", {"ModelComponent": {"AssetPath": f"{KK}/tree_single_A_cut.gltf"}}, (0, 0, -10.0), QuatFromEuler(Yaw=Yaw), (0.001, 0.001, 0.001), Parent=Root)
+		B.S.Add("Collision", {"BoxColliderComponent": {"HalfExtents": [30.0, 30.0, 120.0]}}, (0, 0, 120.0), Parent=Root)
+		B.Reserve(X, Y, 170.0)
+	elif Type in ("Rock", "BigRock"):
+		Id = Rng.choice(["rock_single_A", "rock_single_C", "rock_single_D"]) if Type == "Rock" else "rock_single_B"
+		S = KS * (Rng.uniform(1.1, 1.4) if Type == "Rock" else Rng.uniform(2.0, 2.4))
+		B.S.Add("Model", {"ModelComponent": {"AssetPath": f"{KK}/{Id}.gltf"}}, (0, 0, 0), QuatFromEuler(Yaw=Rng.uniform(0, 360)), (S, S, S), Parent=Root)
+		R = 45.0 if Type == "Rock" else 85.0
+		B.S.Add("Collision", {"BoxColliderComponent": {"HalfExtents": [R, R, 60.0]}}, (0, 0, 60.0), Parent=Root)
+		B.Reserve(X, Y, R + 70.0)
+	else:
+		Slice = {"Fiber": "Fiber", "Herb": "Herb", "Mushroom": "Mushroom"}[Type]
+		B.S.Add("Model", {"SpriteComponent": Sprite(f"{SPRITES}/Forage.esprite", Slice, Billboard=1)}, (0, 0, 0), Parent=Root)
+		B.Reserve(X, Y, 80.0)
+
+
+def BuildForestScene(Height, AutoPlay=""):
+	B = FBuilder(Height)
+	B.Rng = random.Random(41)
+	Rng = B.Rng
+	B.Reserve(FOREST_START[0], FOREST_START[1], 300.0)
+	AddEnvironment(B, 10.0, "Terrain/FarmBie/Forest.eterrain", FOREST_MIN, FOREST_MAX)
+	# 짙은 숲 그늘 (안개 조금 더)
+	for E in B.S.Entities:
+		if E["Name"] == "Sky":
+			E["Components"]["HeightFogComponent"]["Density"] = 0.0007
+			E["Components"]["SkyLightComponent"]["Intensity"] = 2.2
+	# 자원 노드: 길에서 떨어진 곳에 흩어 놓는다
+	def PathDist(X, Y):
+		return float(SegmentDistance(np.array([X]), np.array([Y]), FOREST_PATH)[0])
+	Counts = {"Tree": 16, "Rock": 10, "BigRock": 3, "Fiber": 12, "Herb": 10, "Mushroom": 8}
+	for Type, Count in Counts.items():
+		Placed, Tries = 0, 0
+		while Placed < Count and Tries < 4000:
+			Tries += 1
+			X = Rng.uniform(FOREST_MIN[0] + 250.0, FOREST_MAX[0] - 400.0)
+			Y = Rng.uniform(FOREST_MIN[1] + 250.0, FOREST_MAX[1] - 300.0)
+			Gap = {"Tree": 230.0, "Rock": 150.0, "BigRock": 220.0}.get(Type, 110.0)
+			if PathDist(X, Y) < 180.0 or not B.Free(X, Y, Gap):
+				continue
+			AddNode(B, Type, Placed, X, Y, Rng)
+			Placed += 1
+	# 테두리 숲 (장식 — 베지 못함)
+	Kinds = ["trees_A_large", "trees_B_large", "trees_A_medium", "trees_B_medium"]
+	Count = 0
+	for _ in range(2200):
+		X = Rng.uniform(-5200.0, 5200.0)
+		Y = Rng.uniform(-4600.0, 4600.0)
+		# 큰 나무 군락(배율 후 지름 약 9m)이 놀이 영역을 덮지 않게 경계 밖으로 충분히
+		Near = abs(X) < FOREST_MAX[0] + 380.0 and abs(Y) < FOREST_MAX[1] + 380.0
+		if Near or PathDist(X, Y) < 450.0 or not B.Free(X, Y, 260.0):
+			continue
+		B.Place(f"Tree_{Count}", Rng.choice(Kinds), X, Y, Rng.uniform(0, 360), KS * Rng.uniform(0.9, 1.25), Sink=10.0)
+		Count += 1
+	AddGame(B, AutoPlay, "Forest", CameraBounds(FOREST_MIN, FOREST_MAX))
+	AddTravel(B, "Travel_Farm", FOREST_MAX[0] - 60.0, 0.0, "Scenes/Farm.escene", "FromForest")
+	AddSpawn(B, "FromFarm", FOREST_MAX[0] - 300.0, 0.0)
+	AddCamera(B, FOREST_START)
+	AddPlayer(B, FOREST_START)
 	return B.S
 
 
@@ -477,12 +597,19 @@ def Main():
 	WritePrefabs()
 	Scene = BuildScene(Height)
 	Scene.Save(os.path.join(CONTENT, "Scenes", "Farm.escene"))
+	FH, FW = BuildForestTerrain()
+	WriteTerrain(os.path.join(CONTENT, "Terrain", "FarmBie", "Forest.eterrain"), FH, FW)
+	ForestHeight = FHeight(FH)
+	BuildForestScene(ForestHeight).Save(os.path.join(CONTENT, "Scenes", "Forest.escene"))
+	BuildScene(Height, AutoPlay="Forest").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmForest.escene"))
 	os.makedirs(os.path.join(CONTENT, "Scenes", "Tests"), exist_ok=True)
 	BuildScene(Height, AutoPlay="Basic").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmAutoPlay.escene"))
 	BuildScene(Height, AutoPlay="Time").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmTime.escene"))
+	BuildScene(Height, AutoPlay="Sanity").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmSanity.escene"))
 	BuildScene(Height, AutoPlay="Economy").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmEconomy.escene"))
 	BuildScene(Height, AutoPlay="Farm").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmFarming.escene"))
 	if "--views" in sys.argv:
+		BuildForestScene(ForestHeight, "Shot10").Save(os.path.join(CONTENT, "Scenes", "_ForestShot.escene"))
 		# 확인용 (커밋하지 않음): 시각별 화면
 		BuildScene(Height, AutoPlay="ShopShot").Save(os.path.join(CONTENT, "Scenes", "_FarmShopShot.escene"))
 		BuildScene(Height, AutoPlay="BagShot").Save(os.path.join(CONTENT, "Scenes", "_FarmBagShot.escene"))

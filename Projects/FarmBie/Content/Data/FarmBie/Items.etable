@@ -37,6 +37,73 @@
         "Price": 60,
         "Description": "희귀 씨앗 확률이 크게 오른다. 보부상이 가끔 들고 온다."
       }
+    },
+    {
+      "Name": "Axe",
+      "Values": {
+        "DisplayName": "도끼",
+        "Kind": "Tool",
+        "Price": 0,
+        "Description": "숲의 나무를 벤다. 밤에는 무기로도 쓸 수 있다."
+      }
+    },
+    {
+      "Name": "Pick",
+      "Values": {
+        "DisplayName": "곡괭이",
+        "Kind": "Tool",
+        "Price": 0,
+        "Description": "바위를 깨 돌을 얻는다."
+      }
+    },
+    {
+      "Name": "Wood",
+      "Values": {
+        "DisplayName": "나무",
+        "Kind": "Material",
+        "Price": 0,
+        "Description": "숲에서 벤 통나무. 울타리와 건물의 기본 재료."
+      }
+    },
+    {
+      "Name": "Stone",
+      "Values": {
+        "DisplayName": "돌",
+        "Kind": "Material",
+        "Price": 0,
+        "Description": "단단한 돌. 돌벽과 덫에 쓴다."
+      }
+    },
+    {
+      "Name": "Fiber",
+      "Values": {
+        "DisplayName": "섬유",
+        "Kind": "Material",
+        "Price": 0,
+        "Description": "질긴 풀 줄기. 덫·밧줄·붕대의 재료."
+      }
+    },
+    {
+      "Name": "Herb",
+      "Values": {
+        "DisplayName": "약초",
+        "Kind": "Food",
+        "Price": 0,
+        "Health": 20,
+        "Sanity": 0,
+        "Description": "쓴맛이 나는 숲 약초. 먹으면 상처가 아문다."
+      }
+    },
+    {
+      "Name": "Mushroom",
+      "Values": {
+        "DisplayName": "몽롱버섯",
+        "Kind": "Food",
+        "Price": 0,
+        "Health": 4,
+        "Sanity": 8,
+        "Description": "보랏빛 갓의 버섯. 먹으면 머릿속이 조금 고요해진다."
+      }
     }
   ]
 }

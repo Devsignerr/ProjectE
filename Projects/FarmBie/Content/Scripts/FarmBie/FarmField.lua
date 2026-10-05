@@ -21,6 +21,7 @@ function Field:InitField()
 	self.Tiles = {}
 	self.Cursor = Scene.Find("TileCursor")
 	self.CursorSprite = self.Cursor and self.Cursor:GetComponent("SpriteComponent")
+	if self.Properties.Map ~= "Farm" then return end -- 밭 그림·우물은 농장에서만 (밭 상태는 저장으로 이어짐)
 	local Well = Vector3(M.Well[1], M.Well[2], 0)
 	self:AddInteractable({ Pos = Well, Radius = 300, Prompt = function()
 		if self:CountItem("Can") > 0 and self.Water < self.Farming.CanCapacity then return "E  물뿌리개 채우기" end
@@ -108,6 +109,7 @@ function Field:CropStage(T)
 end
 
 function Field:RefreshTile(T)
+	if self.MapId ~= "Farm" then return end
 	local C = self:TileCenter(T.TX, T.TY)
 	if not T.Z then T.Z = self:GroundZ(C) end
 	local Variant = (T.TX * 7 + T.TY * 3) % 3
@@ -151,7 +153,7 @@ end
 -- ---- 도구 사용
 -- 이 물건으로 이 칸에 무엇을 하나 (실행 전 판정 — 커서 색·안내·동작 고르기). 돌려줌: 행동 이름 | nil, 이유 글
 function Field:PlanUse(Key, TX, TY)
-	if not TX then return nil, "" end
+	if not TX or self.MapId ~= "Farm" then return nil, "" end
 	local T = self:GetTile(TX, TY)
 	if T and T.Crop and not T.Crop.Dead and self:CropStage(T) == "Mature" then return "Harvest" end
 	if not Key then return nil, "" end
@@ -285,6 +287,11 @@ end
 -- ---- 대상 칸 표시 (플레이어가 매 프레임)
 function Field:UpdateCursor(Pos, Facing)
 	if not self.Cursor then return end
+	if self.MapId ~= "Farm" then
+		self.CursorSprite.Visible = false
+		self.CursorAction = nil
+		return
+	end
 	local S = self:SelectedItem()
 	local TX, TY = self:TargetTile(Pos, Facing)
 	local Action = TX and self:PlanUse(S and S.Key, TX, TY)

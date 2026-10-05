@@ -13,6 +13,7 @@
         "SeedPrice": 15,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Speed",
         "Description": "흙 속에서 이쪽을 올려다보는 무. 뽑을 때 눈을 마주치지 말 것."
       }
     },
@@ -27,6 +28,7 @@
         "SeedPrice": 25,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Power",
         "Description": "주름진 속잎이 뇌처럼 꿈틀거린다. 따뜻할 때 수확하면 맛이 좋다."
       }
     },
@@ -41,6 +43,7 @@
         "SeedPrice": 12,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Regen",
         "Description": "물을 주면 촉수가 기지개를 켠다. 베어도 사흘이면 다시 자란다."
       }
     },
@@ -55,6 +58,7 @@
         "SeedPrice": 25,
         "Exclusive": false,
         "Sanity": 18,
+        "Buff": "None",
         "Description": "밤마다 흙 속에서 위로의 말을 속삭인다. 먹으면 마음이 차분해진다."
       }
     },
@@ -69,6 +73,7 @@
         "SeedPrice": 18,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Guard",
         "Description": "꼬투리 끝에 손톱이 자란다. 수확할 때 가끔 손을 잡아 온다."
       }
     },
@@ -83,6 +88,7 @@
         "SeedPrice": 0,
         "Exclusive": true,
         "Sanity": 30,
+        "Buff": "Regen",
         "Description": "보름달 아래에서만 싹을 틔운다는 사람 모양 뿌리. 울음소리를 들으면 정신이 맑아진다."
       }
     },
@@ -97,6 +103,7 @@
         "SeedPrice": 20,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Power",
         "Description": "알갱이 대신 송곳니가 촘촘히 박혔다. 씹는 쪽이 누구인지 헷갈린다."
       }
     },
@@ -111,6 +118,7 @@
         "SeedPrice": 18,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Regen",
         "Description": "줄기에 매달린 채 쿵쿵 뛴다. 따면 박동이 천천히 멎는다."
       }
     },
@@ -125,6 +133,7 @@
         "SeedPrice": 14,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Speed",
         "Description": "껍질 아래로 파란 핏줄이 비친다. 매운맛이 오래 맥박친다."
       }
     },
@@ -139,6 +148,7 @@
         "SeedPrice": 60,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Guard",
         "Description": "줄무늬가 웃는 해골을 그린다. 잘 익을수록 이가 하얗다."
       }
     },
@@ -153,6 +163,7 @@
         "SeedPrice": 35,
         "Exclusive": false,
         "Sanity": 22,
+        "Buff": "None",
         "Description": "해를 따라 도는 대신 밤하늘의 빈 곳을 바라본다. 씨앗을 먹으면 마음이 고요해진다."
       }
     },
@@ -167,6 +178,7 @@
         "SeedPrice": 0,
         "Exclusive": true,
         "Sanity": 0,
+        "Buff": "Regen",
         "Description": "한낮에만 눈을 뜨는 연꽃. 그 시선을 받은 땅은 기름져진다고 한다."
       }
     },
@@ -181,6 +193,7 @@
         "SeedPrice": 70,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Guard",
         "Description": "수확하는 순간 비명을 지른다. 귀마개는 따로 팔지 않는다."
       }
     },
@@ -195,6 +208,7 @@
         "SeedPrice": 20,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Speed",
         "Description": "빛을 먹고 자라 그림자를 남긴다. 어둠 속에서 두 눈이 빛난다."
       }
     },
@@ -209,6 +223,7 @@
         "SeedPrice": 15,
         "Exclusive": false,
         "Sanity": 20,
+        "Buff": "None",
         "Description": "갓 위에서 작은 불꽃이 탄다. 따뜻한 빛을 쬐면 불안이 녹는다."
       }
     },
@@ -223,6 +238,7 @@
         "SeedPrice": 22,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Guard",
         "Description": "송이 사이로 끈적한 거미줄이 엉겨 있다. 알갱이 몇 개는 눈을 깜빡인다."
       }
     },
@@ -237,6 +253,7 @@
         "SeedPrice": 28,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Power",
         "Description": "뽑으면 붉은 즙이 뚝뚝 떨어진다. 피는 아니라고 믿고 싶다."
       }
     },
@@ -251,6 +268,7 @@
         "SeedPrice": 0,
         "Exclusive": true,
         "Sanity": 0,
+        "Buff": "Power",
         "Description": "죽은 이의 숨결로 여문다는 창백한 옥수수. 알갱이마다 작은 얼굴이 떠 있다."
       }
     },
@@ -265,6 +283,7 @@
         "SeedPrice": 28,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Speed",
         "Description": "눈 덮인 땅에서 피어나 차가운 눈동자로 주위를 살핀다."
       }
     },
@@ -279,6 +298,7 @@
         "SeedPrice": 22,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Guard",
         "Description": "단단하고 하얀 뿌리가 뼈를 꼭 닮았다. 국물을 우리면 진하다."
       }
     },
@@ -293,6 +313,7 @@
         "SeedPrice": 30,
         "Exclusive": false,
         "Sanity": 24,
+        "Buff": "None",
         "Description": "반투명한 마늘이 가끔 흙 위로 떠오른다. 먹으면 악몽이 물러간다."
       }
     },
@@ -307,6 +328,7 @@
         "SeedPrice": 40,
         "Exclusive": false,
         "Sanity": 0,
+        "Buff": "Power",
         "Description": "속을 들여다보면 별이 박힌 밤하늘이 보인다. 밑동에서 가는 촉수가 꿈틀댄다."
       }
     },
@@ -321,6 +343,7 @@
         "SeedPrice": 0,
         "Exclusive": true,
         "Sanity": 0,
+        "Buff": "Regen",
         "Description": "겨울 밤하늘에서 떨어진 별이 얼음 꽃으로 뿌리내렸다. 손을 대면 맑은 소리가 난다."
       }
     }

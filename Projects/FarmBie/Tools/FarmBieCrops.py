@@ -624,6 +624,41 @@ def DrawToolIcon(Name):
 		C.Rect(4, 8, 6, 12, (140, 186, 230))
 		C.Line(11, 9, 15, 5, (70, 110, 160))
 		C.Rect(5, 4, 9, 5, (70, 110, 160))
+	elif Name == "Axe":
+		C.Line(4, 14, 11, 3, (140, 96, 56))
+		C.Line(5, 14, 12, 3, (110, 72, 40))
+		C.Rect(9, 1, 13, 6, (176, 182, 192))
+		C.Rect(12, 2, 14, 7, (210, 216, 226))
+	elif Name == "Pick":
+		C.Line(7, 14, 8, 3, (140, 96, 56))
+		C.Line(8, 14, 9, 3, (110, 72, 40))
+		C.Rect(2, 2, 14, 3, (176, 182, 192))
+		C.Px(1, 4, (130, 136, 146))
+		C.Px(15, 4, (130, 136, 146))
+	elif Name == "Wood":
+		for Y, X0 in ((4, 2), (8, 4), (11, 1)):
+			C.Rect(X0, Y, X0 + 11, Y + 3, (150, 100, 56))
+			C.Rect(X0, Y, X0 + 11, Y, (186, 132, 80))
+			C.Ellipse(X0 + 11, Y + 1.5, 1.8, 1.8, (214, 170, 110))
+	elif Name == "Stone":
+		C.Ellipse(8, 9, 6, 4.5, (130, 132, 128))
+		C.Ellipse(7, 8, 4, 3, (166, 168, 160))
+		C.Px(10, 10, (100, 102, 100))
+	elif Name == "Fiber":
+		for X in (4, 6, 8, 10, 12):
+			C.Line(X, 14, X + (2 if X % 4 == 0 else -1), 2, (200, 194, 120))
+		C.Rect(3, 8, 13, 9, (130, 90, 50))
+	elif Name == "Herb":
+		C.Line(8, 14, 8, 5, (70, 120, 60))
+		for X, Y in ((5, 6), (11, 5), (5, 10), (11, 9)):
+			C.Ellipse(X, Y, 2.6, 1.6, (110, 180, 90))
+		C.Ellipse(8, 3, 1.8, 1.8, (240, 236, 130))
+	elif Name == "Mushroom":
+		C.Rect(7, 8, 9, 14, (226, 216, 196))
+		C.Ellipse(8, 7, 6.5, 4, (170, 70, 160))
+		C.Ellipse(8, 6, 5, 2.6, (210, 110, 200))
+		C.Px(5, 6, (250, 230, 250))
+		C.Px(10, 5, (250, 230, 250))
 	elif Name in ("FertBasic", "FertPremium"):
 		Col = (120, 200, 110) if Name == "FertBasic" else (196, 130, 240)
 		C.Rect(3, 4, 12, 14, (186, 160, 120))
@@ -639,5 +674,5 @@ def WriteIcons(Folder, UpscaleSave):
 		for R in range(4):
 			UpscaleSave(DrawSeedPacket(Crop, R), os.path.join(Folder, f"Seed_{Crop['Id']}_{R}.png"))
 			UpscaleSave(DrawCropIcon(Crop, R), os.path.join(Folder, f"Crop_{Crop['Id']}_{R}.png"))
-	for Name in ("Hoe", "Can", "FertBasic", "FertPremium"):
+	for Name in ("Hoe", "Can", "FertBasic", "FertPremium", "Axe", "Pick", "Wood", "Stone", "Fiber", "Herb", "Mushroom"):
 		UpscaleSave(DrawToolIcon(Name), os.path.join(Folder, f"{Name}.png"))

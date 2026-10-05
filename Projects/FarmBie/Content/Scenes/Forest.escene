@@ -1,0 +1,8727 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.95,
+            0.86
+          ],
+          "Intensity": 4.6
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            3000.0
+          ],
+          "Rotation": [
+            -0.2113091308703497,
+            0.36599815077066683,
+            0.4531538935183249,
+            0.7848855672213958
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SkyAtmosphereComponent": {
+          "MoonIntensity": 0.2,
+          "MoonColor": [
+            0.6,
+            0.72,
+            1.0
+          ],
+          "NightSkyColor": [
+            0.008,
+            0.012,
+            0.026
+          ],
+          "StarIntensity": 0.3
+        },
+        "TimeOfDayComponent": {
+          "TimeOfDay": 10.0,
+          "DayLengthMinutes": 0.0,
+          "MaxSunElevation": 60.0,
+          "NorthAzimuth": 0.0,
+          "AnimateInEditor": false
+        },
+        "SkyLightComponent": {
+          "Intensity": 2.2
+        },
+        "HeightFogComponent": {
+          "Color": [
+            0.55,
+            0.6,
+            0.65
+          ],
+          "Density": 0.0007,
+          "HeightFalloff": 0.05,
+          "StartDistance": 3500.0,
+          "MaxOpacity": 0.4,
+          "DirectionalInscatteringColor": [
+            0.9,
+            0.8,
+            0.6
+          ],
+          "Volumetric": false,
+          "VolumetricDistance": 6000.0,
+          "VolumetricAlbedo": [
+            0.95,
+            0.92,
+            0.88
+          ],
+          "VolumetricExtinctionScale": 0.6,
+          "VolumetricAnisotropy": 0.5,
+          "VolumetricDirectionalScale": 0.5,
+          "VolumetricLocalLightScale": 0.35
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sky",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TerrainComponent": {
+          "Asset": "Terrain/FarmBie/Forest.eterrain",
+          "Size": [
+            12000.0,
+            12000.0
+          ],
+          "HeightRange": 4000.0,
+          "Layer0Material": "Materials/FarmBie/GroundGrass.emat",
+          "Layer1Material": "Materials/FarmBie/GroundPath.emat",
+          "Layer2Material": "Materials/FarmBie/GroundSoil.emat",
+          "Layer3Material": "Materials/FarmBie/GroundStone.emat",
+          "Layer0Tiling": 500.0,
+          "Layer1Tiling": 400.0,
+          "Layer2Tiling": 400.0,
+          "Layer3Tiling": 450.0,
+          "CastShadows": true,
+          "Collision": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Terrain",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            2400.0,
+            50.0,
+            300.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -1650.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bound_N",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            2400.0,
+            50.0,
+            300.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            1650.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bound_S",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            1800.0,
+            300.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -2250.0,
+            0.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bound_W",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            1800.0,
+            300.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            2250.0,
+            0.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bound_E",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -521.1724125158571,
+            -738.5941562772408,
+            1.522878656934823
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9361415015663576,
+            0.35162350468233106
+          ],
+          "Scale": [
+            5.086805037576333,
+            5.086805037576333,
+            5.086805037576333
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9361415015663576,
+            0.35162350468233106
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1411.5463326722193,
+            -598.8369553118378,
+            0.9122203217266396
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7467269121492589,
+            -0.6651307530644128
+          ],
+          "Scale": [
+            4.620189657559745,
+            4.620189657559745,
+            4.620189657559745
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 11
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7467269121492589,
+            -0.6651307530644128
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 11
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 11
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            211.60484615699033,
+            720.2053540202796,
+            -1.396580357969779
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4680670220743994,
+            0.8836929686528029
+          ],
+          "Scale": [
+            4.670455059810907,
+            4.670455059810907,
+            4.670455059810907
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 15
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4680670220743994,
+            0.8836929686528029
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 15
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 15
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1388.1185347222463,
+            566.3996304947364,
+            0.5978687089017408
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8249495454790412,
+            -0.5652063759494608
+          ],
+          "Scale": [
+            4.506761813083214,
+            4.506761813083214,
+            4.506761813083214
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 19
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8249495454790412,
+            -0.5652063759494608
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 19
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 19
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            239.20251520813827,
+            -1032.4803838250573,
+            1.5416491679153244
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7741771364955666,
+            0.6329690050290968
+          ],
+          "Scale": [
+            4.664337678106147,
+            4.664337678106147,
+            4.664337678106147
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 23
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7741771364955666,
+            0.6329690050290968
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 23
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 23
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            805.6129791552203,
+            -1157.2987021913332,
+            -4.7834423192029005
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.38269442982527735,
+            0.9238749771374404
+          ],
+          "Scale": [
+            4.934106104282043,
+            4.934106104282043,
+            4.934106104282043
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 27
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.38269442982527735,
+            0.9238749771374404
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 27
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 27
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1474.580883521267,
+            475.4565074085601,
+            -0.808761286230725
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8406048035451542,
+            0.5416489308184894
+          ],
+          "Scale": [
+            4.3231765794746995,
+            4.3231765794746995,
+            4.3231765794746995
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 31
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8406048035451542,
+            0.5416489308184894
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 31
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 31
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            374.6247049256044,
+            261.74773820593964,
+            -4.1781662328197875
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5963661974698551,
+            -0.8027125005351204
+          ],
+          "Scale": [
+            4.666407210372405,
+            4.666407210372405,
+            4.666407210372405
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5963661974698551,
+            -0.8027125005351204
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1734.784625244803,
+            -291.45025993395507,
+            2.3465480167234314
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9577944258101918,
+            0.2874540622202528
+          ],
+          "Scale": [
+            4.875893274576721,
+            4.875893274576721,
+            4.875893274576721
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 39
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9577944258101918,
+            0.2874540622202528
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 39
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 39
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -469.408268004564,
+            -1292.5883421482538,
+            1.1235155547598836
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.169660537211167,
+            -0.9855025632200143
+          ],
+          "Scale": [
+            4.345080264006373,
+            4.345080264006373,
+            4.345080264006373
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 43
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.169660537211167,
+            -0.9855025632200143
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 43
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 43
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -900.9524719849067,
+            -1275.554512568308,
+            2.109685602286988
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_10",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8474620217879385,
+            0.530856027211804
+          ],
+          "Scale": [
+            4.864606829862103,
+            4.864606829862103,
+            4.864606829862103
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 47
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8474620217879385,
+            0.530856027211804
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 47
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 47
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1429.454872929977,
+            -1175.8153528128591,
+            -5.5516791562280945
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_11",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8408488484650106,
+            -0.5412700010485207
+          ],
+          "Scale": [
+            4.92322681230482,
+            4.92322681230482,
+            4.92322681230482
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 51
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8408488484650106,
+            -0.5412700010485207
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 51
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 51
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1243.9086062284978,
+            872.7892755696366,
+            -4.191460774926577
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_12",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9630988250247405,
+            0.26914801362069196
+          ],
+          "Scale": [
+            5.08034175187469,
+            5.08034175187469,
+            5.08034175187469
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 55
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9630988250247405,
+            0.26914801362069196
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 55
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 55
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1576.959544745896,
+            1155.005609919479,
+            1.6541996606696152
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_13",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7429598806823944,
+            -0.6693359512953135
+          ],
+          "Scale": [
+            4.668648963621832,
+            4.668648963621832,
+            4.668648963621832
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 59
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7429598806823944,
+            -0.6693359512953135
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 59
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 59
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            599.825871047597,
+            -261.87596775107704,
+            -0.447238677732027
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_14",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8630711860997916,
+            -0.5050822979716265
+          ],
+          "Scale": [
+            4.349693338355924,
+            4.349693338355924,
+            4.349693338355924
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 63
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8630711860997916,
+            -0.5050822979716265
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 63
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 63
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            82.98505055343026,
+            1112.0059655475907,
+            -0.44653809677775425
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Tree_15",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3166271300014333,
+            -0.9485500833098142
+          ],
+          "Scale": [
+            4.52426533728482,
+            4.52426533728482,
+            4.52426533728482
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3166271300014333,
+            -0.9485500833098142
+          ],
+          "Scale": [
+            0.001,
+            0.001,
+            0.001
+          ]
+        }
+      },
+      "Name": "Stump",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -728.4784620279302,
+            1100.2530686565965,
+            -4.821206294307622
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_C.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7991979359982785,
+            0.6010679321807908
+          ],
+          "Scale": [
+            6.013329153842551,
+            6.013329153842551,
+            6.013329153842551
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 71
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 71
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1047.039865394144,
+            1267.5977273181188,
+            -0.950866876543372
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_D.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4683459787281221,
+            0.8835451568591146
+          ],
+          "Scale": [
+            5.715498147462621,
+            5.715498147462621,
+            5.715498147462621
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 74
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 74
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1838.0855223560172,
+            212.21202110869763,
+            -1.2100753130582655
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9991677285581576,
+            -0.040790320027328915
+          ],
+          "Scale": [
+            5.811713291754082,
+            5.811713291754082,
+            5.811713291754082
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 77
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 77
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            778.8606475854963,
+            726.8219113200298,
+            5.386172313895907
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8662941130572809,
+            -0.499534292799102
+          ],
+          "Scale": [
+            5.0066060851381895,
+            5.0066060851381895,
+            5.0066060851381895
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 80
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 80
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            651.4442747091089,
+            -782.5928046815238,
+            -3.7529423176229058
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_C.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.29044453447739443,
+            -0.9568918289922899
+          ],
+          "Scale": [
+            6.194608205246255,
+            6.194608205246255,
+            6.194608205246255
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 83
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 83
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -795.8658209831349,
+            -947.8440781212469,
+            3.054374894608471
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_C.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5103462648751612,
+            -0.8599690052135436
+          ],
+          "Scale": [
+            5.776153718764439,
+            5.776153718764439,
+            5.776153718764439
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 86
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 86
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            252.7095709914065,
+            -546.4519763856999,
+            2.652753527672163
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_C.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6823627842196961,
+            0.7310137007689695
+          ],
+          "Scale": [
+            5.883605948453379,
+            5.883605948453379,
+            5.883605948453379
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 89
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 89
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -74.50450463583775,
+            224.4861540884997,
+            1.5969239367300099
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.2983907601829887,
+            -0.9544437931263517
+          ],
+          "Scale": [
+            5.603140595155684,
+            5.603140595155684,
+            5.603140595155684
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 92
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 92
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1795.6459286563281,
+            815.1185104747574,
+            -4.7766614726645615
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_D.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6847810801824323,
+            -0.7287488402901107
+          ],
+          "Scale": [
+            4.986182390318979,
+            4.986182390318979,
+            4.986182390318979
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 95
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 95
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -740.8164527714639,
+            -378.3891764559535,
+            -1.2063829696851989
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Rock_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.05132780820757679,
+            0.998681859304857
+          ],
+          "Scale": [
+            5.527393949935157,
+            5.527393949935157,
+            5.527393949935157
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 98
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            45.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 98
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1074.6648927147585,
+            899.9205888654005,
+            4.258176249037909
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_BigRock_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9840431307427556,
+            -0.17793008974874372
+          ],
+          "Scale": [
+            10.119726334832398,
+            10.119726334832398,
+            10.119726334832398
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 101
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            85.0,
+            85.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 101
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1479.3570021928167,
+            -1177.0636276634657,
+            -1.9016722123862397
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_BigRock_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8237385587643539,
+            0.5669698288311513
+          ],
+          "Scale": [
+            9.026034758744661,
+            9.026034758744661,
+            9.026034758744661
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 104
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            85.0,
+            85.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 104
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1891.1407058608838,
+            -1210.7644100367465,
+            -3.6974830850943348
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_BigRock_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5247993652849002,
+            -0.8512259548419361
+          ],
+          "Scale": [
+            9.762873807196234,
+            9.762873807196234,
+            9.762873807196234
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 107
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            85.0,
+            85.0,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Collision",
+      "Parent": 107
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1160.9137933292823,
+            -1036.3160165001234,
+            4.972061173823884
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 110
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            945.5802196605036,
+            -279.0074219391702,
+            -3.0255718729691186
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 112
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1567.344051393316,
+            778.6002546830105,
+            -3.130544976582839
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 114
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1854.3347196560665,
+            -618.9373151620965,
+            0.6722273393104636
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 116
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1751.215728932675,
+            854.365018472472,
+            5.1270183551149735
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 118
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1364.5658219706847,
+            972.2103312089539,
+            2.4353444414434637
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 120
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -548.8651142717338,
+            738.5478455485045,
+            -0.8881935499191606
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 122
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            341.428913436308,
+            -1293.7540482085806,
+            0.10365360402426213
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 124
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -93.31536867464752,
+            478.6988376342906,
+            1.4939702830037092
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 126
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -179.1365175361775,
+            768.5746032607904,
+            3.200040298326539
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 128
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            794.1879891659592,
+            966.5377555997552,
+            0.5812091994234587
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_10",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 130
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            892.4598265041477,
+            496.04792204276146,
+            -1.9759031830864644
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Fiber_11",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Fiber",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 132
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1183.4016594043073,
+            1220.4187306994254,
+            1.618320612326062
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 134
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -495.04141201020025,
+            1022.8949859011468,
+            0.014438670023169434
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 136
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            463.74987418983983,
+            1104.1511401208236,
+            1.3036315626489858
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 138
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1580.011993015184,
+            -277.18925461189906,
+            -0.03645462407855064
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 140
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            816.8435207256475,
+            206.21114064921653,
+            -5.565360908869008
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 142
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1416.6455355116436,
+            1131.5385474878394,
+            0.07861008424324495
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 144
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1198.7453579958283,
+            -607.8089858098612,
+            -4.888219845681435
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 146
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -279.1141089160719,
+            1062.9691117886246,
+            1.1339745884663448
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 148
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            985.1096521965951,
+            304.651360021056,
+            -0.5800828357277682
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 150
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1690.3685489476943,
+            504.0353833461429,
+            -2.4158377100183714
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Herb_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Herb",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 152
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1154.2658462707482,
+            -725.9725087376924,
+            3.4255163912863082
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Mushroom_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Mushroom",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 154
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -391.694065208211,
+            -128.4859637239465,
+            2.0429086875551636
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Mushroom_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Mushroom",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 156
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1222.186455154706,
+            245.79651073909872,
+            0.6684556566858753
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Mushroom_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Mushroom",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 158
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1320.2019377395384,
+            66.20897708067764,
+            3.588452134546526
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Mushroom_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Mushroom",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 160
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -56.49944207514454,
+            -1294.1810146765158,
+            4.3743369915632835
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Mushroom_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Mushroom",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 162
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1778.0520832839188,
+            1193.338248077719,
+            -1.6164456468878945
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Mushroom_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Mushroom",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 164
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -199.5631369881405,
+            -845.0729938484998,
+            2.7587526512980616
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Mushroom_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Mushroom",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 166
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1498.233093641637,
+            -468.265945414861,
+            -0.8645398232392774
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Node_Mushroom_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Forage.esprite",
+          "Slice": "Mushroom",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Model",
+      "Parent": 168
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            543.0188976606005,
+            -2157.0119547915456,
+            46.908683863886466
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17122379583883135,
+            0.9852321613399261
+          ],
+          "Scale": [
+            4.3428932974201375,
+            4.3428932974201375,
+            4.3428932974201375
+          ]
+        }
+      },
+      "Name": "Tree_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -362.3565660109916,
+            3755.077523727685,
+            702.1555911032187
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6752747943349133,
+            0.7375662357618741
+          ],
+          "Scale": [
+            4.7507928108151205,
+            4.7507928108151205,
+            4.7507928108151205
+          ]
+        }
+      },
+      "Name": "Tree_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -5186.679059972056,
+            -4257.7621279600235,
+            758.2217512104019
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8888205589313596,
+            -0.45825540260966435
+          ],
+          "Scale": [
+            5.38884781073704,
+            5.38884781073704,
+            5.38884781073704
+          ]
+        }
+      },
+      "Name": "Tree_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3165.819535263221,
+            3850.9122445760295,
+            721.6878674892586
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.028316500488966622,
+            0.9995990075025377
+          ],
+          "Scale": [
+            5.196440581135981,
+            5.196440581135981,
+            5.196440581135981
+          ]
+        }
+      },
+      "Name": "Tree_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            964.6274585084693,
+            2376.845048063714,
+            202.35792837501748
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.23016882238137415,
+            -0.9731507145368448
+          ],
+          "Scale": [
+            5.244193658905444,
+            5.244193658905444,
+            5.244193658905444
+          ]
+        }
+      },
+      "Name": "Tree_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3269.072938864887,
+            -485.0766239254781,
+            337.4135524689864
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9998701427053618,
+            -0.0161151396630439
+          ],
+          "Scale": [
+            4.809278638909699,
+            4.809278638909699,
+            4.809278638909699
+          ]
+        }
+      },
+      "Name": "Tree_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4492.391328225433,
+            -4007.76782804075,
+            802.8620282784278
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4625953142735005,
+            0.8865695546386653
+          ],
+          "Scale": [
+            5.057963625996937,
+            5.057963625996937,
+            5.057963625996937
+          ]
+        }
+      },
+      "Name": "Tree_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -533.7241601138821,
+            -3659.105608503128,
+            757.9958892744088
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7840732149487318,
+            0.6206683442869949
+          ],
+          "Scale": [
+            4.872275586783723,
+            4.872275586783723,
+            4.872275586783723
+          ]
+        }
+      },
+      "Name": "Tree_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3478.287037276872,
+            -4312.1242025979645,
+            686.8350749530828
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.702448496738952,
+            -0.711734577935614
+          ],
+          "Scale": [
+            5.572278929610926,
+            5.572278929610926,
+            5.572278929610926
+          ]
+        }
+      },
+      "Name": "Tree_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3180.7287974919127,
+            -1811.4199148520092,
+            248.80626372352924
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.15895146113674435,
+            0.9872863986718818
+          ],
+          "Scale": [
+            4.72029897711096,
+            4.72029897711096,
+            4.72029897711096
+          ]
+        }
+      },
+      "Name": "Tree_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2865.153450888173,
+            2691.7283267329612,
+            452.8625690036883
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6446812627773371,
+            -0.764451482714121
+          ],
+          "Scale": [
+            5.470199411535675,
+            5.470199411535675,
+            5.470199411535675
+          ]
+        }
+      },
+      "Name": "Tree_10",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -5011.465466835699,
+            3347.762995784494,
+            620.9539006577822
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8288099302974563,
+            -0.5595302489055668
+          ],
+          "Scale": [
+            5.207292608992963,
+            5.207292608992963,
+            5.207292608992963
+          ]
+        }
+      },
+      "Name": "Tree_11",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4011.0021737792667,
+            2066.153660104239,
+            688.5951941960387
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.2518904108496828,
+            0.9677557651194737
+          ],
+          "Scale": [
+            4.608801912192371,
+            4.608801912192371,
+            4.608801912192371
+          ]
+        }
+      },
+      "Name": "Tree_12",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5174.97892452911,
+            -2834.816883249261,
+            682.7741752928825
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6283630348561674,
+            -0.7779202378305548
+          ],
+          "Scale": [
+            5.431903223151328,
+            5.431903223151328,
+            5.431903223151328
+          ]
+        }
+      },
+      "Name": "Tree_13",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3499.445344991371,
+            2729.6114365184676,
+            653.2946949807218
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5541365663481459,
+            -0.8324257719676192
+          ],
+          "Scale": [
+            5.106150213102316,
+            5.106150213102316,
+            5.106150213102316
+          ]
+        }
+      },
+      "Name": "Tree_14",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1409.1888319050445,
+            4467.638573761589,
+            636.8977602369139
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.28287729230906167,
+            -0.9591561069481306
+          ],
+          "Scale": [
+            4.864271109670101,
+            4.864271109670101,
+            4.864271109670101
+          ]
+        }
+      },
+      "Name": "Tree_15",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2917.65811618351,
+            957.6887158351483,
+            149.96032597206442
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9842667875026982,
+            0.17668868390227577
+          ],
+          "Scale": [
+            4.870438109666139,
+            4.870438109666139,
+            4.870438109666139
+          ]
+        }
+      },
+      "Name": "Tree_16",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2359.7586669286966,
+            -4437.523829137751,
+            739.5332544172148
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7465201997468183,
+            -0.6653627517151606
+          ],
+          "Scale": [
+            5.291105863884037,
+            5.291105863884037,
+            5.291105863884037
+          ]
+        }
+      },
+      "Name": "Tree_17",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -5180.081625344062,
+            557.9888846774684,
+            662.9170921240607
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9852511399572829,
+            -0.171114555818243
+          ],
+          "Scale": [
+            4.680934417026966,
+            4.680934417026966,
+            4.680934417026966
+          ]
+        }
+      },
+      "Name": "Tree_18",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            493.63620063902454,
+            -3636.826589730669,
+            696.7622784921897
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.20598234680287025,
+            0.9785557075637452
+          ],
+          "Scale": [
+            4.257638022482734,
+            4.257638022482734,
+            4.257638022482734
+          ]
+        }
+      },
+      "Name": "Tree_19",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4373.1463894114,
+            4164.013941386327,
+            817.1236882673603
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.1946968034683166,
+            -0.9808634740468317
+          ],
+          "Scale": [
+            4.379935409536373,
+            4.379935409536373,
+            4.379935409536373
+          ]
+        }
+      },
+      "Name": "Tree_20",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4079.8236881632033,
+            711.8785968292314,
+            652.023895470733
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.2710136214786042,
+            -0.9625755123485388
+          ],
+          "Scale": [
+            4.408548895080465,
+            4.408548895080465,
+            4.408548895080465
+          ]
+        }
+      },
+      "Name": "Tree_21",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4253.564627126798,
+            -748.2641916763655,
+            828.0770602866355
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9997928581404998,
+            0.0203529067027435
+          ],
+          "Scale": [
+            4.915439087506732,
+            4.915439087506732,
+            4.915439087506732
+          ]
+        }
+      },
+      "Name": "Tree_22",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3697.9630950706533,
+            -3200.0845963385937,
+            667.5452817050773
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.4324735167547232,
+            -0.9016466366076026
+          ],
+          "Scale": [
+            5.542303115772022,
+            5.542303115772022,
+            5.542303115772022
+          ]
+        }
+      },
+      "Name": "Tree_23",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4904.4206968666185,
+            -997.2465808804909,
+            760.6645222038064
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.879692443795367,
+            -0.4755430625393825
+          ],
+          "Scale": [
+            5.565882783226343,
+            5.565882783226343,
+            5.565882783226343
+          ]
+        }
+      },
+      "Name": "Tree_24",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4092.506887993228,
+            -2667.796562173556,
+            725.5684562259166
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8834492837250046,
+            0.46852680081909526
+          ],
+          "Scale": [
+            5.081831874906315,
+            5.081831874906315,
+            5.081831874906315
+          ]
+        }
+      },
+      "Name": "Tree_25",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4150.111392664858,
+            543.0031636759868,
+            746.3535756065528
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5863997726106518,
+            -0.8100217939550614
+          ],
+          "Scale": [
+            5.41727984036023,
+            5.41727984036023,
+            5.41727984036023
+          ]
+        }
+      },
+      "Name": "Tree_26",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5082.685260894554,
+            -1107.4648255026668,
+            739.300652257887
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.970676682059624,
+            0.24038880777964633
+          ],
+          "Scale": [
+            4.521493191901548,
+            4.521493191901548,
+            4.521493191901548
+          ]
+        }
+      },
+      "Name": "Tree_27",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -732.8500656355345,
+            2258.8047904166688,
+            98.10363424389836
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6488934214273103,
+            0.7608793121306158
+          ],
+          "Scale": [
+            4.7313865550042395,
+            4.7313865550042395,
+            4.7313865550042395
+          ]
+        }
+      },
+      "Name": "Tree_28",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1217.5534065808179,
+            -3722.1048870713803,
+            757.0105979390514
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6492310507399799,
+            0.7605912455156592
+          ],
+          "Scale": [
+            5.433924766724981,
+            5.433924766724981,
+            5.433924766724981
+          ]
+        }
+      },
+      "Name": "Tree_29",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            777.8802352079292,
+            3586.4792625331856,
+            787.2403346214611
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.992162225294213,
+            0.12495646721652755
+          ],
+          "Scale": [
+            4.860651408434138,
+            4.860651408434138,
+            4.860651408434138
+          ]
+        }
+      },
+      "Name": "Tree_30",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1265.8804446327658,
+            -3884.8548575131617,
+            598.58937354775
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9453494491718806,
+            -0.32605891944619764
+          ],
+          "Scale": [
+            4.982181498621455,
+            4.982181498621455,
+            4.982181498621455
+          ]
+        }
+      },
+      "Name": "Tree_31",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3603.507167783904,
+            3800.143251255269,
+            766.1098621199226
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.15734857963827387,
+            -0.987543125380263
+          ],
+          "Scale": [
+            4.578619261212325,
+            4.578619261212325,
+            4.578619261212325
+          ]
+        }
+      },
+      "Name": "Tree_32",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2718.4562111237865,
+            -3117.2548766832874,
+            542.8701612882821
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9887661785937685,
+            0.1494705458245066
+          ],
+          "Scale": [
+            4.70945541990257,
+            4.70945541990257,
+            4.70945541990257
+          ]
+        }
+      },
+      "Name": "Tree_33",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2176.6531946286823,
+            2703.3067656751127,
+            381.9617860596254
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.977805452164964,
+            0.2095149104872262
+          ],
+          "Scale": [
+            4.695938426271474,
+            4.695938426271474,
+            4.695938426271474
+          ]
+        }
+      },
+      "Name": "Tree_34",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2237.200476517866,
+            4261.767105728753,
+            686.3442535262011
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7472362119928462,
+            -0.6645585327768971
+          ],
+          "Scale": [
+            4.174214213835306,
+            4.174214213835306,
+            4.174214213835306
+          ]
+        }
+      },
+      "Name": "Tree_35",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3914.534381739135,
+            -3406.5089946213393,
+            813.4275421706864
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.05090954329828437,
+            -0.9987032684442162
+          ],
+          "Scale": [
+            5.615973107318414,
+            5.615973107318414,
+            5.615973107318414
+          ]
+        }
+      },
+      "Name": "Tree_36",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2047.4045366471978,
+            3307.486274130544,
+            777.2420616959245
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3546414018636701,
+            0.935002393624835
+          ],
+          "Scale": [
+            4.646225010986159,
+            4.646225010986159,
+            4.646225010986159
+          ]
+        }
+      },
+      "Name": "Tree_37",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3904.073811189529,
+            3446.8163736069955,
+            673.9474090266369
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.2244751760673924,
+            -0.9744798075535035
+          ],
+          "Scale": [
+            5.47752882287185,
+            5.47752882287185,
+            5.47752882287185
+          ]
+        }
+      },
+      "Name": "Tree_38",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1041.4428785117525,
+            -2063.9525582780675,
+            17.779885169899913
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8581514586129483,
+            0.5133966050535096
+          ],
+          "Scale": [
+            4.2376064306867995,
+            4.2376064306867995,
+            4.2376064306867995
+          ]
+        }
+      },
+      "Name": "Tree_39",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4351.883846551336,
+            1939.1192259876989,
+            678.8056247882892
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6360264095022875,
+            0.7716672899738776
+          ],
+          "Scale": [
+            5.01214106260684,
+            5.01214106260684,
+            5.01214106260684
+          ]
+        }
+      },
+      "Name": "Tree_40",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3351.469964938213,
+            -681.3365170410552,
+            365.8571273028592
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.03830305085501949,
+            0.9992661688935525
+          ],
+          "Scale": [
+            5.470501606309901,
+            5.470501606309901,
+            5.470501606309901
+          ]
+        }
+      },
+      "Name": "Tree_41",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3996.155665297062,
+            -2350.6577054660643,
+            787.1510003754348
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.961055646815838,
+            -0.27635492346508206
+          ],
+          "Scale": [
+            4.576489856682385,
+            4.576489856682385,
+            4.576489856682385
+          ]
+        }
+      },
+      "Name": "Tree_42",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4133.129130947244,
+            2630.6646420670886,
+            648.5185149186009
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.857690552505617,
+            0.514166233958055
+          ],
+          "Scale": [
+            4.541757130100106,
+            4.541757130100106,
+            4.541757130100106
+          ]
+        }
+      },
+      "Name": "Tree_43",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4567.130666918363,
+            -4004.28869633605,
+            675.6231749210012
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.27012663712337265,
+            0.9628248022960448
+          ],
+          "Scale": [
+            5.086525937561689,
+            5.086525937561689,
+            5.086525937561689
+          ]
+        }
+      },
+      "Name": "Tree_44",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3058.362353640483,
+            1707.0424489094466,
+            265.9802531462538
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9068701915893607,
+            0.42141008009618897
+          ],
+          "Scale": [
+            4.234416855742449,
+            4.234416855742449,
+            4.234416855742449
+          ]
+        }
+      },
+      "Name": "Tree_45",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3364.212146910003,
+            843.674180073237,
+            497.176567425352
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9943038744046118,
+            0.1065823875880908
+          ],
+          "Scale": [
+            5.606138322619909,
+            5.606138322619909,
+            5.606138322619909
+          ]
+        }
+      },
+      "Name": "Tree_46",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2606.919560028671,
+            -1232.526629074453,
+            7.969867914719558
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3139739973836767,
+            0.9494315820357542
+          ],
+          "Scale": [
+            4.504546409092156,
+            4.504546409092156,
+            4.504546409092156
+          ]
+        }
+      },
+      "Name": "Tree_47",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3276.2477491979425,
+            -1805.400598021985,
+            362.59468186695364
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3005186489707364,
+            0.9537759388980219
+          ],
+          "Scale": [
+            4.662381544792566,
+            4.662381544792566,
+            4.662381544792566
+          ]
+        }
+      },
+      "Name": "Tree_48",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4840.502837218305,
+            -3392.8547028913713,
+            681.517759090468
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5476567393716903,
+            0.8367031109185434
+          ],
+          "Scale": [
+            4.11550445648488,
+            4.11550445648488,
+            4.11550445648488
+          ]
+        }
+      },
+      "Name": "Tree_49",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4778.94581084663,
+            4231.7605578176845,
+            613.143377335041
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8732841231974499,
+            0.487211289043328
+          ],
+          "Scale": [
+            4.518198616799432,
+            4.518198616799432,
+            4.518198616799432
+          ]
+        }
+      },
+      "Name": "Tree_50",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            416.83394285351005,
+            4159.5329495065525,
+            662.3783721953564
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6727528523026618,
+            -0.7398672852063625
+          ],
+          "Scale": [
+            4.438374132180059,
+            4.438374132180059,
+            4.438374132180059
+          ]
+        }
+      },
+      "Name": "Tree_51",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -116.73188893211227,
+            -2583.543090314548,
+            323.5744481385869
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9300200641308566,
+            0.36750874862244765
+          ],
+          "Scale": [
+            4.945178885106504,
+            4.945178885106504,
+            4.945178885106504
+          ]
+        }
+      },
+      "Name": "Tree_52",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2871.045367687673,
+            3799.891507210057,
+            782.9355508227818
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7158009099211221,
+            0.6983044159649097
+          ],
+          "Scale": [
+            4.881557096766381,
+            4.881557096766381,
+            4.881557096766381
+          ]
+        }
+      },
+      "Name": "Tree_53",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            794.4839941290375,
+            -2856.603692949672,
+            364.9028332336471
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8137555687691642,
+            0.5812072558882709
+          ],
+          "Scale": [
+            5.210439863236713,
+            5.210439863236713,
+            5.210439863236713
+          ]
+        }
+      },
+      "Name": "Tree_54",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4030.114633811241,
+            -1553.336783351499,
+            785.898514868634
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6154299658107327,
+            0.7881915739096684
+          ],
+          "Scale": [
+            5.1552340784577115,
+            5.1552340784577115,
+            5.1552340784577115
+          ]
+        }
+      },
+      "Name": "Tree_55",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1165.25097911091,
+            -2713.8390330461657,
+            328.36891158249296
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9539116397752612,
+            -0.30008762637148567
+          ],
+          "Scale": [
+            4.894058841032,
+            4.894058841032,
+            4.894058841032
+          ]
+        }
+      },
+      "Name": "Tree_56",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3608.087614998203,
+            -4341.295817179539,
+            663.9909595029678
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4277323758143357,
+            0.9039054235262801
+          ],
+          "Scale": [
+            5.259677730067373,
+            5.259677730067373,
+            5.259677730067373
+          ]
+        }
+      },
+      "Name": "Tree_57",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2733.7212517629887,
+            -2801.0399569498823,
+            445.98003631206564
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.03813598894447438,
+            -0.9992725585881096
+          ],
+          "Scale": [
+            5.616903436084574,
+            5.616903436084574,
+            5.616903436084574
+          ]
+        }
+      },
+      "Name": "Tree_58",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2083.394845628462,
+            -4556.627481623326,
+            732.4268044744316
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.08224874409399381,
+            -0.9966118322069836
+          ],
+          "Scale": [
+            4.695999660246532,
+            4.695999660246532,
+            4.695999660246532
+          ]
+        }
+      },
+      "Name": "Tree_59",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1366.0278262216161,
+            3232.318923154865,
+            733.724635798164
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.831397842444407,
+            0.55567762918691
+          ],
+          "Scale": [
+            5.433238877614687,
+            5.433238877614687,
+            5.433238877614687
+          ]
+        }
+      },
+      "Name": "Tree_60",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1203.7002927681115,
+            -2138.977911191193,
+            46.5355056034183
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8861188700720852,
+            0.4634580327302258
+          ],
+          "Scale": [
+            4.76112818845576,
+            4.76112818845576,
+            4.76112818845576
+          ]
+        }
+      },
+      "Name": "Tree_61",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1708.8266306542191,
+            -3319.5190395334803,
+            502.50103210788984
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7800444467470851,
+            0.6257241094116751
+          ],
+          "Scale": [
+            4.867456037108962,
+            4.867456037108962,
+            4.867456037108962
+          ]
+        }
+      },
+      "Name": "Tree_62",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3384.400403232841,
+            4531.855528266115,
+            841.7418152666415
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.26195102652479096,
+            0.9650811674168179
+          ],
+          "Scale": [
+            4.859559600204678,
+            4.859559600204678,
+            4.859559600204678
+          ]
+        }
+      },
+      "Name": "Tree_63",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3844.310086546702,
+            -1329.7938985583019,
+            684.5866642410676
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6728847181872877,
+            0.7397473595965142
+          ],
+          "Scale": [
+            4.274834013268764,
+            4.274834013268764,
+            4.274834013268764
+          ]
+        }
+      },
+      "Name": "Tree_64",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3392.4824386601776,
+            1862.3326046134243,
+            442.36891351445377
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.947953161620596,
+            -0.3184098041416381
+          ],
+          "Scale": [
+            4.760311026432859,
+            4.760311026432859,
+            4.760311026432859
+          ]
+        }
+      },
+      "Name": "Tree_65",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4330.827957583619,
+            -1825.6530521469963,
+            752.7000193519946
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9683539782393781,
+            0.24958079418891604
+          ],
+          "Scale": [
+            4.155887989223867,
+            4.155887989223867,
+            4.155887989223867
+          ]
+        }
+      },
+      "Name": "Tree_66",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5122.371416538292,
+            -1919.1039600086688,
+            745.605619362228
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7238954524340727,
+            0.6899096853540101
+          ],
+          "Scale": [
+            4.625236933710795,
+            4.625236933710795,
+            4.625236933710795
+          ]
+        }
+      },
+      "Name": "Tree_67",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5181.28254233376,
+            783.5594986752676,
+            585.2647300893311
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5197916006271917,
+            0.8542930948552857
+          ],
+          "Scale": [
+            4.877524938113074,
+            4.877524938113074,
+            4.877524938113074
+          ]
+        }
+      },
+      "Name": "Tree_68",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            91.07658727125818,
+            -4530.64424560352,
+            619.2105020523198
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7595516343862767,
+            -0.6504470114476166
+          ],
+          "Scale": [
+            5.026208018646595,
+            5.026208018646595,
+            5.026208018646595
+          ]
+        }
+      },
+      "Name": "Tree_69",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3767.4112693643146,
+            1256.7973746644793,
+            580.4080862792865
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9641033404502561,
+            -0.265527303553999
+          ],
+          "Scale": [
+            5.257440986550428,
+            5.257440986550428,
+            5.257440986550428
+          ]
+        }
+      },
+      "Name": "Tree_70",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -240.5524870450763,
+            4377.756114052703,
+            680.889327494405
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9976616839842962,
+            0.0683459165540868
+          ],
+          "Scale": [
+            5.4242189339948075,
+            5.4242189339948075,
+            5.4242189339948075
+          ]
+        }
+      },
+      "Name": "Tree_71",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4758.123381898769,
+            1197.556350940171,
+            724.5682851517352
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.49367955798680063,
+            0.8696438892017566
+          ],
+          "Scale": [
+            4.237288005432144,
+            4.237288005432144,
+            4.237288005432144
+          ]
+        }
+      },
+      "Name": "Tree_72",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2780.5919047985108,
+            3035.143406657434,
+            545.709078590128
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3304652204004895,
+            -0.943818170044239
+          ],
+          "Scale": [
+            5.290112266398474,
+            5.290112266398474,
+            5.290112266398474
+          ]
+        }
+      },
+      "Name": "Tree_73",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2720.0283670824656,
+            -1134.2830532874327,
+            46.1868698444066
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.4260443176058953,
+            -0.9047022932632187
+          ],
+          "Scale": [
+            4.684407381922522,
+            4.684407381922522,
+            4.684407381922522
+          ]
+        }
+      },
+      "Name": "Tree_74",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4944.086273496772,
+            -2249.8292679904507,
+            740.5829650932222
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.24709262788069147,
+            -0.9689918643863911
+          ],
+          "Scale": [
+            5.58889970614015,
+            5.58889970614015,
+            5.58889970614015
+          ]
+        }
+      },
+      "Name": "Tree_75",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4630.496178812424,
+            -155.81894190181265,
+            688.317504698952
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5096659969730193,
+            -0.8603723447028608
+          ],
+          "Scale": [
+            4.21041797049352,
+            4.21041797049352,
+            4.21041797049352
+          ]
+        }
+      },
+      "Name": "Tree_76",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2735.675602383993,
+            -2431.890387763806,
+            205.94771334375022
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8094988151455632,
+            -0.5871215106585087
+          ],
+          "Scale": [
+            4.921207244825099,
+            4.921207244825099,
+            4.921207244825099
+          ]
+        }
+      },
+      "Name": "Tree_77",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4534.237830441503,
+            3496.7304850248665,
+            707.0528970430037
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7950662821213941,
+            0.6065225527823873
+          ],
+          "Scale": [
+            4.18064047941189,
+            4.18064047941189,
+            4.18064047941189
+          ]
+        }
+      },
+      "Name": "Tree_78",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3028.1568331627313,
+            -3711.580472604963,
+            725.8126933275844
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7079266289016924,
+            -0.706285981803324
+          ],
+          "Scale": [
+            4.668569559034141,
+            4.668569559034141,
+            4.668569559034141
+          ]
+        }
+      },
+      "Name": "Tree_79",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3404.2272535407174,
+            279.7584068805254,
+            488.3033884994269
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7326914334434754,
+            0.6805609916521407
+          ],
+          "Scale": [
+            4.106872336135648,
+            4.106872336135648,
+            4.106872336135648
+          ]
+        }
+      },
+      "Name": "Tree_80",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1895.4400276423985,
+            -2670.7919714393047,
+            301.4115025840061
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7336737811156262,
+            0.679501863796929
+          ],
+          "Scale": [
+            5.619113829050122,
+            5.619113829050122,
+            5.619113829050122
+          ]
+        }
+      },
+      "Name": "Tree_81",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -864.1256970422673,
+            -4463.305081662937,
+            706.139603892615
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.10838705499913998,
+            -0.9941087698580138
+          ],
+          "Scale": [
+            4.765307560998232,
+            4.765307560998232,
+            4.765307560998232
+          ]
+        }
+      },
+      "Name": "Tree_82",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4994.174256064041,
+            2922.0693298143906,
+            701.9550732539404
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.35407361059542114,
+            0.9352175566572315
+          ],
+          "Scale": [
+            4.290508785852623,
+            4.290508785852623,
+            4.290508785852623
+          ]
+        }
+      },
+      "Name": "Tree_83",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1201.1898049970587,
+            4081.328093781589,
+            638.7821886604385
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.48479603385597037,
+            0.8746272380606043
+          ],
+          "Scale": [
+            5.224594183309111,
+            5.224594183309111,
+            5.224594183309111
+          ]
+        }
+      },
+      "Name": "Tree_84",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4604.358305742271,
+            1639.9175356584228,
+            731.0490366895797
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.13984373447914408,
+            -0.9901735857550062
+          ],
+          "Scale": [
+            4.802466841619649,
+            4.802466841619649,
+            4.802466841619649
+          ]
+        }
+      },
+      "Name": "Tree_85",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2867.118669098561,
+            -4333.944868681815,
+            645.7597230658441
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9780141975999946,
+            -0.20853831612641052
+          ],
+          "Scale": [
+            5.210633532594978,
+            5.210633532594978,
+            5.210633532594978
+          ]
+        }
+      },
+      "Name": "Tree_86",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2042.1918103816142,
+            4542.599049254133,
+            681.9306006052794
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9527645913748343,
+            0.3037097848643422
+          ],
+          "Scale": [
+            4.27099679487048,
+            4.27099679487048,
+            4.27099679487048
+          ]
+        }
+      },
+      "Name": "Tree_87",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1948.1555064941276,
+            -2209.812816573823,
+            81.11649316392904
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5364799454829543,
+            -0.8439130690388711
+          ],
+          "Scale": [
+            4.986976760038471,
+            4.986976760038471,
+            4.986976760038471
+          ]
+        }
+      },
+      "Name": "Tree_88",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2462.39934188559,
+            2043.1009676894664,
+            27.330809788594102
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.1911505997924353,
+            0.9815607205868582
+          ],
+          "Scale": [
+            4.335855567433745,
+            4.335855567433745,
+            4.335855567433745
+          ]
+        }
+      },
+      "Name": "Tree_89",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2197.0134542839855,
+            -3608.1788035361587,
+            587.023868116474
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9282006877526208,
+            -0.37207994202262734
+          ],
+          "Scale": [
+            4.505100946765603,
+            4.505100946765603,
+            4.505100946765603
+          ]
+        }
+      },
+      "Name": "Tree_90",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2661.4666216669098,
+            1539.180744808914,
+            30.95428553067009
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7491060943684081,
+            0.6624500429316235
+          ],
+          "Scale": [
+            4.217894378592308,
+            4.217894378592308,
+            4.217894378592308
+          ]
+        }
+      },
+      "Name": "Tree_91",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1624.0046007706324,
+            -4528.259635957874,
+            588.7853174524508
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5618918938986235,
+            0.8272106742366289
+          ],
+          "Scale": [
+            4.794853977658181,
+            4.794853977658181,
+            4.794853977658181
+          ]
+        }
+      },
+      "Name": "Tree_92",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2814.0969947594504,
+            231.61090317584512,
+            92.09729143074992
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3653600333383862,
+            -0.930866287948475
+          ],
+          "Scale": [
+            5.215727748673439,
+            5.215727748673439,
+            5.215727748673439
+          ]
+        }
+      },
+      "Name": "Tree_93",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1463.0844878759808,
+            2353.036434691521,
+            197.39860957925228
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8103938361562513,
+            0.5858855095664638
+          ],
+          "Scale": [
+            4.132816342307045,
+            4.132816342307045,
+            4.132816342307045
+          ]
+        }
+      },
+      "Name": "Tree_94",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -283.87851911915186,
+            2883.5697044272683,
+            440.93592023177564
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.031909828578404166,
+            0.9994907517531599
+          ],
+          "Scale": [
+            5.5792727886309965,
+            5.5792727886309965,
+            5.5792727886309965
+          ]
+        }
+      },
+      "Name": "Tree_95",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1180.2130198276695,
+            3622.7593832091625,
+            675.1566882432436
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.150298746597767,
+            0.9886406256932497
+          ],
+          "Scale": [
+            4.854595844950292,
+            4.854595844950292,
+            4.854595844950292
+          ]
+        }
+      },
+      "Name": "Tree_96",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2078.492029437747,
+            3436.4952877131545,
+            649.1625448727177
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5474091606465671,
+            -0.8368651091067311
+          ],
+          "Scale": [
+            5.111703937192306,
+            5.111703937192306,
+            5.111703937192306
+          ]
+        }
+      },
+      "Name": "Tree_97",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1710.552254788793,
+            2176.291248663627,
+            67.64769318701384
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7741569176931931,
+            -0.6329937336086153
+          ],
+          "Scale": [
+            4.368630245059972,
+            4.368630245059972,
+            4.368630245059972
+          ]
+        }
+      },
+      "Name": "Tree_98",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4887.132890630648,
+            2296.198522517223,
+            725.3839266615324
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.10945067277507677,
+            0.9939922284550735
+          ],
+          "Scale": [
+            4.86750775483118,
+            4.86750775483118,
+            4.86750775483118
+          ]
+        }
+      },
+      "Name": "Tree_99",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            141.13293797110236,
+            2220.6918576303633,
+            80.90645677280835
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9602241318681071,
+            -0.27923040052641124
+          ],
+          "Scale": [
+            5.040246292012194,
+            5.040246292012194,
+            5.040246292012194
+          ]
+        }
+      },
+      "Name": "Tree_100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4852.653550369578,
+            -198.16149638389652,
+            541.1347160972147
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.766020921053198,
+            -0.6428156411513414
+          ],
+          "Scale": [
+            4.934532319031964,
+            4.934532319031964,
+            4.934532319031964
+          ]
+        }
+      },
+      "Name": "Tree_101",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3634.0731901056256,
+            4594.64823539282,
+            835.6894057985799
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.22571549262327809,
+            0.9741932643935858
+          ],
+          "Scale": [
+            4.2759514774671485,
+            4.2759514774671485,
+            4.2759514774671485
+          ]
+        }
+      },
+      "Name": "Tree_102",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3878.6884238431703,
+            -146.88786185174376,
+            536.3335519938928
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8950122252556247,
+            -0.4460416086453986
+          ],
+          "Scale": [
+            5.195652184388819,
+            5.195652184388819,
+            5.195652184388819
+          ]
+        }
+      },
+      "Name": "Tree_103",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2233.307097917667,
+            -1982.4827819224893,
+            3.547221826800394
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8309464396912453,
+            0.5563524192132571
+          ],
+          "Scale": [
+            4.9692789455953665,
+            4.9692789455953665,
+            4.9692789455953665
+          ]
+        }
+      },
+      "Name": "Tree_104",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -5186.651063927299,
+            1702.3350144033484,
+            834.9440993495423
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9916181022573048,
+            -0.1292034801219427
+          ],
+          "Scale": [
+            4.846524969750529,
+            4.846524969750529,
+            4.846524969750529
+          ]
+        }
+      },
+      "Name": "Tree_105",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -5162.722325707617,
+            4391.578339005342,
+            732.7841835575232
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6052296507546404,
+            0.7960509216422125
+          ],
+          "Scale": [
+            4.742139515969054,
+            4.742139515969054,
+            4.742139515969054
+          ]
+        }
+      },
+      "Name": "Tree_106",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_large.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2121.8721442502338,
+            2139.8311045115743,
+            57.63552706553082
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9569354740254339,
+            0.2903007036707252
+          ],
+          "Scale": [
+            5.056257261789804,
+            5.056257261789804,
+            5.056257261789804
+          ]
+        }
+      },
+      "Name": "Tree_107",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4952.158572805047,
+            2473.377113853694,
+            694.9799948475606
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.058640378943161306,
+            0.998279172354809
+          ],
+          "Scale": [
+            4.211279477815583,
+            4.211279477815583,
+            4.211279477815583
+          ]
+        }
+      },
+      "Name": "Tree_108",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2306.811250860246,
+            -3599.003152438824,
+            633.0686507690024
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.23922750172577828,
+            -0.9709635433001812
+          ],
+          "Scale": [
+            4.423223728148029,
+            4.423223728148029,
+            4.423223728148029
+          ]
+        }
+      },
+      "Name": "Tree_109",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3982.6993975425316,
+            1383.6270877053585,
+            574.5585449838479
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.32313742514197874,
+            0.9463520510215065
+          ],
+          "Scale": [
+            4.820386471536095,
+            4.820386471536095,
+            4.820386471536095
+          ]
+        }
+      },
+      "Name": "Tree_110",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "ScriptAsset": "Scripts/FarmBie/FarmGame.lua",
+          "PropertyOverrides": "{\"AutoPlay\": \"\", \"Map\": \"Forest\", \"CameraBounds\": \"-1300.0,-1300.0,1300.0,1100.0\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"1\", \"ShipSpot\": \"380.0,-950.0\", \"MerchantSpot\": \"520.0,1480.0\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FarmGame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            1480.0,
+            -2.0816135406676413
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Merchant",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Peddler.esprite",
+          "Slice": "Idle0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/FarmBie/Peddler_Idle.eflipbook",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "MerchantBody",
+      "Parent": 282
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Fx.esprite",
+          "Slice": "Shadow",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            1.5
+          ],
+          "Rotation": [
+            -0.7071067811865476,
+            0.0,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.1,
+            1.0,
+            1.1
+          ]
+        }
+      },
+      "Name": "MerchantShadow",
+      "Parent": 282
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            35.0,
+            90.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            1480.0,
+            87.91838645933235
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "MerchantCollision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Field.esprite",
+          "Slice": "Cursor",
+          "Color": [
+            1,
+            1,
+            1,
+            0.85
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            3.0
+          ],
+          "Rotation": [
+            -0.7071067811865476,
+            0.0,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "TileCursor",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "UIComponent": {
+          "Asset": "UI/FarmBie/HUD.eui",
+          "ZOrder": 0,
+          "Visible": true,
+          "ReceiveInput": false,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 2,
+          "ScriptAsset": "Scripts/FarmBie/FarmHud.lua",
+          "PropertyOverrides": "{}"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Hud",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60.0,
+            230.0,
+            150.0
+          ],
+          "IsTrigger": true
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "ScriptAsset": "Scripts/FarmBie/FarmTravel.lua",
+          "PropertyOverrides": "{\"TargetScene\": \"Scenes/Farm.escene\", \"SpawnName\": \"FromForest\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            2140.0,
+            0.0,
+            73.44970684889971
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Travel_Farm",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1900.0,
+            0.0,
+            5.655313695442571
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Spawn_FromFarm",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "CameraComponent": {
+          "FovYDegrees": 30.0,
+          "NearZ": 50.0,
+          "FarZ": 40000.0,
+          "Primary": true,
+          "Priority": 10
+        },
+        "DepthOfFieldComponent": {
+          "Enabled": true,
+          "FocusDistance": 2000.0,
+          "FocalRegion": 600.0,
+          "NearTransition": 600.0,
+          "FarTransition": 1500.0,
+          "NearBlurSize": 0.6,
+          "FarBlurSize": 0.8,
+          "PreviewInEditor": false,
+          "Mode": 1,
+          "TiltShiftCenter": 0.5,
+          "TiltShiftBand": 0.5,
+          "TiltShiftTransition": 0.45,
+          "TiltShiftAngle": 0.0,
+          "BokehBladeCount": 6,
+          "BokehRotation": 15.0,
+          "BokehHighlightBoost": 2.0,
+          "BokehHighlightThreshold": 1.0
+        },
+        "ColorGradingComponent": {
+          "Enabled": true,
+          "Temperature": 0.1,
+          "Tint": 0.02,
+          "Saturation": 1.1,
+          "Contrast": 1.06,
+          "Lift": [
+            0.0,
+            0.006,
+            0.02
+          ],
+          "Gamma": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Gain": [
+            1.03,
+            1.0,
+            0.97
+          ],
+          "LookupTable": "",
+          "LookupTableIntensity": 1.0
+        },
+        "VignetteComponent": {
+          "Enabled": true,
+          "Intensity": 0.35,
+          "Size": 0.5,
+          "Smoothness": 0.6,
+          "Roundness": 1.0,
+          "Color": [
+            0.03,
+            0.02,
+            0.03
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1900.0,
+            684.0402866513376,
+            1955.0405552672592
+          ],
+          "Rotation": [
+            0.40557978767263886,
+            0.40557978767263886,
+            -0.5792279653395692,
+            0.5792279653395692
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Camera",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/FarmBie/Player.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 291
+        },
+        "TransformComponent": {
+          "Position": [
+            1900.0,
+            0.0,
+            94.65531369544257
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Player",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

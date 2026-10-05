@@ -210,6 +210,23 @@ def HudWidgets():
 			Text("GoldText", "0", 26, BoxSlot(VAlign="Center"), TEXT_GOLD),
 		]),
 	], Brush=FrameBrush(), ContentPadding=[20, 10, 24, 12]))
+	# 왼쪽 위 돈 아래: 체력·정신력 막대 + 버프
+	def VitalRow(Name, Label, Color, Fill):
+		return Widget("HorizontalBox", f"{Name}Row", BoxSlot((0, 0, 0, 6)), "HitTestInvisible", [
+			Text(f"{Name}Label", Label, 16, BoxSlot((0, 0, 8, 0), VAlign="Center"), Color),
+			Widget("Overlay", f"{Name}Box", BoxSlot(VAlign="Center"), "HitTestInvisible", [
+				Widget("ProgressBar", f"{Name}Bar", BoxSlot(), MinSize=[200, 16], Brush=Brush((0.05, 0.04, 0.06, 0.92), 2, 1, (0, 0, 0, 1)),
+					   FillBrush=Brush(Fill, 1), Percent=1.0, FillDirection="LeftToRight"),
+				Text(f"{Name}Text", "100", 13, BoxSlot(HAlign="Center", VAlign="Center"), TEXT_LIGHT, "Center"),
+			]),
+		])
+	C.append(Widget("Border", "VitalPanel", CanvasSlot((0, 0), 16, 82, 0, 0, AutoSize=True), "HitTestInvisible", [
+		Widget("VerticalBox", "VitalBox", BoxSlot(), "HitTestInvisible", [
+			VitalRow("Health", "체력", (1.0, 0.62, 0.55, 1), (0.86, 0.26, 0.24, 1)),
+			VitalRow("Sanity", "정신", (0.78, 0.66, 1.0, 1), (0.56, 0.38, 0.9, 1)),
+			Text("BuffText", "", 15, BoxSlot((0, 2, 0, 0)), (0.75, 1.0, 0.7, 1)),
+		]),
+	], Brush=FrameBrush(36), ContentPadding=[16, 10, 18, 8]))
 	C.append(ShopWindow())
 	C.append(BagWindow())
 	# 화면 전체 어둡게 (잠들기·새 날 전환)

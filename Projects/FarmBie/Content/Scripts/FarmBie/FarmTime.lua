@@ -150,8 +150,10 @@ function Time_:UpdateSleep(Dt)
 		end
 		local Notes = self.MorningNotes or {}
 		if Sub then table.insert(Notes, 1, Sub) end
-		self:Hud():Announce(self:DateText(), #Notes > 0 and table.concat(Notes, "   ·   ") or string.format("%d년차 아침", self.Year), 3.5)
+		local Text = #Notes > 0 and table.concat(Notes, "   ·   ") or string.format("%d년차 아침", self.Year)
 		self.MorningNotes = nil
+		if self.OnWake and self:OnWake(self:DateText(), Text) then return end
+		self:Hud():Announce(self:DateText(), Text, 3.5)
 	end
 end
 
@@ -245,7 +247,13 @@ function Time_:ApplyDayNight(bForce)
 		G.Gamma = Vector3(K.Gamma[1], K.Gamma[2], K.Gamma[3])
 		G.Gain = Vector3(K.Gain[1] * K.Exposure, K.Gain[2] * K.Exposure, K.Gain[3] * K.Exposure)
 	end
-	if self.Vignette then self.Vignette.Intensity = K.Vignette end
+	-- 정신력이 낮으면 화면이 바래고 가장자리가 어두워진다 (FarmVitals:FearLevel)
+	local Fear = self.FearLevel and self:FearLevel() or 0
+	if G and Fear > 0 then
+		G.Saturation = K.Saturation * (1 - 0.45 * Fear)
+		G.Temperature = K.Temperature - 0.15 * Fear
+	end
+	if self.Vignette then self.Vignette.Intensity = K.Vignette + 0.35 * Fear end
 	if self.Atmosphere then self.Atmosphere.MoonIntensity = K.Moon end
 	if self.Fog then
 		self.Fog.Color = Vector3(K.Fog[1], K.Fog[2], K.Fog[3])

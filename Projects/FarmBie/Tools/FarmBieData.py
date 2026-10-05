@@ -185,6 +185,52 @@ def WriteFarming(Content):
 	Table(Content, "Items", "Item", ITEM_ROWS)
 
 
+# ---- 경제 ---------------------------------------------------------------------------------------------------------------------
+ECONOMY = {
+	"StartGold": 300,
+	"MerchantOpenHour": 6.0, "MerchantCloseHour": 18.0,  # 방문 요일의 머무는 시각
+	"RandomStockPicks": 3,                               # 고정 목록 밖에서 무작위로 고르는 물건 수
+	"MerchantLines": ["흐흐… 오늘도 살아 있었군. 뭘 찾나?", "밤이 길어지고 있어. 울타리는 튼튼한가?", "이 씨앗들, 어디서 났는지는 묻지 말게.",
+					  "자네 밭에서 이상한 소리가 나더군. 좋은 징조야.", "물건은 한정이야. 망설이면 다른 이가 가져가지.", "크리스탈은 잘 숨겨 두었나? 놈들은 냄새를 맡는다네."],
+}
+
+ECONOMY_FIELDS = [
+	Field("StartGold", "Int", 300, "처음 돈"),
+	Field("MerchantOpenHour", "Float", 6.0, "보부상이 오는 시각"),
+	Field("MerchantCloseHour", "Float", 18.0, "보부상이 떠나는 시각"),
+	Field("RandomStockPicks", "Int", 3, "무작위 재고 고르는 수"),
+	Field("MerchantLines", "Array", [], "보부상 인사말 (방문 날마다 돌아가며)", Element="String"),
+]
+
+
+def StockRows():
+	# 보부상 물건: Key(물건 열쇠), Price(0 = 물건 기본값), Stock(방문마다 수량), Always(늘 들고 옴), Weight(무작위 가중치), Season(Any | 계절)
+	import FarmBieCrops as FC
+	Rows = []
+	for C in FC.CROPS:
+		if C["Exclusive"]:
+			continue
+		Rows.append((f"Seed_{C['Id']}", {"Key": f"Seed:{C['Id']}:0", "Price": C["SeedPrice"], "Stock": 15, "Always": True, "Weight": 0, "Season": C["Season"]}))
+		Rows.append((f"RareSeed_{C['Id']}", {"Key": f"Seed:{C['Id']}:1", "Price": C["SeedPrice"] * 8, "Stock": 1, "Always": False, "Weight": 2, "Season": C["Season"]}))
+	Rows.append(("FertBasic", {"Key": "FertBasic", "Price": 0, "Stock": 12, "Always": True, "Weight": 0, "Season": "Any"}))
+	Rows.append(("FertPremium", {"Key": "FertPremium", "Price": 0, "Stock": 4, "Always": False, "Weight": 4, "Season": "Any"}))
+	return Rows
+
+
+def WriteEconomy(Content):
+	Struct(Content, "Economy", "경제 수치", ECONOMY_FIELDS)
+	Values(Content, "Economy", "Economy", ECONOMY)
+	Struct(Content, "StockItem", "보부상 물건", [
+		Field("Key", "String", "", "물건 열쇠 (FarmInventory.lua 규약)"),
+		Field("Price", "Int", 0, "값 (0 = 물건 기본값)"),
+		Field("Stock", "Int", 1, "방문마다 들고 오는 수량"),
+		Field("Always", "Bool", False, "늘 들고 옴 (아니면 무작위 후보)"),
+		Field("Weight", "Int", 1, "무작위 후보 가중치"),
+		Field("Season", "Enum", "Any", "파는 계절", Values=["Any", "Spring", "Summer", "Autumn", "Winter"]),
+	])
+	Table(Content, "MerchantStock", "StockItem", StockRows())
+
+
 def WriteFarmMap(Content, Grid):
 	# 농장 격자 (BuildFarmBie.py 상수 — 생성기와 게임 코드가 같은 값을 쓰도록 여기로 넘긴다)
 	Struct(Content, "FarmMap", "농장 격자", [
@@ -208,3 +254,4 @@ def WriteAll(Content):
 	Struct(Content, "DayNightKey", "낮밤 화면 열쇠 (시각별 하늘빛·색 보정·등불)", DAY_NIGHT_FIELDS)
 	Table(Content, "DayNightKeys", "DayNightKey", [(f"K{I:02d}", Row) for I, Row in enumerate(DAY_NIGHT_KEYS)])
 	WriteFarming(Content)
+	WriteEconomy(Content)

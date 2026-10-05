@@ -1,0 +1,446 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/StockItem.estruct",
+  "Rows": [
+    {
+      "Name": "Seed_EyeRadish",
+      "Values": {
+        "Key": "Seed:EyeRadish:0",
+        "Price": 15,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "RareSeed_EyeRadish",
+      "Values": {
+        "Key": "Seed:EyeRadish:1",
+        "Price": 120,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "Seed_BrainCabbage",
+      "Values": {
+        "Key": "Seed:BrainCabbage:0",
+        "Price": 25,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "RareSeed_BrainCabbage",
+      "Values": {
+        "Key": "Seed:BrainCabbage:1",
+        "Price": 200,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "Seed_TentacleLeek",
+      "Values": {
+        "Key": "Seed:TentacleLeek:0",
+        "Price": 12,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "RareSeed_TentacleLeek",
+      "Values": {
+        "Key": "Seed:TentacleLeek:1",
+        "Price": 96,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "Seed_WhisperPotato",
+      "Values": {
+        "Key": "Seed:WhisperPotato:0",
+        "Price": 25,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "RareSeed_WhisperPotato",
+      "Values": {
+        "Key": "Seed:WhisperPotato:1",
+        "Price": 200,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "Seed_FingerBean",
+      "Values": {
+        "Key": "Seed:FingerBean:0",
+        "Price": 18,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "RareSeed_FingerBean",
+      "Values": {
+        "Key": "Seed:FingerBean:1",
+        "Price": 144,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "Seed_FangCorn",
+      "Values": {
+        "Key": "Seed:FangCorn:0",
+        "Price": 20,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "RareSeed_FangCorn",
+      "Values": {
+        "Key": "Seed:FangCorn:1",
+        "Price": 160,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "Seed_HeartTomato",
+      "Values": {
+        "Key": "Seed:HeartTomato:0",
+        "Price": 18,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "RareSeed_HeartTomato",
+      "Values": {
+        "Key": "Seed:HeartTomato:1",
+        "Price": 144,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "Seed_VeinPepper",
+      "Values": {
+        "Key": "Seed:VeinPepper:0",
+        "Price": 14,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "RareSeed_VeinPepper",
+      "Values": {
+        "Key": "Seed:VeinPepper:1",
+        "Price": 112,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "Seed_SkullMelon",
+      "Values": {
+        "Key": "Seed:SkullMelon:0",
+        "Price": 60,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "RareSeed_SkullMelon",
+      "Values": {
+        "Key": "Seed:SkullMelon:1",
+        "Price": 480,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "Seed_VoidSunflower",
+      "Values": {
+        "Key": "Seed:VoidSunflower:0",
+        "Price": 35,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "RareSeed_VoidSunflower",
+      "Values": {
+        "Key": "Seed:VoidSunflower:1",
+        "Price": 280,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "Seed_ScreamPumpkin",
+      "Values": {
+        "Key": "Seed:ScreamPumpkin:0",
+        "Price": 70,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "RareSeed_ScreamPumpkin",
+      "Values": {
+        "Key": "Seed:ScreamPumpkin:1",
+        "Price": 560,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "Seed_ShadowEggplant",
+      "Values": {
+        "Key": "Seed:ShadowEggplant:0",
+        "Price": 20,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "RareSeed_ShadowEggplant",
+      "Values": {
+        "Key": "Seed:ShadowEggplant:1",
+        "Price": 160,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "Seed_CandleMushroom",
+      "Values": {
+        "Key": "Seed:CandleMushroom:0",
+        "Price": 15,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "RareSeed_CandleMushroom",
+      "Values": {
+        "Key": "Seed:CandleMushroom:1",
+        "Price": 120,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "Seed_CobwebGrape",
+      "Values": {
+        "Key": "Seed:CobwebGrape:0",
+        "Price": 22,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "RareSeed_CobwebGrape",
+      "Values": {
+        "Key": "Seed:CobwebGrape:1",
+        "Price": 176,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "Seed_BloodBeet",
+      "Values": {
+        "Key": "Seed:BloodBeet:0",
+        "Price": 28,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "RareSeed_BloodBeet",
+      "Values": {
+        "Key": "Seed:BloodBeet:1",
+        "Price": 224,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "Seed_FrostEyeFlower",
+      "Values": {
+        "Key": "Seed:FrostEyeFlower:0",
+        "Price": 28,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Winter"
+      }
+    },
+    {
+      "Name": "RareSeed_FrostEyeFlower",
+      "Values": {
+        "Key": "Seed:FrostEyeFlower:1",
+        "Price": 224,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Winter"
+      }
+    },
+    {
+      "Name": "Seed_BoneCarrot",
+      "Values": {
+        "Key": "Seed:BoneCarrot:0",
+        "Price": 22,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Winter"
+      }
+    },
+    {
+      "Name": "RareSeed_BoneCarrot",
+      "Values": {
+        "Key": "Seed:BoneCarrot:1",
+        "Price": 176,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Winter"
+      }
+    },
+    {
+      "Name": "Seed_GhostGarlic",
+      "Values": {
+        "Key": "Seed:GhostGarlic:0",
+        "Price": 30,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Winter"
+      }
+    },
+    {
+      "Name": "RareSeed_GhostGarlic",
+      "Values": {
+        "Key": "Seed:GhostGarlic:1",
+        "Price": 240,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Winter"
+      }
+    },
+    {
+      "Name": "Seed_AbyssTurnip",
+      "Values": {
+        "Key": "Seed:AbyssTurnip:0",
+        "Price": 40,
+        "Stock": 15,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Winter"
+      }
+    },
+    {
+      "Name": "RareSeed_AbyssTurnip",
+      "Values": {
+        "Key": "Seed:AbyssTurnip:1",
+        "Price": 320,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Winter"
+      }
+    },
+    {
+      "Name": "FertBasic",
+      "Values": {
+        "Key": "FertBasic",
+        "Price": 0,
+        "Stock": 12,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "FertPremium",
+      "Values": {
+        "Key": "FertPremium",
+        "Price": 0,
+        "Stock": 4,
+        "Always": false,
+        "Weight": 4,
+        "Season": "Any"
+      }
+    }
+  ]
+}

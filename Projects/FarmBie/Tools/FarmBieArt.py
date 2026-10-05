@@ -233,6 +233,46 @@ def DrawFarmerUse(Dir, Tool, Frame):
 USE_POSES = {"Hoe": [0.2, 0.22], "Can": [0.16, 0.3]}  # 도구 → 프레임 길이
 
 
+# ---- 보부상 (수상한 떠돌이 상인: 후드 망토 + 커다란 등짐 + 그림자 속 빛나는 눈) -----------------------------------------------------
+CLOAK, CLOAK_L, CLOAK_D = (78, 58, 96), (112, 86, 134), (50, 36, 64)
+PACK, PACK_L, PACK_D = (140, 96, 56), (182, 132, 80), (96, 62, 36)
+GLOW = (250, 214, 110)
+
+
+def DrawPeddler(Frame):
+	C = FCanvas(36, 44)
+	B = Frame % 2
+	# 등짐 (몸 뒤로 크게 — 냄비·두루마리·등불)
+	C.Rect(5, 4 + B, 30, 26 + B, PACK)
+	C.Rect(6, 5 + B, 12, 25 + B, PACK_L)
+	C.Rect(5, 26 + B, 30, 26 + B, PACK_D)
+	C.Rect(4, 12 + B, 31, 13 + B, PACK_D)
+	C.Ellipse(9, 4 + B, 3.5, 3, (110, 110, 120))      # 냄비
+	C.Rect(22, 1 + B, 28, 4 + B, (220, 206, 170))     # 두루마리
+	C.Rect(29, 15 + B, 32, 20 + B, (90, 70, 40))      # 등불
+	C.Rect(30, 16 + B, 31, 19 + B, GLOW)
+	# 망토 몸
+	C.Rect(10, 16 + B, 25, 38, CLOAK)
+	C.Rect(9, 24 + B, 26, 38, CLOAK)
+	C.Rect(11, 17 + B, 13, 37, CLOAK_L)
+	C.Rect(9, 38, 26, 39, CLOAK_D)
+	C.Rect(17, 26 + B, 18, 38, CLOAK_D)               # 앞 여밈
+	# 후드 + 그림진 얼굴 + 빛나는 눈
+	C.Ellipse(17.5, 15 + B, 7.5, 7, CLOAK)
+	C.Ellipse(17.5, 14 + B, 6, 5.5, CLOAK_L)
+	C.Ellipse(17.5, 17 + B, 4.5, 3.6, (24, 16, 30))
+	C.Px(15, 17 + B, GLOW)
+	C.Px(20, 17 + B, GLOW)
+	# 손 + 지팡이
+	C.Line(28, 22 + B, 30, 41, (110, 80, 50))
+	C.Rect(26, 26 + B, 28, 27 + B, (200, 170, 140))
+	# 발
+	C.Rect(12, 40, 16, 41, (60, 44, 34))
+	C.Rect(19, 40, 23, 41, (60, 44, 34))
+	C.Outline(OUTLINE)
+	return C
+
+
 def DrawShadow():
 	C = FCanvas(24, 10)
 	C.Ellipse(12, 5, 11, 4.5, (20, 16, 28), 110)
@@ -256,6 +296,11 @@ def WriteSprites(Folder):
 			WriteFlipbook(Folder, f"Farmer_{Pose}{Dir}", "Farmer.esprite", [f"{Pose}{Dir}{I}" for I in range(Count)], Fps)
 		for Tool, Times in USE_POSES.items():
 			WriteFlipbook(Folder, f"Farmer_{Tool}{Dir}", "Farmer.esprite", [f"{Tool}{Dir}{I}" for I in range(len(Times))], 0, "Once", Times)
+	Peddler = FAtlas(128)
+	for Frame in range(2):
+		Peddler.Add(f"Idle{Frame}", DrawPeddler(Frame))
+	Peddler.Save(Folder, "Peddler")
+	WriteFlipbook(Folder, "Peddler_Idle", "Peddler.esprite", ["Idle0", "Idle1"], 2.0)
 	Fx = FAtlas(128)
 	Fx.Add("Shadow", DrawShadow(), (0.5, 0.5))
 	Fx.Save(Folder, "Fx")

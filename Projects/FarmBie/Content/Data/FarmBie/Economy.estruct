@@ -1,0 +1,38 @@
+{
+  "Version": 1,
+  "Name": "Economy",
+  "Description": "경제 수치",
+  "Fields": [
+    {
+      "Name": "StartGold",
+      "Type": "Int",
+      "Default": 300,
+      "Description": "처음 돈"
+    },
+    {
+      "Name": "MerchantOpenHour",
+      "Type": "Float",
+      "Default": 6.0,
+      "Description": "보부상이 오는 시각"
+    },
+    {
+      "Name": "MerchantCloseHour",
+      "Type": "Float",
+      "Default": 18.0,
+      "Description": "보부상이 떠나는 시각"
+    },
+    {
+      "Name": "RandomStockPicks",
+      "Type": "Int",
+      "Default": 3,
+      "Description": "무작위 재고 고르는 수"
+    },
+    {
+      "Name": "MerchantLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "보부상 인사말 (방문 날마다 돌아가며)",
+      "Element": "String"
+    }
+  ]
+}

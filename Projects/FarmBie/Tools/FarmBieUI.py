@@ -26,7 +26,7 @@ PAPER  = (64, 44, 34)
 def DrawWoodFrame9():
 	# 나무 창틀: 짙은 갈색 반투명 안 + 나무 테(밝은 윗줄·어두운 아랫줄) + 네 귀퉁이 못
 	C = FCanvas(24, 24)
-	C.Rect(2, 2, 21, 21, PAPER, 225)
+	C.Rect(2, 2, 21, 21, PAPER, 242)
 	for (X0, Y0, X1, Y1, Col) in ((1, 1, 22, 2, WOOD), (1, 21, 22, 22, WOOD), (1, 1, 2, 22, WOOD), (21, 1, 22, 22, WOOD),
 								  (2, 1, 21, 1, WOOD_L), (1, 2, 1, 21, WOOD_L), (2, 22, 21, 22, WOOD_D), (22, 2, 22, 21, WOOD_D)):
 		C.Rect(X0, Y0, X1, Y1, Col)
@@ -72,8 +72,30 @@ def DrawSlot(bSelected):
 	return C
 
 
+def DrawSelectBar():
+	# 목록 선택 줄: 왼쪽에서 옅어지는 금빛 띠 (가로로 늘림)
+	C = FCanvas(24, 12)
+	for X in range(24):
+		C.Rect(X, 0, X, 11, (240, 196, 90), int(170 * (1.0 - X / 30.0)))
+	C.Rect(0, 0, 23, 0, (255, 226, 140), 220)
+	C.Rect(0, 11, 23, 11, (170, 120, 50), 200)
+	return C
+
+
+def DrawCoin():
+	C = FCanvas(12, 12)
+	C.Ellipse(6, 6, 5.2, 5.2, (226, 168, 40))
+	C.Ellipse(6, 6, 4, 4, (252, 214, 90))
+	C.Rect(5, 3, 6, 8, (226, 168, 40))
+	C.Px(4, 4, (255, 246, 190))
+	C.Outline((70, 40, 10))
+	return C
+
+
 def WriteTextures(Content):
 	Folder = os.path.join(Content, *UI_DIR.split("/"))
+	UpscaleSave(DrawSelectBar(), os.path.join(Folder, "Select.png"))
+	UpscaleSave(DrawCoin(), os.path.join(Folder, "Coin.png"))
 	UpscaleSave(DrawSlot(False), os.path.join(Folder, "Slot.png"))
 	UpscaleSave(DrawSlot(True), os.path.join(Folder, "SlotSel.png"))
 	import FarmBieCrops
@@ -81,6 +103,8 @@ def WriteTextures(Content):
 	UpscaleSave(DrawWoodFrame9(), os.path.join(Folder, "Frame.png"))
 	UpscaleSave(DrawSun(), os.path.join(Folder, "Sun.png"))
 	UpscaleSave(DrawMoon(), os.path.join(Folder, "Moon.png"))
+	from FarmBieArt import DrawPeddler
+	UpscaleSave(DrawPeddler(0), os.path.join(Folder, "Peddler.png"), 3)
 
 
 # ---- 위젯 도우미 (HD2DGameplay.py와 같은 .eui 형식) -------------------------------------------------------------------------
@@ -179,9 +203,89 @@ def HudWidgets():
 			Text(f"ToastText{I}", "", 18, BoxSlot(VAlign="Center"), TEXT_LIGHT),
 		]))
 	C.append(Widget("VerticalBox", "Toasts", CanvasSlot((0, 1), 20, -20, 0, 0, (0, 1), AutoSize=True, Z=1), "HitTestInvisible", Toasts))
+	# 왼쪽 위: 돈
+	C.append(Widget("Border", "GoldPanel", CanvasSlot((0, 0), 16, 14, 0, 0, AutoSize=True), "HitTestInvisible", [
+		Widget("HorizontalBox", "GoldRow", BoxSlot(), "HitTestInvisible", [
+			Img("GoldIcon", f"{UI_DIR}/Coin.png", 30, BoxSlot((0, 0, 10, 0), VAlign="Center")),
+			Text("GoldText", "0", 26, BoxSlot(VAlign="Center"), TEXT_GOLD),
+		]),
+	], Brush=FrameBrush(), ContentPadding=[20, 10, 24, 12]))
+	C.append(ShopWindow())
+	C.append(BagWindow())
 	# 화면 전체 어둡게 (잠들기·새 날 전환)
 	C.append(Widget("Border", "Fade", StretchSlot(Z=10), "Collapsed", Brush=Brush((0.0, 0.0, 0.0, 1.0)), ContentPadding=[0, 0, 0, 0]))
 	return C
+
+
+SHOP_ROWS = 9
+
+
+def ListRow(Prefix, I):
+	# 목록 한 줄: 선택 띠 + 아이콘 + 이름(늘어남) + 오른쪽 값(가격·수량)
+	return Widget("Overlay", f"{Prefix}Row{I}", BoxSlot((0, 0, 0, 3)), "HitTestInvisible", [
+		Widget("Image", f"{Prefix}Sel{I}", BoxSlot(), "Collapsed", Brush=Brush(Texture=f"{UI_DIR}/Select.png"), ImageSize=[0, 0]),
+		Widget("HorizontalBox", f"{Prefix}RowBox{I}", BoxSlot((10, 4, 14, 4)), "HitTestInvisible", [
+			Widget("Image", f"{Prefix}Icon{I}", BoxSlot((0, 0, 10, 0), VAlign="Center"), "HitTestInvisible", Brush=Brush(), ImageSize=[36, 36]),
+			Text(f"{Prefix}Name{I}", "", 20, BoxSlot(VAlign="Center", Size="Fill")),
+			Text(f"{Prefix}Price{I}", "", 19, BoxSlot((12, 0, 0, 0), VAlign="Center"), TEXT_GOLD, "Right"),
+			Text(f"{Prefix}Stock{I}", "", 17, BoxSlot((14, 0, 0, 0), VAlign="Center"), TEXT_DIM, "Right"),
+		]),
+	])
+
+
+def DetailPanel(Prefix):
+	return Widget("VerticalBox", f"{Prefix}Detail", CanvasSlot((0, 0), 560, 92, 300, 380), "HitTestInvisible", [
+		Widget("Image", f"{Prefix}DetailIcon", BoxSlot((0, 0, 0, 10), HAlign="Center"), "HitTestInvisible", Brush=Brush(), ImageSize=[96, 96]),
+		Text(f"{Prefix}DetailName", "", 24, BoxSlot((0, 0, 0, 8), HAlign="Center"), TEXT_GOLD, "Center"),
+		Text(f"{Prefix}DetailDesc", "", 18, BoxSlot((0, 0, 0, 10)), TEXT_LIGHT, "Left", Wrap=True),
+		Text(f"{Prefix}DetailInfo", "", 17, BoxSlot(), TEXT_DIM, "Left", Wrap=True),
+	])
+
+
+def ShopWindow():
+	Rows = [ListRow("Shop", I) for I in range(SHOP_ROWS)]
+	return Widget("Border", "ShopWindow", CanvasSlot((0.5, 0.5), 0, -10, 900, 560, (0.5, 0.5), Z=5), "Collapsed", [
+		Widget("Canvas", "ShopCanvas", BoxSlot(), "HitTestInvisible", [
+			Img("ShopPortrait", "UI/FarmBie/Peddler.png", 64, CanvasSlot((0, 0), 6, 4, 64, 64)),
+			Text("ShopTitle", "떠돌이 보부상", 30, CanvasSlot((0, 0), 84, 2, 0, 0, AutoSize=True), TEXT_GOLD),
+			Text("ShopSay", "", 18, CanvasSlot((0, 0), 84, 42, 0, 0, AutoSize=True), (0.95, 0.85, 0.7, 1)),
+			Widget("HorizontalBox", "ShopGoldRow", CanvasSlot((1, 0), -10, 10, 0, 0, (1, 0), AutoSize=True), "HitTestInvisible", [
+				Img("ShopGoldIcon", f"{UI_DIR}/Coin.png", 26, BoxSlot((0, 0, 8, 0), VAlign="Center")),
+				Text("ShopGold", "0", 24, BoxSlot(VAlign="Center"), TEXT_GOLD),
+			]),
+			Widget("VerticalBox", "ShopList", CanvasSlot((0, 0), 0, 86, 540, 400), "HitTestInvisible", Rows),
+			DetailPanel("Shop"),
+			Text("ShopHint", "W/S 고르기   E 사기   Esc 닫기", 16, CanvasSlot((0.5, 1), 0, -4, 0, 0, (0.5, 1), AutoSize=True), TEXT_DIM, "Center"),
+		]),
+	], Brush=FrameBrush(), ContentPadding=[28, 22, 28, 22])
+
+
+def BagWindow():
+	Slots = []
+	for Row in range(4):
+		Cells = []
+		for Col in range(9):
+			I = Row * 9 + Col
+			Cells.append(Widget("Overlay", f"Bag{I}", BoxSlot((2, 2, 2, 2)), "HitTestInvisible", [
+				Widget("Image", f"BagBg{I}", BoxSlot(), "HitTestInvisible", Brush=Brush(Texture=f"{UI_DIR}/Slot.png", NineSlice=True, TextureSize=48), ImageSize=[60, 60]),
+				Widget("Image", f"BagIcon{I}", BoxSlot((8, 8, 8, 8), "Center", "Center"), "Collapsed", Brush=Brush(), ImageSize=[44, 44]),
+				Text(f"BagCount{I}", "", 15, BoxSlot((0, 0, 6, 3), "Right", "Bottom"), TEXT_LIGHT),
+			]))
+		Slots.append(Widget("HorizontalBox", f"BagRow{Row}", BoxSlot((0, 0, 0, 6 if Row == 0 else 0)), "HitTestInvisible", Cells))
+	return Widget("Border", "BagWindow", CanvasSlot((0.5, 0.5), 0, -20, 1000, 520, (0.5, 0.5), Z=5), "Collapsed", [
+		Widget("Canvas", "BagCanvas", BoxSlot(), "HitTestInvisible", [
+			Text("BagTitle", "소지품", 30, CanvasSlot((0, 0), 4, 0, 0, 0, AutoSize=True), TEXT_GOLD),
+			Text("BagSub", "맨 윗줄 = 핫바", 16, CanvasSlot((0, 0), 130, 12, 0, 0, AutoSize=True), TEXT_DIM),
+			Widget("VerticalBox", "BagGrid", CanvasSlot((0, 0), 0, 60, 600, 300), "HitTestInvisible", Slots),
+			Widget("VerticalBox", "BagDetail", CanvasSlot((0, 0), 640, 56, 300, 360), "HitTestInvisible", [
+				Widget("Image", "BagDetailIcon", BoxSlot((0, 0, 0, 10), HAlign="Center"), "HitTestInvisible", Brush=Brush(), ImageSize=[96, 96]),
+				Text("BagDetailName", "", 24, BoxSlot((0, 0, 0, 8), HAlign="Center"), TEXT_GOLD, "Center"),
+				Text("BagDetailDesc", "", 18, BoxSlot((0, 0, 0, 10)), TEXT_LIGHT, "Left", Wrap=True),
+				Text("BagDetailInfo", "", 17, BoxSlot(), TEXT_DIM, "Left", Wrap=True),
+			]),
+			Text("BagHint", "WASD 고르기   E 집기/놓기 (자리 바꾸기)   I·Esc 닫기", 16, CanvasSlot((0.5, 1), 0, -4, 0, 0, (0.5, 1), AutoSize=True), TEXT_DIM, "Center"),
+		]),
+	], Brush=FrameBrush(), ContentPadding=[28, 22, 28, 22])
 
 
 def WriteHud(Content):

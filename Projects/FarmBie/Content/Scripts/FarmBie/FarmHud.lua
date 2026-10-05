@@ -132,6 +132,7 @@ function Hud:OnUpdate(Dt)
 	self:Set("ClockYear", "Text", string.format("%d년차", GM.Year))
 	local bMoon = GM.Phase == "Night" or GM.Hour >= GM.Calendar.NightStartHour
 	self:Set("ClockIcon", "Texture", bMoon and "UI/FarmBie/Moon.png" or "UI/FarmBie/Sun.png")
+	self:Set("GoldText", "Text", tostring(GM.Gold or 0))
 	self:UpdateHotbar()
 	self:UpdateToasts(Time.GetUnscaledDelta())
 	-- 알림 띠: 실제 시간으로 줄어든다 (일시정지 중에도 사라짐), 끝 0.5초 페이드

@@ -2,6 +2,7 @@
 --   시나리오는 코루틴 하나(Run<이름>) — 도우미(GoTo/Press/Wait)가 프레임마다 입력을 채우고 yield 한다. 시간은 실제 시간(메뉴로 게임이 멈춰도 흐른다).
 --   확인은 Expect로 쌓고 끝에 관리자 ReportAutoPlay → 로그 "[FarmBie] 결과: 실패 N건".
 --   Basic: 이동(사방)·방향 플립북·구르기·카메라 추적·집/울타리 충돌
+--   Economy: 처음 돈·출하(작물 전부/고른 묶음)·아침 정산·보부상 요일·재고(계절·한정)·사기(돈 부족·품절)·떠남·소지품 창 옮기기·저장
 --   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
@@ -43,6 +44,7 @@ function AutoPilot:Step(UDt)
 	self.Time = self.Time + UDt
 	self.Frame = self.Frame + 1
 	self.In = { Move = Vector3(0, 0, 0) }
+	-- 창 입력은 확인/취소 표준 이름으로도 (FarmPlayer:MenuNavigation과 같게)
 	if self.Co and coroutine.status(self.Co) ~= "dead" then
 		local bOk, Err = coroutine.resume(self.Co)
 		if not bOk then
@@ -52,7 +54,10 @@ function AutoPilot:Step(UDt)
 			self:Finish()
 		end
 	end
-	return self.In
+	local In = self.In
+	In.Confirm = In.Confirm or In.Interact or In.UseTool
+	In.Cancel = In.Cancel or In.Pause or In.Dodge
+	return In
 end
 
 function AutoPilot:Finish()
@@ -326,6 +331,127 @@ function AutoPilot:RunFarm()
 	self:UseOn(Cols[2], TY, "Hoe")
 	self:Expect(GM:GetTile(Cols[2], TY).Crop == nil, "시든 작물 걷기")
 	self:Finish()
+end
+
+function AutoPilot:RunEconomy()
+	local GM, P = self.GM, self.Player
+	local R = GM.Report
+	local Hud = GM:Hud()
+	self:Wait(1.0)
+	self:Expect(GM.Gold == 300 and Hud.Cache["GoldText.Text"] == "300", "처음 돈 300")
+	-- 출하: 작물 전부 (고른 칸 = 괭이)
+	GM:Give("Crop:EyeRadish:0", 3, true)
+	GM:Give("Crop:EyeRadish:1", 1, true)
+	GM:Give("Crop:BrainCabbage:0", 2, true)
+	self.In.Slot = 1
+	self:Yield()
+	self:Expect(self:GoTo(GM.ShipSpot + Vector3(0, 200, 0), 40, 12), "출하 상자 앞")
+	self:Wait(0.2)
+	self:Expect(GM.Focus ~= nil and string.find(Hud.Cache["PromptText.Text"] or "", "작물 전부") ~= nil, "출하 안내 " .. tostring(Hud.Cache["PromptText.Text"]))
+	self:Press("Interact")
+	local Expected = 3 * 35 + 105 + 2 * 55
+	self:Expect(GM:CountItem("Crop:EyeRadish:0") == 0 and GM:PendingShipValue() == Expected, "출하 값 " .. GM:PendingShipValue())
+	-- 고른 묶음만: 작물 칸을 고르고 넣기
+	GM:Give("Crop:TentacleLeek:0", 4, true)
+	GM:Give("Crop:EyeRadish:2", 1, true)
+	for I = 1, 9 do
+		if GM.Bag[I] and GM.Bag[I].Key == "Crop:TentacleLeek:0" then self.In.Slot = I end
+	end
+	self:Yield()
+	self:Wait(0.1)
+	self:Press("Interact")
+	self:Expect(GM:CountItem("Crop:TentacleLeek:0") == 0 and GM:CountItem("Crop:EyeRadish:2") == 1, "고른 묶음만 출하")
+	Expected = Expected + 4 * 30
+	-- 아침 정산 (월 → 화)
+	self:NextMorning()
+	self:Expect(GM.Gold == 300 + Expected, string.format("아침 정산 %d (기대 %d)", GM.Gold, 300 + Expected))
+	self:Expect(string.find(Hud.Cache["BannerSub.Text"] or "", "출하 수입") ~= nil, "정산 알림 " .. tostring(Hud.Cache["BannerSub.Text"]))
+	-- 보부상: 화요일엔 없다 → 수요일 아침에 온다
+	self:Expect(not GM:IsMerchantHere() and not GM.MerchantSprites[1].Visible, "화요일 보부상 없음")
+	self:NextMorning()
+	self:Wait(0.2)
+	self:Expect(GM:Weekday() == 2 and GM:IsMerchantHere() and GM.MerchantSprites[1].Visible, "수요일 보부상 옴")
+	self:Expect(string.find(Hud.Cache["BannerSub.Text"] or "", "보부상") ~= nil, "보부상 알림")
+	local SpringSeeds, Fert = 0, false
+	for _, E in ipairs(GM.Stock) do
+		local Info = GM:ItemInfo(E.Key)
+		if Info.Kind == "Seed" and Info.Rarity == 0 then
+			SpringSeeds = SpringSeeds + 1
+			self:Expect(Info.Crop.Season == "Spring", "봄 씨앗만 " .. E.Key)
+		end
+		if E.Key == "FertBasic" then Fert = true end
+	end
+	self:Expect(SpringSeeds == 5 and Fert and #GM.Stock == 5 + 1 + 3, string.format("재고 %d줄 (봄 씨앗 %d)", #GM.Stock, SpringSeeds))
+	-- 거래: 천막 앞 → 상점 창 → 뇌양배추 씨앗 사기
+	self:Expect(self:GoTo(GM.MerchantSpot + Vector3(-60, -170, 0), 40, 20), "보부상 앞")
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(GM.Menu == "Shop" and Game.GetTimeScale() == 0, "상점 창 (시간 멈춤)")
+	local Target
+	for I, E in ipairs(GM.Stock) do if E.Key == "Seed:BrainCabbage:0" then Target = I end end
+	while GM.MenuIndex < Target do self:Press("MenuDown") end
+	local Gold0, Stock0 = GM.Gold, GM.Stock[Target].Stock
+	self:Press("Confirm")
+	self:Expect(GM.Gold == Gold0 - 25 and GM.Stock[Target].Stock == Stock0 - 1 and GM:CountItem("Seed:BrainCabbage:0") == 1, "사기 25골드")
+	-- 돈 부족
+	local Saved = GM.Gold
+	GM.Gold = 10
+	self:Press("Confirm")
+	self:Expect(GM:CountItem("Seed:BrainCabbage:0") == 1 and Hud.LastToast == "돈이 모자라다", "돈 부족 " .. tostring(Hud.LastToast))
+	GM.Gold = Saved
+	-- 품절
+	GM.Stock[Target].Stock = 1
+	self:Press("Confirm")
+	self:Press("Confirm")
+	self:Expect(GM.Stock[Target].Stock == 0 and Hud.LastToast == "다 팔렸다" and Hud.Cache["ShopStock" .. (Target - 1 - GM.MenuOffset) .. ".Text"] == "품절", "품절")
+	self:Press("Cancel")
+	self:Expect(GM.Menu == nil and Game.GetTimeScale() == 1, "상점 닫힘")
+	-- 저장/불러오기: 재고 그대로 (되살아나지 않음)
+	GM:SaveGame()
+	GM.Stock[Target].Stock = 9
+	GM:LoadGame()
+	self:Expect(GM.Stock[Target].Stock == 0 and GM.StockDay == GM:TotalDays(), "재고 저장")
+	-- 저녁이면 떠난다
+	GM:SetHour(18.2)
+	self:Wait(0.2)
+	self:Expect(not GM:IsMerchantHere() and not GM.MerchantSprites[1].Visible and GM.Focus == nil, "보부상 떠남")
+	-- 소지품 창: 1번 칸(괭이)을 10번 칸으로
+	self:Press("Inventory")
+	self:Expect(GM.Menu == "Bag", "소지품 창")
+	self:Press("Confirm")
+	self:Press("MenuDown") -- 한 줄 아래 = +9칸
+	self:Press("Confirm")
+	self:Expect(GM.Bag[1] == nil or GM.Bag[1].Key ~= "Hoe", "괭이 옮김")
+	self:Expect(GM.Bag[10] and GM.Bag[10].Key == "Hoe", "10번 칸 괭이")
+	self:Press("Inventory")
+	self:Expect(GM.Menu == nil, "소지품 닫힘")
+	self:Finish()
+end
+
+function AutoPilot:RunShopShot()
+	local GM, P = self.GM, self.Player
+	while GM:Weekday() ~= 2 do GM.Day = GM.Day + 1 end
+	GM:SetHour(9)
+	GM:Give("Crop:EyeRadish:1", 2, true)
+	self:Wait(0.3)
+	P:Teleport(GM.MerchantSpot + Vector3(-60, -170, P.entity:GetWorldPosition().Z))
+	GM:OpenShop()
+	GM.MenuIndex = 3
+	GM:RefreshMenu()
+	while true do self:Yield() end
+end
+
+function AutoPilot:RunBagShot()
+	local GM = self.GM
+	GM:Give("Crop:EyeRadish:0", 7, true)
+	GM:Give("Crop:EyeRadish:3", 1, true)
+	GM:Give("Seed:Mandrake:1", 2, true)
+	GM:Give("Crop:BrainCabbage:2", 3, true)
+	self:Wait(0.3)
+	GM:OpenBag()
+	GM.MenuIndex = 7
+	GM:RefreshMenu()
+	while true do self:Yield() end
 end
 
 function AutoPilot:RunTime()

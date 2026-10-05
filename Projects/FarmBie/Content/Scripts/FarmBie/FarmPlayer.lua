@@ -69,13 +69,35 @@ function FarmPlayer:GatherInput()
 	end
 	local MX, MY = Input.GetAction("Move")
 	local In = { Move = Vector3(MX, -MY, 0), Dodge = Input.WasActionPressed("Dodge"), Interact = Input.WasActionPressed("Interact"),
-	             UseTool = Input.WasActionPressed("UseTool"), Pause = Input.WasActionPressed("Pause") }
+	             UseTool = Input.WasActionPressed("UseTool"), Pause = Input.WasActionPressed("Pause"), Inventory = Input.WasActionPressed("Inventory") }
+	self:MenuNavigation(In, MX, MY)
 	for I = 1, 9 do
 		if Input.WasActionPressed("Slot" .. I) then In.Slot = I end
 	end
 	local Wheel = Input.GetAction("SlotScroll")
 	if Wheel and math.abs(Wheel) > 0.1 then In.SlotStep = Wheel > 0 and -1 or 1 end
 	return In
+end
+
+-- 창 입력: 이동 축을 누른 순간 + 누르고 있으면 반복(0.35초 뒤 0.11초마다) → MenuUp/Down/Left/Right, 확인/취소
+function FarmPlayer:MenuNavigation(In, MX, MY)
+	local UDt = Time.GetUnscaledDelta()
+	local DirY = MY > 0.5 and 1 or (MY < -0.5 and -1 or 0)
+	local DirX = MX > 0.5 and 1 or (MX < -0.5 and -1 or 0)
+	local Held = DirY * 3 + DirX
+	if Held ~= 0 and Held ~= self.MenuHeld then
+		self.MenuRepeat = 0.35
+		In.MenuUp, In.MenuDown, In.MenuLeft, In.MenuRight = DirY == 1, DirY == -1, DirX == -1, DirX == 1
+	elseif Held ~= 0 then
+		self.MenuRepeat = (self.MenuRepeat or 0) - UDt
+		if self.MenuRepeat <= 0 then
+			self.MenuRepeat = 0.11
+			In.MenuUp, In.MenuDown, In.MenuLeft, In.MenuRight = DirY == 1, DirY == -1, DirX == -1, DirX == 1
+		end
+	end
+	self.MenuHeld = Held
+	In.Confirm = In.Interact or In.UseTool
+	In.Cancel = In.Pause or In.Dodge
 end
 
 function FarmPlayer:OnUpdate(Dt)
@@ -91,6 +113,15 @@ function FarmPlayer:OnUpdate(Dt)
 		return
 	end
 	local GM = self.GM
+	if GM:IsMenuOpen() then
+		GM:MenuInput(In)
+		self:UpdateAnimation(Vector3(0, 0, 0))
+		return
+	end
+	if In.Inventory then
+		GM:OpenBag()
+		return
+	end
 	GM:UpdateInteract(Pos)
 	if In.Slot then GM:SelectSlot(In.Slot) end
 	if In.SlotStep then GM:SelectSlot(GM.Selected + In.SlotStep) end

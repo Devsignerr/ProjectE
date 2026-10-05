@@ -4,9 +4,11 @@
 --   Full: 씬을 세 번 연다 — 단계는 Game.SetPersistent("HD2D_AutoPhase")로 넘기고 실패 목록·확인 수·기대 상태도 Persistent로 잇는다.
 --     ① Main     : 타이틀(이어하기 없음) → 처음부터 → 시작 연출 → 인벤토리(탭) → 촌장(퀘스트 1) → 창 상자 → 장비 탭에서 창 → 대장장이 의뢰 → 상점(활·회복약)
 --                  → 리나 의뢰 → 야영지 상자(지팡이) → 회복약 → 종류별 전투(부스트 공격 포함) → 고양이 → 농부 의뢰 → 허수아비 사냥 → 농부 보고(부적 장비)
---                  → 리나 보고(목걸이) → 촌장 보고(퀘스트 2) → 대장장이 보고(판금 갑옷 장비) → 게시판 저장 → 맵 이동 트리거(같은 씬)
---     ② Travel   : 세션으로 도착(타이틀 없음, Spawn_Test 자리, 상태 일치) → 보스 → 보상 상자 → 촌장(퀘스트 완료) → 저장 → 같은 씬 다시 열기(세션 없음)
---     ③ Load     : 타이틀(이어하기 가능) → 이어하기 → 저장 상태와 일치·자리 → 결과
+--                  → 리나 보고(목걸이) → 촌장 보고(퀘스트 2) → 대장장이 보고(판금 갑옷 장비) → 메타(일시정지 각 화면·설정·지도·도감·기록·대장간 — HD2DMetaPilot)
+--                  → 게시판 저장(슬롯 2) → 맵 이동 트리거(같은 씬)
+--     ② Travel   : 세션으로 도착(타이틀 없음, Spawn_Test 자리, 상태 일치) → 보스 → 보상 상자 → 촌장(퀘스트 완료) → 저장(슬롯 2 덮어쓰기 확인)
+--                  → 예전 단일 슬롯 저장 만들기(슬롯 1 비움) → 같은 씬 다시 열기(세션 없음)
+--     ③ Load     : 예전 저장 → 슬롯 1 이전 → 타이틀(이어하기 가능) → 슬롯 창(빈 칸 막힘) → 슬롯 2 → 저장 상태와 일치·자리 → 결과
 --   Cave: 동굴 유적(_HD2DCaveAutoPlay.escene)에서 시작해 두 씬을 잇는다 — 단계 Persistent "HD2D_AutoPhase", 시나리오 "HD2D_AutoScenario"(마을 씬은 속성이 비어 있다)
 --     ① Run    : 타이틀 없이 시작 → (메인 퀘스트 4단계 상태로 꾸밈) → 입구 홀·갈림길·보물 단(수정 검)·복도·호수의 적 정리 → 구덩이 막힘 → 가시 함정 건너기
 --                → 보스 방(문 닫힘) → 수정 거미 여왕(패턴 3종 이상·2단계·잔상) → 문 열림·보상 상자·제단 상자(수정 부적) → 퀘스트 5단계 → 동굴 출구 트리거
@@ -17,6 +19,8 @@ local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
 
 local AutoPilot = {}
 AutoPilot.__index = AutoPilot
+-- 메타 시스템 확인·스크린샷 시나리오 (일시정지 메뉴·슬롯·설정·일지·지도·대장간·도감 — HD2DMetaPilot.lua)
+for Name, Fn in pairs(Script.Require("Scripts/Demo/HD2D/HD2DMetaPilot.lua")) do AutoPilot[Name] = Fn end
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
 
@@ -74,7 +78,7 @@ function AutoPilot:Step(UDt)
 	end
 	local In = self.In
 	In.Confirm = In.Confirm or In.Interact or In.Attack
-	In.Cancel = In.Cancel or In.Dash
+	In.Cancel = In.Cancel or In.Dash or In.Pause
 	return In
 end
 
@@ -161,6 +165,13 @@ function AutoPilot:Route(From, To)
 	return Points
 end
 
+-- 순간이동 자리의 바닥 높이 (위에서 아래로 레이캐스트 — 단·벼랑처럼 높이가 다른 곳에 지금 높이로 놓으면 지형 속에 끼어 떨어졌다)
+function AutoPilot:GroundZ(Target, FallbackZ)
+	local Hit = Physics.Raycast(Vector3(Target.X, Target.Y, FallbackZ + 1500), Vector3(0, 0, -1), 4000)
+	if Hit then return Hit.position.Z end
+	return FallbackZ - 60
+end
+
 -- 한 프레임 이동 입력 (막히면 옆으로 비켜 보고, 오래 막히면 순간이동)
 function AutoPilot:MoveToward(Target, Scale)
 	local Pos = self:Pos()
@@ -183,7 +194,7 @@ function AutoPilot:MoveToward(Target, Scale)
 	if (self.StuckTotal or 0) > 4.5 then
 		self:Note(string.format("막힘 → 순간이동 (%.0f, %.0f) — 막힌 자리 (%.0f, %.0f)", Target.X, Target.Y, Pos.X, Pos.Y))
 		self.Teleports = self.Teleports + 1
-		self.Player:Teleport(Vector3(Target.X, Target.Y, Pos.Z + 30))
+		self.Player:Teleport(Vector3(Target.X, Target.Y, self:GroundZ(Target, Pos.Z) + 90))
 		self.StuckTotal = 0
 		return
 	end
@@ -200,7 +211,8 @@ function AutoPilot:GoTo(Target, Radius, Timeout, Label)
 	local Nav0 = self.NavRoutes or 0
 	local Route = self:Route(self:Pos(), Target)
 	if self.Scenario == "Cave" and Label then
-		self:Note(string.format("길 %s: %d점 (%s)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path"))
+		local From = self:Pos()
+		self:Note(string.format("길 %s: %d점 (%s, 출발 %.0f, %.0f, %.0f)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path", From.X, From.Y, From.Z))
 	end
 	local Index = 1
 	self.StuckTotal, self.StuckClock, self.StuckFrom = 0, 0, nil
@@ -447,11 +459,7 @@ end
 
 function AutoPilot:SaveAtBoard()
 	local Board = self:FindProp("SavePoint")
-	local Saves = self.GM.Report.Saves
-	self:InteractAt(Board.Pos, "게시판")
-	self:TalkThrough()
-	self:Wait(0.2)
-	return self:Expect(self.GM.Report.Saves == Saves + 1 and SaveGame.Exists(D.Balance().SaveSlot), "게시판 저장")
+	return self:SaveAtBoardSlot(2) -- 슬롯 창 (HD2DMetaPilot)
 end
 
 function AutoPilot:Idle()
@@ -475,6 +483,7 @@ function AutoPilot:RunFullMain()
 	local GM, P = self.GM, self.Player
 	-- 타이틀 (처음 실행: 이어하기 없음) → 처음부터 → 시작 연출
 	SaveGame.Delete(D.Balance().SaveSlot)
+	self:MetaResetSaves() -- 슬롯 1~3도
 	self:WaitUntil(function() return GM.Menu == "Title" end, 5)
 	self:Wait(0.5)
 	self:Expect(GM.Menu == "Title" and Game.GetTimeScale() == 0, "타이틀 화면 + 시간 정지")
@@ -542,6 +551,7 @@ function AutoPilot:RunFullMain()
 	self:TalkToNpc("Girl")
 	self:TalkThrough()
 	self:Expect(GM:SubState("Cat") == "Active", "서브 퀘스트 받음: 고양이")
+	self:MetaTrackCheck("Cat")
 	self:OpenChestAt(3)
 	self:Expect(GM:Count("Staff") == 1, "지팡이 획득")
 	-- 회복약 (인벤토리 도구 탭에서)
@@ -610,6 +620,7 @@ function AutoPilot:RunFullMain()
 	self:Expect(#GM:BuildRows() == 4, "퀘스트 탭 (메인 + 서브 3)")
 	self:Press("Inventory")
 	self:Wait(0.2)
+	self:MetaChecksMain()
 
 	-- 게시판 저장 → 기대 상태 기록 → 맵 이동 트리거 (같은 씬)
 	self:SaveAtBoard()
@@ -689,6 +700,7 @@ function AutoPilot:RunFullTravel()
 	local Board = self:FindProp("SavePoint")
 	Game.SetPersistent("HD2D_AutoExpect", GM:StateSignature())
 	Game.SetPersistent("HD2D_AutoPos", Board.Pos)
+	self:MetaPrepareMigration(2)
 	self:HandOff("Load")
 	Game.OpenScene(Game.GetCurrentScene())
 	self:Idle()
@@ -700,8 +712,7 @@ function AutoPilot:RunFullLoad()
 	self:WaitUntil(function() return GM.Menu == "Title" end, 5)
 	self:Wait(0.4)
 	self:Expect(GM.Menu == "Title" and GM.bCanContinue, "다시 연 씬: 타이틀 + 이어하기 가능")
-	self:TitleChoose(2)
-	self:Wait(0.5)
+	self:MetaLoadChecks(2) -- 예전 저장 이전 확인 → 이어하기 슬롯 창 → 슬롯 2
 	local Expect = Game.GetPersistent("HD2D_AutoExpect", "")
 	local Now = GM:StateSignature()
 	if not self:Expect(Now == Expect, "이어하기 = 저장 상태") then
@@ -888,6 +899,7 @@ function AutoPilot:RunCaveRun()
 	self:Expect(GM:Count("CrystalCharm") == 1, "수정 부적 획득 (제단 옆 상자)")
 	self:EquipFromMenu("CrystalCharm")
 	self:Expect(GM.Report.Chests == 4, "동굴 상자 4개 (보물 3 + 보상)")
+	self:MetaCaveChecks() -- 동굴 지도·미니맵 (앞 구간 길찾기 타이밍을 바꾸지 않게 보스 뒤에)
 
 	-- 6 출구로: 함정을 다시 건너 입구 홀 서쪽 이동 트리거 → 메인 맵
 	self:CrossTraps(-1)

@@ -54551,6 +54551,42 @@
     },
     {
       "Components": {
+        "UIComponent": {
+          "Asset": "UI/Demo/HD2D/Meta.eui",
+          "ZOrder": 1,
+          "Visible": true,
+          "ReceiveInput": true,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/HD2D/HD2DMetaHud.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"Map\": \"Village\", \"MapImage\": \"UI/Demo/HD2D/Maps/Village.png\", \"MapBounds\": \"-4500,-2050,5500,1450\", \"MapTitle\": \"하르트 마을과 황혼의 들판\", \"Landmarks\": \"하르트 마을,-2450,-420,Place;연못,2500,-1050,Place;야영지,1300,1020,Place;방앗간,3950,-1180,Place;밀밭,4760,-760,Place;수호자의 언덕,4950,760,Place;동굴 유적,330,-1800,Exit;갈매기 항구,440,1180,Exit\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "MetaUI",
+      "Parent": -1
+    },
+    {
+      "Components": {
         "NavMeshComponent": {
           "AgentRadius": 35.0,
           "AgentHeight": 150.0,
@@ -54676,7 +54712,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 1932
+          "Root": 1933
         },
         "TransformComponent": {
           "Position": [

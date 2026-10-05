@@ -1,0 +1,196 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/Upgrade.estruct",
+  "Rows": [
+    {
+      "Name": "Sword_1",
+      "Values": {
+        "Weapon": "Sword",
+        "Level": 1,
+        "Damage": 3.0,
+        "Gold": 30,
+        "Materials": [
+          "Jelly*1"
+        ]
+      }
+    },
+    {
+      "Name": "Sword_2",
+      "Values": {
+        "Weapon": "Sword",
+        "Level": 2,
+        "Damage": 6.0,
+        "Gold": 80,
+        "Materials": [
+          "GoblinFang*2",
+          "OldBone*1"
+        ]
+      }
+    },
+    {
+      "Name": "Sword_3",
+      "Values": {
+        "Weapon": "Sword",
+        "Level": 3,
+        "Damage": 10.0,
+        "Gold": 160,
+        "Materials": [
+          "CrystalShard*2",
+          "GolemCore*1"
+        ]
+      }
+    },
+    {
+      "Name": "Spear_1",
+      "Values": {
+        "Weapon": "Spear",
+        "Level": 1,
+        "Damage": 4.0,
+        "Gold": 40,
+        "Materials": [
+          "GoblinFang*1",
+          "Jelly*1"
+        ]
+      }
+    },
+    {
+      "Name": "Spear_2",
+      "Values": {
+        "Weapon": "Spear",
+        "Level": 2,
+        "Damage": 10.0,
+        "Gold": 90,
+        "Materials": [
+          "GoblinFang*2",
+          "OldBone*2"
+        ]
+      }
+    },
+    {
+      "Name": "Spear_3",
+      "Values": {
+        "Weapon": "Spear",
+        "Level": 3,
+        "Damage": 16.0,
+        "Gold": 180,
+        "Materials": [
+          "CrystalShard*2",
+          "GolemCore*1"
+        ]
+      }
+    },
+    {
+      "Name": "Bow_1",
+      "Values": {
+        "Weapon": "Bow",
+        "Level": 1,
+        "Damage": 3.0,
+        "Gold": 35,
+        "Materials": [
+          "BatWing*2"
+        ]
+      }
+    },
+    {
+      "Name": "Bow_2",
+      "Values": {
+        "Weapon": "Bow",
+        "Level": 2,
+        "Damage": 6.0,
+        "Gold": 85,
+        "Materials": [
+          "BatWing*2",
+          "OldBone*2"
+        ]
+      }
+    },
+    {
+      "Name": "Bow_3",
+      "Values": {
+        "Weapon": "Bow",
+        "Level": 3,
+        "Damage": 10.0,
+        "Gold": 170,
+        "Materials": [
+          "CrystalShard*3"
+        ]
+      }
+    },
+    {
+      "Name": "Staff_1",
+      "Values": {
+        "Weapon": "Staff",
+        "Level": 1,
+        "Damage": 6.0,
+        "Gold": 40,
+        "Materials": [
+          "Spore*2"
+        ]
+      }
+    },
+    {
+      "Name": "Staff_2",
+      "Values": {
+        "Weapon": "Staff",
+        "Level": 2,
+        "Damage": 13.0,
+        "Gold": 90,
+        "Materials": [
+          "Spore*2",
+          "BatWing*2"
+        ]
+      }
+    },
+    {
+      "Name": "Staff_3",
+      "Values": {
+        "Weapon": "Staff",
+        "Level": 3,
+        "Damage": 21.0,
+        "Gold": 200,
+        "Materials": [
+          "CrystalShard*3",
+          "GolemCore*1"
+        ]
+      }
+    },
+    {
+      "Name": "CrystalSword_1",
+      "Values": {
+        "Weapon": "CrystalSword",
+        "Level": 1,
+        "Damage": 4.0,
+        "Gold": 80,
+        "Materials": [
+          "CrystalShard*2"
+        ]
+      }
+    },
+    {
+      "Name": "CrystalSword_2",
+      "Values": {
+        "Weapon": "CrystalSword",
+        "Level": 2,
+        "Damage": 9.0,
+        "Gold": 150,
+        "Materials": [
+          "CrystalShard*3",
+          "OldBone*2"
+        ]
+      }
+    },
+    {
+      "Name": "CrystalSword_3",
+      "Values": {
+        "Weapon": "CrystalSword",
+        "Level": 3,
+        "Damage": 16.0,
+        "Gold": 260,
+        "Materials": [
+          "CrystalShard*4",
+          "GolemCore*1"
+        ]
+      }
+    }
+  ]
+}

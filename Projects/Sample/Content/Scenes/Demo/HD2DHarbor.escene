@@ -35705,6 +35705,42 @@
     },
     {
       "Components": {
+        "UIComponent": {
+          "Asset": "UI/Demo/HD2D/Meta.eui",
+          "ZOrder": 1,
+          "Visible": true,
+          "ReceiveInput": true,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/HD2D/HD2DMetaHud.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"Map\": \"Harbor\", \"MapImage\": \"UI/Demo/HD2D/Maps/Harbor.png\", \"MapBounds\": \"-4500,-2050,5500,1450\", \"MapTitle\": \"갈매기 항구와 해안 절벽 길\", \"Landmarks\": \"갈매기 여관,-2050,-1300,Place;어시장,-2000,-60,Place;항만 사무소,-820,-1300,Place;등대,1210,1120,Place;해적 야영지,2850,-700,Place;해적 후미,4600,200,Place;하르트 마을로,-3650,-1730,Exit\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "MetaUI",
+      "Parent": -1
+    },
+    {
+      "Components": {
         "NavMeshComponent": {
           "AgentRadius": 35.0,
           "AgentHeight": 150.0,
@@ -35867,7 +35903,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 1230
+          "Root": 1231
         },
         "TransformComponent": {
           "Position": [

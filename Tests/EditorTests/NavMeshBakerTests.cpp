@@ -71,3 +71,27 @@ E_TEST(NavMeshBaker_AppendTerrainGrid)
 	E_EXPECT_NEAR(Input.Vertices[1].Z, 50.0f, 0.02f); // 평평한 곳 ≈ 위치 Z (32768 = 범위 가운데에서 반 단계 위)
 	E_EXPECT_NEAR(Input.Vertices[1].X, 100.0f - 200.0f, 1.0e-3f);
 }
+
+// 콜라이더 상자 → 닫힌 상자 12삼각형: 면마다 법선이 상자 가운데에서 바깥을 향하고, 윗면 둘은 위를 향한다 (걸을 수 있는 면)
+E_TEST(NavMeshBaker_AppendBoxFacesOutward)
+{
+	FNavMeshBuildInput Input;
+	const FMatrix4x4   World = FMatrix4x4::MakeScale(FVector3(2.0f, 1.0f, 1.0f)) * FMatrix4x4::MakeTranslation(FVector3(100.0f, 0.0f, 0.0f));
+	FNavMeshBaker::AppendBox(FVector3(0.0f, 0.0f, 50.0f), FVector3(10.0f, 20.0f, 50.0f), World, Input);
+	E_EXPECT_EQ(Input.Vertices.size(), 8u);
+	E_EXPECT_EQ(Input.Indices.size(), 36u);
+	const FVector3 Center(100.0f, 0.0f, 50.0f);
+	uint32         UpFacing = 0;
+	for (size_t Index = 0; Index + 2 < Input.Indices.size(); Index += 3)
+	{
+		const FVector3& P0     = Input.Vertices[Input.Indices[Index]];
+		const FVector3& P1     = Input.Vertices[Input.Indices[Index + 1]];
+		const FVector3& P2     = Input.Vertices[Input.Indices[Index + 2]];
+		const FVector3  Normal = FVector3::Cross(P1 - P0, P2 - P0);
+		const FVector3  Mid    = (P0 + P1 + P2) * (1.0f / 3.0f);
+		E_EXPECT_TRUE(FVector3::Dot(Normal, Mid - Center) > 0.0f);
+		UpFacing += Normal.Z > 0.0f && Mid.Z > 99.0f ? 1u : 0u;
+	}
+	E_EXPECT_EQ(UpFacing, 2u);
+	E_EXPECT_NEAR(Input.Vertices[7].X, 120.0f, 1.0e-3f); // 반 크기 10 × 스케일 2
+}

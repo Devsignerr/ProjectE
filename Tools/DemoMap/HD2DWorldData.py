@@ -115,6 +115,32 @@ def ExtendTables(G):
 	])
 
 
+# ================================================================ 메타 시스템(lane-c HD2DMetaGen) 표에 항구 행 덧붙이기 — 기존 행 순서 뒤 (여러 번 불러도 한 번만)
+def ExtendMeta():
+	import HD2DMetaArt
+	import HD2DMetaGen
+	import HD2DWorldArt as WA
+	Known = {Row[0] for Row in HD2DMetaGen.BESTIARY}
+	for Kind, Habitat, Desc, Draw in (
+			("Crab", "해안 절벽 길", "바위틈에 사는 붉은 게. 집게를 치켜들었다가 옆걸음으로 돌진해 꼬집는다. 구워 먹으면 맛있다는 소문.", lambda: WA.DrawCrab("Idle", 0)),
+			("Seagull", "해안 절벽 길", "생선 냄새에 사나워진 갈매기. 머리 위를 맴돌다 부리로 내리꽂는다.", lambda: WA.DrawSeagull("Idle", 0)),
+			("Pirate", "해적 야영지", "바렌 선장을 따르는 해적 졸개. 칼을 치켜들었다가 단숨에 베어 들어온다.", lambda: WA.DrawPirate("Idle", 0)),
+			("Ghost", "밤의 절벽 길", "밤바다에서 길을 잃은 혼. 해가 지면 절벽 길을 떠돌다 해가 뜨면 사라진다.", lambda: WA.DrawGhost("Idle", 0)),
+			("PirateCaptain", "해적 후미", "갈매기 항구를 노리는 해적 선장 바렌. 칼 돌진·권총·화약통을 쓰고, 화나면 앞바다 배에서 포격을 부른다.",
+			 lambda: WA.DrawCaptain("Idle", 0))):
+		HD2DMetaArt.PICTURES.setdefault(Kind, Draw)
+		if Kind not in Known:
+			HD2DMetaGen.BESTIARY.append((Kind, Habitat, Desc))
+	Journal = {Row[0] for Row in HD2DMetaGen.QUEST_JOURNAL}
+	for Key, Row in (
+			("Sub_Lighthouse", {"Title": "꺼진 등대", "Summary": "", "Objective": "해적 야영지에서 등대 렌즈를 찾자", "Report": "등대지기 노아에게 렌즈를 돌려주자"}),
+			("Sub_Pirates", {"Title": "해적 소탕", "Summary": "", "Objective": "동쪽 절벽 길의 해적·마물을 쓰러뜨리자", "Report": "어부 토마에게 보고하자"}),
+			("Sub_Captain", {"Title": "해적 선장", "Summary": "", "Objective": "동쪽 후미의 해적 선장 바렌을 쓰러뜨리자", "Report": "항만장 마르타에게 보고하자"})):
+		if Key not in Journal:
+			HD2DMetaGen.QUEST_JOURNAL.append((Key, Row))
+	# 재료 드랍(MaterialDrops)은 넣지 않는다 — 항구 적은 골드·회복약만 (행이 없으면 드랍 없음)
+
+
 # ================================================================ 새 표 (지역·낮밤)
 REGIONS = [
 	("Village", {"DisplayName": "하르트 마을", "Subtitle": "황혼의 들판 어귀", "DayNight": True,

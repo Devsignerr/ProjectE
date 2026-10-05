@@ -2,7 +2,8 @@
 --   맡는 것: 적 자리(소환·부활)·보스, 보물상자·마을 사람·소품(프리팹으로 만들고 상호작용), 효과 조각·투사체·줍는 것·독 웅덩이
 --            (스크립트 없는 FxSprite 프리팹 조각 — 만든 직후 콜백에서 모양을 정하고 여기서 움직이고 지운다), 화면 흔들림, 자동 검증 결과 판정.
 --   확장 모듈(메서드를 이 클래스에 붙인다): HD2DParty.lua = 일행·장비·퀘스트·서브 퀘스트·저장/불러오기·맵 이동 세션,
---            HD2DMenu.lua = 타이틀·대화·인벤토리(탭)·상점 메뉴·엔딩, HD2DDungeon.lua = 던전 장치(가시 함정·보스 방 문·수정 가시 분출).
+--            HD2DMenu.lua = 타이틀·대화·인벤토리(탭)·상점 메뉴·엔딩, HD2DDungeon.lua = 던전 장치(가시 함정·보스 방 문·수정 가시 분출),
+--            메타 시스템: HD2DMeta.lua(설정·기록·도감·재료·강화 값·저장 슬롯·퀘스트 추적), HD2DPause.lua(일시정지 메뉴·지도·슬롯·확인 창), HD2DCrafting.lua(대장간).
 --   보스: 맵마다 BossKind(골렘 = HD2DBoss.lua, 수정 거미 여왕 = HD2DSpiderQueen.lua). 처치 여부는 맵별(IsBossDefeated), 퀘스트 단계의 BossGoal이
 --            이 맵이면 다음 단계로. 자동 검증이 맵을 건너가면(동굴 → 마을) 시나리오를 Persistent "HD2D_AutoScenario"로 넘긴다.
 --   시작 순서: 맵 이동으로 왔으면 세션을 불러와 Spawn_<이름>에 플레이어를 둔다 → 아니면 Title 속성이 켜진 맵은 타이틀 화면 → 처음부터(시작 연출)/이어하기.
@@ -35,7 +36,9 @@ local HD2DGame = {
 		RespawnMinDistance = 900.0,
 	},
 }
-for _, Module in ipairs({ "Scripts/Demo/HD2D/HD2DParty.lua", "Scripts/Demo/HD2D/HD2DMenu.lua", "Scripts/Demo/HD2D/HD2DDungeon.lua", "Scripts/Demo/HD2D/HD2DWorld.lua" }) do
+for _, Module in ipairs({ "Scripts/Demo/HD2D/HD2DParty.lua", "Scripts/Demo/HD2D/HD2DMenu.lua", "Scripts/Demo/HD2D/HD2DDungeon.lua",
+                         "Scripts/Demo/HD2D/HD2DMeta.lua", "Scripts/Demo/HD2D/HD2DPause.lua", "Scripts/Demo/HD2D/HD2DCrafting.lua",
+                         "Scripts/Demo/HD2D/HD2DWorld.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do HD2DGame[Name] = Fn end
 end
 
@@ -82,9 +85,10 @@ function HD2DGame:OnStart()
 	if self.Properties.AutoPlay == "" then
 		self.Properties.AutoPlay = Game.GetPersistent("HD2D_AutoScenario", "")
 	end
-	self.Menu = nil        -- nil | "Title" | "Dialog" | "Inventory" | "Shop" | "Travel"
+	self.Menu = nil        -- nil | "Title" | "Dialog" | "Inventory" | "Shop" | "Travel" | "Ending" | "Pause" | "Slots" | "Confirm" | "Forge" | "Leaving"
 	self.Mode = "Play"     -- Title | Intro | Play | Travel
 	self:InitParty()
+	self:InitMeta()
 	local bSession = self:TryResumeSession()
 
 	for Item in string.gmatch(self.Properties.Enemies, "[^;]+") do
@@ -178,6 +182,7 @@ function HD2DGame:OnEnemyKilled(S)
 	-- 전리품: 골드 동전 몇 개 + 확률 아이템 (+ 대장간 의뢰 중이면 슬라임 젤리)
 	local Gold = Row.GoldMin + math.floor(self:Random() * (Row.GoldMax - Row.GoldMin + 1))
 	local Ground = Vector3(Pos.X, Pos.Y, Pos.Z + S.Foot + 2)
+	self:OnMetaEnemyKilled(S, Ground) -- 도감·기록·재료 드랍 (메타 난수열)
 	self:DropLoot(Ground, Gold, (Row.DropItem ~= "" and self:Random() < Row.DropChance) and Row.DropItem or nil, S.bBoss and 8 or 3)
 	if S.Kind == "Slime" and self:SubState("Smith") == "Active" and self:Count("Jelly") + self:PendingPickups("Jelly") < D.SubQuest("Smith").Count
 		and self:Random() < 0.85 then
@@ -466,11 +471,8 @@ function HD2DGame:Interact()
 			function() self:OnSubQuestChanged() end)
 		self:OnSubQuestChanged()
 	elseif T.Id == "SavePoint" then
-		self:StartDialog("", { "||낡은 게시판에 지금까지의 모험을 적어 두었다." }, function()
-			if self:SaveGame() then
-				self:Hud():Toast("UI/Demo/HD2D/Icons/Coin.png", "기록했다")
-				self:SpawnHealFx(self:GetPlayer().entity:GetWorldPosition(), { 1, 0.9, 0.6, 1 })
-			end
+		self:StartDialog("", { "||낡은 게시판에 지금까지의 모험을 적어 두려 한다." }, function()
+			self:OpenSlots("Save") -- 슬롯 고르기 → 기록 (HD2DPause.lua)
 		end)
 	end
 	return true
@@ -619,6 +621,7 @@ function HD2DGame:SpawnHealFx(Pos, Color)
 end
 
 function HD2DGame:DamageNumber(Pos, Text, Color, Scale)
+	if self.Settings and not self.Settings.Numbers then return end -- 설정: 피해·회복 숫자 숨김
 	local H = self:Hud()
 	if H then H:ShowDamage(Pos, Text, Color, Scale) end
 end
@@ -845,7 +848,7 @@ function HD2DGame:AddShake(Amount, Time)
 end
 
 function HD2DGame:GetShakeOffset()
-	if self.ShakeTime <= 0 then return Vector3(0, 0, 0) end
+	if self.ShakeTime <= 0 or (self.Settings and not self.Settings.Shake) then return Vector3(0, 0, 0) end -- 설정: 화면 흔들림 끔
 	local A = self.Shake * math.min(1.0, self.ShakeTime / 0.15)
 	return Vector3(math.sin(self.Time * 91.0) * A, 0, math.cos(self.Time * 73.0) * A)
 end
@@ -877,6 +880,7 @@ function HD2DGame:OnUpdate(Dt)
 	self:UpdateHazards(Dt)
 	self:UpdateSlots(Dt)
 	self:UpdateDungeon(Dt)
+	self:UpdateMeta(Dt)
 	self:UpdateWorld(Dt)
 end
 

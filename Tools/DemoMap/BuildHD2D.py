@@ -23,6 +23,7 @@ from BuildCampfire import Fbm, FlickerScript, PlainMaterial, Smoothstep, WriteFo
 import HD2DArt  # noqa: E402
 import HD2DEnvironment as Env  # noqa: E402
 import HD2DGameplay  # noqa: E402
+import HD2DMapArt  # noqa: E402
 import ModelBounds  # noqa: E402
 
 ROOT    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -92,6 +93,11 @@ HARBOR_GATE = (440.0, 1290.0)
 HARBOR_SPAWN = (420.0, 960.0)
 NOTICE_BOARD = (-2780.0, -800.0)
 EXTRA_FOLIAGE = []  # BuildScene이 채우는 추가 폴리지 (꽃·밀·긴 풀) — Main이 풀과 함께 쓴다
+# 지도 화면·미니맵 (HD2DMapArt — Main이 장면을 만든 뒤 그림을 쓴다): 놀이 영역 + 지명 (이름, X, Y, Place|Exit)
+MINIMAP = HD2DMapArt.Info("Village", (PLAY_MIN[0] - 100.0, PLAY_MIN[1] - 100.0, PLAY_MAX[0] + 100.0, PLAY_MAX[1] + 100.0), "하르트 마을과 황혼의 들판", [
+	("하르트 마을", -2450.0, -420.0, "Place"), ("연못", 2500.0, -1050.0, "Place"), ("야영지", 1300.0, 1020.0, "Place"),
+	("방앗간", 3950.0, -1180.0, "Place"), ("밀밭", 4760.0, -760.0, "Place"), ("수호자의 언덕", 4950.0, 760.0, "Place"),
+	("동굴 유적", 330.0, -1800.0, "Exit"), ("갈매기 항구", 440.0, 1180.0, "Exit")])
 
 
 def InRect(X, Y, Rect, Margin):
@@ -946,7 +952,8 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 			WinIndex += 1
 
 	# ---- 게임: 관리자·HUD(HD2DGameplay) + 카메라 + 플레이어
-	HD2DGameplay.AddGame(S, Height, PATH, AutoPlay, Title=None if AutoPlay else Start == PLAYER_START)  # 타이틀은 기본 씬에만 (시점 변형 제외)
+	HD2DGameplay.AddGame(S, Height, PATH, AutoPlay, Title=None if AutoPlay else Start == PLAYER_START,  # 타이틀은 기본 씬에만 (시점 변형 제외)
+						 Minimap=MINIMAP)
 	StartZ = Height(*Start) + HD2DGameplay.PLAYER_RADIUS + HD2DGameplay.PLAYER_HALF + 4.0
 	Forward = (0.0, -math.cos(math.radians(-CAMERA_PITCH)), -math.sin(math.radians(-CAMERA_PITCH)))
 	Focus = (Start[0], Start[1], StartZ - 85.0 + 70.0)
@@ -969,6 +976,23 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	return S, Grass, Dry
 
 
+def WriteMinimap(Sampler, Scene):
+	# 지도 그림: 지형 레이어(풀/흙길/자갈/이끼·바위) + 물(수면 아래) + 밀밭 + 나무(폴리지) + 건물(콜라이더) — HD2DMapArt
+	Cell = Sampler.Cell
+
+	def Classify(X, Y):
+		IX = np.clip(np.round((X + TERRAIN_SIZE * 0.5) / Cell).astype(int), 0, TERRAIN_RES - 1)
+		IY = np.clip(np.round((Y + TERRAIN_SIZE * 0.5) / Cell).astype(int), 0, TERRAIN_RES - 1)
+		H, W = Sampler.H[IY, IX], Sampler.Stack[IY, IX]
+		Layer = np.argmax(W, axis=-1)
+		Kind = np.choose(Layer, [HD2DMapArt.K_GRASS, HD2DMapArt.K_PATH, HD2DMapArt.K_PLAZA, HD2DMapArt.K_MOSS])
+		Kind = np.where((Kind == HD2DMapArt.K_GRASS) & (X > WHEAT[0]) & (X < WHEAT[2]) & (Y > WHEAT[1]) & (Y < WHEAT[3]), HD2DMapArt.K_FIELD, Kind)
+		return np.where(H < POND_LEVEL + 5.0, HD2DMapArt.K_WATER, Kind)
+
+	Trees = [(T[0], T[1], 95.0 * T[4]) for Type, Items in EXTRA_FOLIAGE if Type in (Env.TREE_TYPE, Env.TREE_AUTUMN_TYPE, Env.PINE_TYPE) for T in Items]
+	HD2DMapArt.WriteMinimap(CONTENT, MINIMAP, Classify, Scene, Sampler, Trees)
+
+
 def Main():
 	bViews = "--views" in sys.argv
 	HD2DArt.WriteAll(os.path.join(CONTENT, "Sprites", "HD2D"))
@@ -982,6 +1006,7 @@ def Main():
 	Env.WriteParticles(CONTENT, (PLAY_MAX[0] - PLAY_MIN[0] + 1600.0, PLAY_MAX[1] - PLAY_MIN[1] + 1400.0))
 	HD2DGameplay.WriteAll(CONTENT, CAMERA_DISTANCE, PLAY_MIN, PLAY_MAX)
 	Scene, Grass, Dry = BuildScene(Sampler)
+	WriteMinimap(Sampler, Scene)
 	WriteFoliage(os.path.join(CONTENT, "Foliage", "Demo", "HD2D.efoliage"), [(GRASS_TYPE, Grass), (GRASS_DRY_TYPE, Dry)] + EXTRA_FOLIAGE)
 	Scene.Save(os.path.join(CONTENT, "Scenes", "Demo", "HD2D.escene"))
 	print(f"HD2D 생성: 엔티티 {len(Scene.Entities)}개, 풀 {len(Grass) + len(Dry)}개, 지형 {TERRAIN_RES}² 높이 {H.min():.0f}~{H.max():.0f}cm")

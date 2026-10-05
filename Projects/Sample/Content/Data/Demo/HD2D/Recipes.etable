@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/Recipe.estruct",
+  "Rows": [
+    {
+      "Name": "Potion",
+      "Values": {
+        "Result": "Potion",
+        "Count": 1,
+        "Gold": 5,
+        "Materials": [
+          "Spore*1"
+        ]
+      }
+    },
+    {
+      "Name": "Ether",
+      "Values": {
+        "Result": "Ether",
+        "Count": 1,
+        "Gold": 8,
+        "Materials": [
+          "BatWing*1",
+          "Spore*1"
+        ]
+      }
+    },
+    {
+      "Name": "HiPotion",
+      "Values": {
+        "Result": "HiPotion",
+        "Count": 1,
+        "Gold": 15,
+        "Materials": [
+          "Jelly*2",
+          "Spore*2"
+        ]
+      }
+    },
+    {
+      "Name": "Elixir",
+      "Values": {
+        "Result": "Elixir",
+        "Count": 1,
+        "Gold": 60,
+        "Materials": [
+          "CrystalShard*2",
+          "HiPotion*1",
+          "Ether*1"
+        ]
+      }
+    }
+  ]
+}

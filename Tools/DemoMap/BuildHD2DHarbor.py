@@ -4,8 +4,9 @@
 #   + 가로등·창 불빛(낮밤 — HD2DWorld.lua가 켜고 끈다, 이름 Night_<n>/NightWin_<n>) + 플레이어/게임 관리자(HD2DGameplay)
 #   실행: python Tools/DemoMap/BuildHD2DHarbor.py [--views]   (머티리얼·파티클 일부는 BuildHD2D.py가 먼저 써 둔 HD2D 공용 것을 쓴다)
 #   --views: 확인용 변형(커밋하지 않음) — Scenes/Demo/_HD2DHarbor_<시점>.escene(시작 자리만 다름), _HD2DHarbor_Over<이름>.escene(흐림 끈 자유 시점),
-#            _HD2DHarborAutoPlay.escene(자동 검증), _HD2DHarborShot_<이름>.escene(스크린샷·측정), _HD2DHarborNavBake.escene(내비메시 굽기)
-#   --install-nav: 구운 _HD2DHarborNavBake.enav → Scenes/Demo/HD2DHarbor.enav (순서는 Docs/Rules/DataAndDemos.md HD2D 항구 항목)
+#            _HD2DHarborAutoPlay.escene(자동 검증), _HD2DHarborShot_<이름>.escene(스크린샷·측정)
+#   내비메시: 씬 그대로 굽는다 (엔진 굽기가 지형 + 정적 콜라이더를 넣는다 — 잔교·방파제 바닥 상자 포함)
+#     .\Scripts\Verify.ps1 -Target Editor -Config Release -Frames 30 -ExtraArgs "--scene Scenes/Demo/HD2DHarbor.escene --bake-navmesh" → 옆에 HD2DHarbor.enav
 #   게임: 자리·적 종류·상자·보스는 HD2DHarborLayout.py → HD2DGameplay.FMapLayout("Harbor") → AddGame (타이틀 없음 — 바로 플레이)
 #   규약: 메인 맵과 같은 고정 원근 디오라마 카메라(+Y 위에서 -Y를 봄, 피치 -28·시야각 24). 바다·잔교는 카메라 쪽(+Y, 낮음), 집은 안쪽(-Y).
 #         카메라 쪽 물체 높이는 앞 거리 × 0.5 아래로 (그보다 높으면 캐릭터를 가린다 — 등대는 520cm, 걷는 길과 X를 비킨다)
@@ -30,6 +31,7 @@ import HD2DArt  # noqa: E402
 import HD2DWorldArt  # noqa: E402
 import HD2DMeshKit as MK  # noqa: E402
 import HD2DHarborLayout as Layout  # noqa: E402
+import HD2DMapArt  # noqa: E402
 
 CONTENT = Main.CONTENT
 PH      = "Asset/PolyHaven"
@@ -756,9 +758,10 @@ def BuildScene(Height, Start=Layout.PLAYER_START, Overview=None, AutoPlay="", bG
 				   "Gulls": "-2100,-1900,760,520;700,-2050,820,600;-3600,420,430,320;2900,150,620,520",  # 지붕 너머·모래톱·절벽 위 (카메라 앞은 비운다 — 흐린 덩어리로 가렸다)
 				   "NightEnemies": ";".join(f"{K},{X:.0f},{Y:.0f},{Height(X, Y) + HD2DGameplay.ENEMY_CAPSULE[K][0] + HD2DGameplay.ENEMY_CAPSULE[K][1] + 4.0:.0f}"
 											for K, X, Y in Layout.NIGHT_ENEMIES)})
-		HD2DGameplay.AddGame(S, FStandHeight(Height), HARBOR_PATH, AutoPlay, Layout=Harbor, Title=False, NavMesh=NAV_ASSET)
+		HD2DGameplay.AddGame(S, FStandHeight(Height), HARBOR_PATH, AutoPlay, Layout=Harbor, Title=False, NavMesh=NAV_ASSET, Minimap=MINIMAP)
 	else:
-		HD2DGameplay.AddGame(S, Height, HARBOR_PATH, AutoPlay, Layout=HD2DGameplay.FMapLayout("Harbor", Props=[("SavePoint", -2700.0, -520.0)]), Title=False, NavMesh=None)
+		HD2DGameplay.AddGame(S, Height, HARBOR_PATH, AutoPlay, Layout=HD2DGameplay.FMapLayout("Harbor", Props=[("SavePoint", -2700.0, -520.0)]), Title=False, NavMesh=None,
+							 Minimap=MINIMAP)
 	Stand = FStandHeight(Height)
 	(TX, TY), Half = Layout.TRAVEL_HOME
 	HD2DGameplay.AddTravel(S, Height, "HartRoad_Travel", TX, TY, "Scenes/Demo/HD2D.escene", "Harbor", Half)
@@ -1176,25 +1179,36 @@ AUTO_SCENES = {
 }
 
 
-def NavBakeHeight(Height):
-	# 굽기용 바닥 판: 바다(물 상자 아래)는 비운다
-	def Sample(X, Y):
-		Z = Height(X, Y)
-		return Z if Z > SEA + 15.0 else -1.0e4
-	return Sample
+# 지도 화면·미니맵 (HD2DMapArt): 놀이 영역 + 지명 (이름, X, Y, Place|Exit)
+MINIMAP = HD2DMapArt.Info("Harbor", (Layout.PLAY_MIN[0] - 100.0, Layout.PLAY_MIN[1] - 100.0, Layout.PLAY_MAX[0] + 100.0, Layout.PLAY_MAX[1] + 100.0),
+						  "갈매기 항구와 해안 절벽 길", [
+	("갈매기 여관", -2050.0, -1300.0, "Place"), ("어시장", -2000.0, -60.0, "Place"), ("항만 사무소", -820.0, -1300.0, "Place"),
+	("등대", Layout.LIGHTHOUSE[0], Layout.LIGHTHOUSE[1], "Place"), ("해적 야영지", 2850.0, -700.0, "Place"), ("해적 후미", 4600.0, 200.0, "Place"),
+	("하르트 마을로", Layout.TRAVEL_HOME[0][0], Layout.TRAVEL_HOME[0][1] + 150.0, "Exit")])
 
 
-def InstallNav():
-	import shutil
-	Root = os.path.join(CONTENT, "Scenes", "Demo")
-	shutil.copyfile(os.path.join(Root, "_HD2DHarborNavBake.enav"), os.path.join(Root, "HD2DHarbor.enav"))
-	print("Scenes/Demo/HD2DHarbor.enav 설치")
+def WriteMinimap(Sampler, Scene, Foliage):
+	# 지도 그림: 지형 레이어(풀/모래/자갈/바위) + 바다(수면 아래) + 나무 + 건물(콜라이더) — 잔교·방파제는 자갈색으로 덧칠
+	Cell = Sampler.Cell
+
+	def Classify(X, Y):
+		IX = np.clip(np.round((X - TERRAIN_CENTER[0] + TERRAIN_SIZE * 0.5) / Cell).astype(int), 0, TERRAIN_RES - 1)
+		IY = np.clip(np.round((Y - TERRAIN_CENTER[1] + TERRAIN_SIZE * 0.5) / Cell).astype(int), 0, TERRAIN_RES - 1)
+		H, W = Sampler.H[IY, IX], Sampler.Stack[IY, IX]
+		Kind = np.choose(np.argmax(W, axis=-1), [HD2DMapArt.K_GRASS, HD2DMapArt.K_SAND, HD2DMapArt.K_PLAZA, HD2DMapArt.K_ROCK])
+		Kind = np.where(H < SEA + 2.0, HD2DMapArt.K_WATER, Kind)
+		PX, PEnd, PW = Layout.PIER
+		JX, _, JW = Layout.JETTY
+		LX, LY = Layout.LIGHTHOUSE
+		Deck = ((np.abs(X - PX) < PW * 0.5) & (Y > Layout.QUAY_Y) & (Y < PEnd)) | ((np.abs(X - JX) < JW * 0.5) & (Y > Layout.QUAY_Y) & (Y < LY))
+		Deck |= np.hypot(X - LX, Y - LY) < 280.0
+		return np.where(Deck, HD2DMapArt.K_PATH, Kind)
+
+	Trees = [(T[0], T[1], 95.0 * T[4]) for Type, Items in Foliage if Type in (Env.TREE_TYPE, Env.PINE_TYPE) for T in Items]
+	HD2DMapArt.WriteMinimap(CONTENT, MINIMAP, Classify, Scene, Sampler, Trees)
 
 
 def Main_():
-	if "--install-nav" in sys.argv:
-		InstallNav()
-		return
 	bGame = "--layout-only" not in sys.argv
 	X, Y, H, D = BuildHeights()
 	Weights, Stack = BuildWeights(X, Y, H, D)
@@ -1207,6 +1221,7 @@ def Main_():
 	HD2DGameplay.WriteAll(CONTENT, Main.CAMERA_DISTANCE, Main.PLAY_MIN, Main.PLAY_MAX)
 	Scene, Foliage = BuildScene(Sampler, bGame=bGame)
 	WriteFoliage(os.path.join(CONTENT, "Foliage", "Demo", "HD2DHarbor.efoliage"), Foliage)
+	WriteMinimap(Sampler, Scene, Foliage)
 	Scene.Save(os.path.join(CONTENT, *SCENE.split("/")))
 	print(f"HD2D 항구 생성: 엔티티 {len(Scene.Entities)}개, 풀 {sum(len(I) for _, I in Foliage)}개, 높이 {H.min():.0f}~{H.max():.0f}cm")
 	if "--views" in sys.argv:
@@ -1220,7 +1235,6 @@ def Main_():
 			for Name, (Start, Scenario) in AUTO_SCENES.items():
 				Variant, _ = BuildScene(Sampler, Start, AutoPlay=Scenario)
 				Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", f"_HD2DHarbor{Name}.escene"))
-			HD2DGameplay.WriteNavBake(CONTENT, Scene, NavBakeHeight(Sampler), Layout.PLAY_MIN, Layout.PLAY_MAX, HARBOR_PATH, "_HD2DHarborNavBake", 50.0)
 		print("확인용 변형: Scenes/Demo/_HD2DHarbor_*.escene, _HD2DHarborAutoPlay.escene, _HD2DHarborShot_*.escene (커밋하지 않음)")
 
 

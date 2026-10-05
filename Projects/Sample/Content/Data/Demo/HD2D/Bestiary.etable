@@ -1,0 +1,146 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/BestiaryEntry.estruct",
+  "Rows": [
+    {
+      "Name": "Slime",
+      "Values": {
+        "Habitat": "하르트 들판",
+        "Description": "들판 어디서나 볼 수 있는 말랑한 마물. 깡충 뛰어 몸으로 부딪친다. 떨어뜨리는 젤리는 대장장이가 반긴다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Slime.png",
+        "PictureW": 144,
+        "PictureH": 112
+      }
+    },
+    {
+      "Name": "Bat",
+      "Values": {
+        "Habitat": "들판 숲 그늘",
+        "Description": "해 질 녘이면 날아오르는 박쥐. 높이 떠 있다가 급강하하며 침을 뱉는다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Bat.png",
+        "PictureW": 135,
+        "PictureH": 65
+      }
+    },
+    {
+      "Name": "Goblin",
+      "Values": {
+        "Habitat": "들판 동쪽",
+        "Description": "떠돌이 도적 고블린. 몸을 웅크렸다가 단숨에 돌진한다. 웅크리면 옆으로 비켜서자.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Goblin.png",
+        "PictureW": 95,
+        "PictureH": 130
+      }
+    },
+    {
+      "Name": "Archer",
+      "Values": {
+        "Habitat": "옛 성채 터",
+        "Description": "성채 터를 지키던 병사의 해골. 거리를 두고 활을 당긴다. 시위를 당기는 틈을 노리자.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Archer.png",
+        "PictureW": 60,
+        "PictureH": 124
+      }
+    },
+    {
+      "Name": "Mushroom",
+      "Values": {
+        "Habitat": "연못가·밀밭",
+        "Description": "느릿느릿 걷는 독버섯. 보랏빛 포자를 뿜어 땅에 독 웅덩이를 남긴다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Mushroom.png",
+        "PictureW": 144,
+        "PictureH": 144
+      }
+    },
+    {
+      "Name": "Golem",
+      "Values": {
+        "Habitat": "들판 동쪽 끝",
+        "Description": "들판을 지키던 고대의 바위 골렘. 땅을 내리치고 바위를 던진다. 바닥의 붉은 원을 조심하라.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Golem.png",
+        "PictureW": 118,
+        "PictureH": 110
+      }
+    },
+    {
+      "Name": "CaveBat",
+      "Values": {
+        "Habitat": "동굴 유적",
+        "Description": "동굴 깊은 곳에 사는 푸른 박쥐. 들판의 박쥐보다 빠르고 사납다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/CaveBat.png",
+        "PictureW": 135,
+        "PictureH": 65
+      }
+    },
+    {
+      "Name": "CrystalSlime",
+      "Values": {
+        "Habitat": "동굴 유적",
+        "Description": "수정을 머금어 단단해진 슬라임. 몸이 무거워 부딪히면 꽤 아프다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/CrystalSlime.png",
+        "PictureW": 144,
+        "PictureH": 112
+      }
+    },
+    {
+      "Name": "SpiderQueen",
+      "Values": {
+        "Habitat": "유적 깊은 곳",
+        "Description": "유적 깊은 곳에 둥지를 튼 거대한 거미. 거미줄을 쏘고 수정 가시를 솟게 하며 덮쳐 온다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/SpiderQueen.png",
+        "PictureW": 77,
+        "PictureH": 55
+      }
+    },
+    {
+      "Name": "Crab",
+      "Values": {
+        "Habitat": "해안 절벽 길",
+        "Description": "바위틈에 사는 붉은 게. 집게를 치켜들었다가 옆걸음으로 돌진해 꼬집는다. 구워 먹으면 맛있다는 소문.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Crab.png",
+        "PictureW": 140,
+        "PictureH": 95
+      }
+    },
+    {
+      "Name": "Seagull",
+      "Values": {
+        "Habitat": "해안 절벽 길",
+        "Description": "생선 냄새에 사나워진 갈매기. 머리 위를 맴돌다 부리로 내리꽂는다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Seagull.png",
+        "PictureW": 145,
+        "PictureH": 85
+      }
+    },
+    {
+      "Name": "Pirate",
+      "Values": {
+        "Habitat": "해적 야영지",
+        "Description": "바렌 선장을 따르는 해적 졸개. 칼을 치켜들었다가 단숨에 베어 들어온다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Pirate.png",
+        "PictureW": 100,
+        "PictureH": 150
+      }
+    },
+    {
+      "Name": "Ghost",
+      "Values": {
+        "Habitat": "밤의 절벽 길",
+        "Description": "밤바다에서 길을 잃은 혼. 해가 지면 절벽 길을 떠돌다 해가 뜨면 사라진다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Ghost.png",
+        "PictureW": 115,
+        "PictureH": 135
+      }
+    },
+    {
+      "Name": "PirateCaptain",
+      "Values": {
+        "Habitat": "해적 후미",
+        "Description": "갈매기 항구를 노리는 해적 선장 바렌. 칼 돌진·권총·화약통을 쓰고, 화나면 앞바다 배에서 포격을 부른다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/PirateCaptain.png",
+        "PictureW": 88,
+        "PictureH": 124
+      }
+    }
+  ]
+}

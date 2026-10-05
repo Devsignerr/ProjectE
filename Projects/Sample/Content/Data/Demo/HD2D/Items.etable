@@ -385,6 +385,102 @@
         "Description": "해적들이 떼어 간 등대의 큰 유리 렌즈. 등대지기 노아에게 돌려주자.",
         "Price": 0
       }
+    },
+    {
+      "Name": "BatWing",
+      "Values": {
+        "DisplayName": "박쥐 날개",
+        "Kind": "Material",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/BatWing.png",
+        "Description": "흡혈 박쥐의 얇은 날개막. 가볍고 질겨 물약을 달이거나 활을 손볼 때 쓴다.",
+        "Price": 0,
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "GoblinFang",
+      "Values": {
+        "DisplayName": "고블린 송곳니",
+        "Kind": "Material",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Fang.png",
+        "Description": "고블린 도적의 날카로운 송곳니. 대장간에서 창끝을 벼릴 때 쓴다.",
+        "Price": 0,
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "OldBone",
+      "Values": {
+        "DisplayName": "낡은 뼛조각",
+        "Kind": "Material",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Bone.png",
+        "Description": "해골 궁수가 남긴 뼛조각. 오래 묵어 쇠처럼 단단하다.",
+        "Price": 0,
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "Spore",
+      "Values": {
+        "DisplayName": "독버섯 포자",
+        "Kind": "Material",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Spore.png",
+        "Description": "독버섯이 뿜는 보랏빛 포자. 잘 달이면 약이 된다.",
+        "Price": 0,
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "CrystalShard",
+      "Values": {
+        "DisplayName": "수정 조각",
+        "Kind": "Material",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Shard.png",
+        "Description": "동굴 유적의 푸른 수정 조각. 마력을 머금어 은은히 빛난다.",
+        "Price": 0,
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "GolemCore",
+      "Values": {
+        "DisplayName": "골렘의 핵",
+        "Kind": "Material",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Core.png",
+        "Description": "바위 골렘의 가슴에서 빛나던 핵. 아직도 따뜻하다.",
+        "Price": 0,
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0
+      }
     }
   ]
 }

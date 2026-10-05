@@ -474,6 +474,61 @@
         "Weight": 2,
         "Season": "Any"
       }
+    },
+    {
+      "Name": "Arrow",
+      "Values": {
+        "Key": "Arrow",
+        "Price": 0,
+        "Stock": 30,
+        "Always": true,
+        "Weight": 0,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "Shell",
+      "Values": {
+        "Key": "Shell",
+        "Price": 0,
+        "Stock": 10,
+        "Always": false,
+        "Weight": 5,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "Sword",
+      "Values": {
+        "Key": "Sword",
+        "Price": 0,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 4,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "Bow",
+      "Values": {
+        "Key": "Bow",
+        "Price": 0,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 4,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "Shotgun",
+      "Values": {
+        "Key": "Shotgun",
+        "Price": 0,
+        "Stock": 1,
+        "Always": false,
+        "Weight": 2,
+        "Season": "Any"
+      }
     }
   ]
 }

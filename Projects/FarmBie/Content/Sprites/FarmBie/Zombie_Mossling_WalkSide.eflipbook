@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Zombie_Mossling.esprite",
+  "Fps": 7.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "WalkSide0"
+    },
+    {
+      "Slice": "WalkSide1"
+    },
+    {
+      "Slice": "WalkSide2"
+    },
+    {
+      "Slice": "WalkSide3"
+    }
+  ]
+}

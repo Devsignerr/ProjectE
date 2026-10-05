@@ -1,0 +1,17 @@
+{
+  "Version": 1,
+  "Sprite": "Zombie_Runner.esprite",
+  "Fps": 8.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "DieSide0"
+    },
+    {
+      "Slice": "DieSide1"
+    },
+    {
+      "Slice": "DieSide2"
+    }
+  ]
+}

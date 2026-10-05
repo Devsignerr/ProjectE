@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "Sprite": "Farmer.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "GunUp0",
+      "Duration": 0.15
+    },
+    {
+      "Slice": "GunUp1",
+      "Duration": 0.5
+    }
+  ]
+}

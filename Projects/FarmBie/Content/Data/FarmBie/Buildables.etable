@@ -99,6 +99,54 @@
       }
     },
     {
+      "Name": "SkullMine",
+      "Values": {
+        "DisplayName": "해골 지뢰",
+        "Kind": "Trap",
+        "Cost": "SkullMine*1",
+        "Hp": 1,
+        "Blocks": false,
+        "Solid": false,
+        "Damage": 160,
+        "Radius": 300,
+        "Cooldown": 0,
+        "Range": 0,
+        "Description": "제작한 해골 지뢰를 묻는다."
+      }
+    },
+    {
+      "Name": "ScreamMine",
+      "Values": {
+        "DisplayName": "비명 지뢰",
+        "Kind": "Trap",
+        "Cost": "ScreamMine*1",
+        "Hp": 1,
+        "Blocks": false,
+        "Solid": false,
+        "Damage": 120,
+        "Radius": 260,
+        "Cooldown": 0,
+        "Range": 0,
+        "Description": "제작한 비명 지뢰를 묻는다."
+      }
+    },
+    {
+      "Name": "FangSpike",
+      "Values": {
+        "DisplayName": "이빨 덫",
+        "Kind": "Trap",
+        "Cost": "FangSpike*1",
+        "Hp": 200,
+        "Blocks": false,
+        "Solid": false,
+        "Damage": 18,
+        "Radius": 60,
+        "Cooldown": 0.45,
+        "Range": 0,
+        "Description": "제작한 이빨 덫을 놓는다."
+      }
+    },
+    {
       "Name": "Turret",
       "Values": {
         "DisplayName": "쇠뇌 포탑",

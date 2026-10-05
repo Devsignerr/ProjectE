@@ -1,0 +1,108 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Weapon.estruct",
+  "Rows": [
+    {
+      "Name": "Hoe",
+      "Values": {
+        "Kind": "Melee",
+        "Damage": 6,
+        "Range": 110,
+        "Arc": 110,
+        "Cooldown": 0.42,
+        "Knockback": 300,
+        "Ammo": "",
+        "Shots": 1,
+        "Spread": 0,
+        "ShotSpeed": 0,
+        "Slice": "",
+        "Pose": "Hoe"
+      }
+    },
+    {
+      "Name": "Axe",
+      "Values": {
+        "Kind": "Melee",
+        "Damage": 11,
+        "Range": 115,
+        "Arc": 120,
+        "Cooldown": 0.42,
+        "Knockback": 420,
+        "Ammo": "",
+        "Shots": 1,
+        "Spread": 0,
+        "ShotSpeed": 0,
+        "Slice": "",
+        "Pose": "Axe"
+      }
+    },
+    {
+      "Name": "Pick",
+      "Values": {
+        "Kind": "Melee",
+        "Damage": 9,
+        "Range": 110,
+        "Arc": 100,
+        "Cooldown": 0.42,
+        "Knockback": 350,
+        "Ammo": "",
+        "Shots": 1,
+        "Spread": 0,
+        "ShotSpeed": 0,
+        "Slice": "",
+        "Pose": "Pick"
+      }
+    },
+    {
+      "Name": "Sword",
+      "Values": {
+        "Kind": "Melee",
+        "Damage": 20,
+        "Range": 140,
+        "Arc": 150,
+        "Cooldown": 0.34,
+        "Knockback": 520,
+        "Ammo": "",
+        "Shots": 1,
+        "Spread": 0,
+        "ShotSpeed": 0,
+        "Slice": "",
+        "Pose": "Sword"
+      }
+    },
+    {
+      "Name": "Bow",
+      "Values": {
+        "Kind": "Shot",
+        "Damage": 15,
+        "Range": 950,
+        "Arc": 0,
+        "Cooldown": 0.5,
+        "Knockback": 220,
+        "Ammo": "Arrow",
+        "Shots": 1,
+        "Spread": 0,
+        "ShotSpeed": 1700,
+        "Slice": "Arrow",
+        "Pose": "Bow"
+      }
+    },
+    {
+      "Name": "Shotgun",
+      "Values": {
+        "Kind": "Shot",
+        "Damage": 9,
+        "Range": 620,
+        "Arc": 0,
+        "Cooldown": 0.95,
+        "Knockback": 380,
+        "Ammo": "Shell",
+        "Shots": 5,
+        "Spread": 32,
+        "ShotSpeed": 1900,
+        "Slice": "Pellet",
+        "Pose": "Gun"
+      }
+    }
+  ]
+}

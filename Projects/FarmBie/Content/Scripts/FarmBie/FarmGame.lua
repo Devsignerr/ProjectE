@@ -18,11 +18,12 @@ local FarmGame = {
 }
 for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua", "Scripts/FarmBie/FarmInventory.lua", "Scripts/FarmBie/FarmField.lua",
                          "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua", "Scripts/FarmBie/FarmVitals.lua",
-                         "Scripts/FarmBie/FarmForage.lua", "Scripts/FarmBie/FarmBuild.lua" }) do
+                         "Scripts/FarmBie/FarmForage.lua", "Scripts/FarmBie/FarmBuild.lua",
+                         "Scripts/FarmBie/FarmDefense.lua", "Scripts/FarmBie/FarmCraft.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do FarmGame[Name] = Fn end
 end
 
-local SaveParts = { "Time", "Inventory", "Field", "Economy", "Vitals", "Forage", "Build" }
+local SaveParts = { "Time", "Inventory", "Field", "Economy", "Vitals", "Forage", "Build", "Defense" }
 local SessionSlot = "FarmBie_Session"
 local SaveVersion = 1
 
@@ -49,10 +50,16 @@ function FarmGame:OnStart()
 	if self.MapId == "Farm" then self:InitEconomy() else self.Economy = Script.Require("Scripts/FarmBie/FarmData.lua").Values("Economy.edata"); self.Gold = 0; self.Shipped = {}; self.Stock = {}; self.StockDay = -1 end
 	self:InitForage()
 	self:InitBuild()
+	self:InitDefense()
+	self:InitCraft()
 	self:AddInteractable({ Pos = self.SleepSpot, Radius = 170, Prompt = function()
-		if self.Phase == "Night" then return "E  잠자기 (하루를 마친다)" end
-		return nil
-	end, Act = function() self:BeginSleep("Bed") end })
+		if self.Phase ~= "Night" then return nil end
+		if self:IsNightCleared() then return "E  잠자기 (하루를 마친다)" end
+		return "좀비를 모두 물리쳐야 잘 수 있다"
+	end, Act = function()
+		if not self:IsNightCleared() then return end
+		if not self:OnNightEnd() then self:BeginSleep("Bed") end
+	end })
 	if self:TryResumeSession() then
 		-- 맵 이동으로 왔다 (상태는 세션에서)
 	elseif self.Properties.Slot == "Test" and Game.GetPersistent("FarmBie_AutoPhase", "") == "" then
@@ -63,6 +70,9 @@ function FarmGame:OnStart()
 		self:GiveStartGold()
 	end
 	if self.MapId == "Farm" and not self.Crystal then self:EnsureCrystal() end
+	self:SyncCropTiles()
+	if not self.TonightPlan then self:PlanNight() end
+	if self.bResumed and self.Phase == "Night" then self:ResumeNight() end
 	self:ApplyDayNight(true)
 	self.bReady = true
 end
@@ -96,10 +106,12 @@ function FarmGame:OnUpdate(Dt)
 		self:UpdateTravel()
 		return
 	end
+	if self.Phase == "GameOver" then return end
 	self:UpdateTime(Dt)
 	if self.MapId == "Farm" then
 		self:UpdateMerchant()
 		self:UpdateStructures()
+		self:UpdateDefense(Dt)
 	end
 	self:UpdateVitals(Dt)
 end
@@ -186,6 +198,11 @@ function FarmGame:OnDayStart(bNewSeason)
 	self:RefreshNodes()
 	if Income > 0 then self.MorningNotes[#self.MorningNotes + 1] = string.format("출하 수입 +%d", Income) end
 	if self:IsMerchantDay() then self.MorningNotes[#self.MorningNotes + 1] = "보부상이 남쪽 천막에 왔다" end
+	for _, Note in ipairs(self.PendingNightNotes or {}) do table.insert(self.MorningNotes, 1, Note) end
+	self.PendingNightNotes = nil
+	if self.Defense then self.Report.TotalKills = (self.Report.TotalKills or 0) + self.Defense.Kills; self.Defense.Kills = 0 end
+	self:PlanNight()
+	self.MorningNotes[#self.MorningNotes + 1] = self:PlanText()
 	Log.Info(string.format("[FarmBie] 아침: 자란 작물 %d, 출하 수입 %d, 돈 %d", Grown, Income, self.Gold))
 end
 
@@ -273,6 +290,8 @@ function FarmGame:LoadGame()
 	local T = SaveGame.Load(self:SlotName())
 	if type(T) ~= "table" then return false end
 	for _, Part in ipairs(SaveParts) do self["Load" .. Part](self, T) end
+	self:SyncCropTiles()
+	self:PlanNight()
 	self.Report.Loads = (self.Report.Loads or 0) + 1
 	Log.Info(string.format("[FarmBie] 불러옴: %s — %d년차 %s", self:SlotName(), self.Year, self:DateText()))
 	return true

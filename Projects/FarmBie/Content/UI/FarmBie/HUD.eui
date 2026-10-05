@@ -3663,6 +3663,560 @@
       },
       {
         "Type": "Border",
+        "Name": "DefensePanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0
+          ],
+          "AnchorMax": [
+            0.5,
+            0
+          ],
+          "Offsets": [
+            0,
+            14,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Texture": "UI/FarmBie/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "TextureSize": [
+            36,
+            36
+          ]
+        },
+        "ContentPadding": [
+          18,
+          8,
+          18,
+          10
+        ],
+        "Children": [
+          {
+            "Type": "VerticalBox",
+            "Name": "DefenseBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "DefenseText",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 20,
+                "TextColor": [
+                  0.98,
+                  0.95,
+                  0.88,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              },
+              {
+                "Type": "HorizontalBox",
+                "Name": "CrystalRow",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "CrystalLabel",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        8,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "크리스탈",
+                    "FontSize": 15,
+                    "TextColor": [
+                      0.85,
+                      0.7,
+                      1.0,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.06,
+                      0.03,
+                      0.02,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.5
+                    ]
+                  },
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "CrystalBar",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "MinSize": [
+                      220,
+                      12
+                    ],
+                    "Brush": {
+                      "Color": [
+                        0.05,
+                        0.04,
+                        0.08,
+                        0.92
+                      ],
+                      "CornerRadius": 2,
+                      "BorderWidth": 1,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "FillBrush": {
+                      "Color": [
+                        0.7,
+                        0.45,
+                        1.0,
+                        1
+                      ],
+                      "CornerRadius": 1,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "Percent": 1.0,
+                    "FillDirection": "LeftToRight"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "RespawnText",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0.5
+          ],
+          "AnchorMax": [
+            0.5,
+            0.5
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0.5
+          ],
+          "AutoSize": true,
+          "ZOrder": 4
+        },
+        "Text": "",
+        "FontSize": 30,
+        "TextColor": [
+          1.0,
+          0.45,
+          0.4,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 3,
+        "OutlineColor": [
+          0.06,
+          0.03,
+          0.02,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.5
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "GameOverWindow",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 12
+        },
+        "Brush": {
+          "Color": [
+            0.02,
+            0.0,
+            0.04,
+            0.9
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "Children": [
+          {
+            "Type": "Canvas",
+            "Name": "GameOverCanvas",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "GameOverTitle",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "AnchorMin": [
+                    0.5,
+                    0.5
+                  ],
+                  "AnchorMax": [
+                    0.5,
+                    0.5
+                  ],
+                  "Offsets": [
+                    0,
+                    -90,
+                    0,
+                    0
+                  ],
+                  "Alignment": [
+                    0.5,
+                    0.5
+                  ],
+                  "AutoSize": true,
+                  "ZOrder": 0
+                },
+                "Text": "",
+                "FontSize": 48,
+                "TextColor": [
+                  0.85,
+                  0.6,
+                  1.0,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 3,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "GameOverBody",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "AnchorMin": [
+                    0.5,
+                    0.5
+                  ],
+                  "AnchorMax": [
+                    0.5,
+                    0.5
+                  ],
+                  "Offsets": [
+                    0,
+                    0,
+                    900,
+                    120
+                  ],
+                  "Alignment": [
+                    0.5,
+                    0
+                  ],
+                  "AutoSize": false,
+                  "ZOrder": 0
+                },
+                "Text": "",
+                "FontSize": 22,
+                "TextColor": [
+                  0.98,
+                  0.95,
+                  0.88,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": true,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "GameOverHint",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "AnchorMin": [
+                    0.5,
+                    1
+                  ],
+                  "AnchorMax": [
+                    0.5,
+                    1
+                  ],
+                  "Offsets": [
+                    0,
+                    -60,
+                    0,
+                    0
+                  ],
+                  "Alignment": [
+                    0.5,
+                    1
+                  ],
+                  "AutoSize": true,
+                  "ZOrder": 0
+                },
+                "Text": "E  처음부터 다시",
+                "FontSize": 20,
+                "TextColor": [
+                  1.0,
+                  0.86,
+                  0.45,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.06,
+                  0.03,
+                  0.02,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.5
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
         "Name": "ShopWindow",
         "Enabled": true,
         "Opacity": 1,

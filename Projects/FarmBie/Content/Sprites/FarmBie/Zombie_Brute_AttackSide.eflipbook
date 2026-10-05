@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Zombie_Brute.esprite",
+  "Fps": 6.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "AttackSide0"
+    },
+    {
+      "Slice": "AttackSide1"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Recipe.estruct",
+  "Rows": [
+    {
+      "Name": "Arrow",
+      "Values": {
+        "Output": "Arrow",
+        "Count": 10,
+        "Inputs": "Wood*1,Fiber*2"
+      }
+    },
+    {
+      "Name": "Shell",
+      "Values": {
+        "Output": "Shell",
+        "Count": 5,
+        "Inputs": "Iron*1,Stone*2"
+      }
+    },
+    {
+      "Name": "EyeArrow",
+      "Values": {
+        "Output": "EyeArrow",
+        "Count": 10,
+        "Inputs": "Arrow*10,Crop:EyeRadish:1+*1"
+      }
+    },
+    {
+      "Name": "FireArrow",
+      "Values": {
+        "Output": "FireArrow",
+        "Count": 10,
+        "Inputs": "Arrow*10,Crop:VeinPepper:1+*1"
+      }
+    },
+    {
+      "Name": "GhostShell",
+      "Values": {
+        "Output": "GhostShell",
+        "Count": 5,
+        "Inputs": "Shell*5,Crop:GhostGarlic:1+*1"
+      }
+    },
+    {
+      "Name": "SkullMine",
+      "Values": {
+        "Output": "SkullMine",
+        "Count": 1,
+        "Inputs": "Stone*3,Crop:SkullMelon:1+*1"
+      }
+    },
+    {
+      "Name": "ScreamMine",
+      "Values": {
+        "Output": "ScreamMine",
+        "Count": 1,
+        "Inputs": "Stone*3,Crop:ScreamPumpkin:1+*1"
+      }
+    },
+    {
+      "Name": "FangSpike",
+      "Values": {
+        "Output": "FangSpike",
+        "Count": 1,
+        "Inputs": "Wood*2,Crop:FangCorn:1+*1"
+      }
+    }
+  ]
+}

@@ -160,7 +160,8 @@ function Vit:UpdateVitals(Dt)
 	end
 	local P = self:Player()
 	if P and P.Mover and P.BaseWalkSpeed then
-		P.Mover.MaxWalkSpeed = P.BaseWalkSpeed * self:StatMul() * (1 + self:BuffAmount("Speed"))
+		local Slow = (self.Defense and self.Defense.PlayerSlow > 0) and self.Night.SlowMul or 1.0
+		P.Mover.MaxWalkSpeed = P.BaseWalkSpeed * self:StatMul() * (1 + self:BuffAmount("Speed")) * Slow
 	end
 end
 

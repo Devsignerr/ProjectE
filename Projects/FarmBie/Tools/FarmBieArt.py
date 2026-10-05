@@ -233,6 +233,43 @@ def DrawFarmerUse(Dir, Tool, Frame):
 				_Hoe(Tools, 15, 21, 8, 9, 5, 6, 5, 3, K)
 			else:
 				_Hoe(Tools, 18, 22, 27, 30, 26, 30, 4, 6, K)
+	elif Tool == "Sword":
+		Blade, Edge, Hilt = (220, 228, 240), (150, 160, 180), (200, 160, 60)
+		Lines = {"Down": [((22, 22), (27, 10)), ((18, 24), (12, 37))], "Up": [((10, 22), (5, 10)), ((16, 16), (16, 1))], "Side": [((15, 21), (8, 8)), ((18, 22), (31, 27))]}
+		(X0, Y0), (X1, Y1) = Lines[Dir][Frame]
+		Tools.Line(X0, Y0, X1, Y1, Blade)
+		Tools.Line(X0 + 1, Y0, X1 + 1, Y1, Edge)
+		Tools.Rect(X0 - 1, Y0 - 1, X0 + 1, Y0 + 1, Hilt)
+	elif Tool in ("Bow", "Gun"):
+		Wood, Metal = (130, 84, 44), (90, 94, 104)
+		if Dir == "Side":
+			if Tool == "Bow":
+				Tools.Line(24, 15, 27, 20, Wood)
+				Tools.Line(27, 20, 24, 25, Wood)
+				Tools.Line(24, 15, 24, 25, (220, 220, 210))
+				if Frame == 0:
+					Tools.Line(18, 20, 27, 20, (200, 170, 120))
+			else:
+				Tools.Rect(17, 19, 30, 20, Metal)
+				Tools.Rect(17, 21, 21, 22, Wood)
+				if Frame == 1:
+					Tools.Rect(31, 18, 33 if Tools.W > 33 else 31, 21, (255, 210, 90))
+		elif Dir == "Down":
+			if Tool == "Bow":
+				Tools.Line(11, 28, 16, 31, Wood)
+				Tools.Line(16, 31, 21, 28, Wood)
+				Tools.Line(11, 28, 21, 28, (220, 220, 210))
+			else:
+				Tools.Rect(15, 23, 16, 36, Metal)
+				Tools.Rect(14, 23, 17, 26, Wood)
+				if Frame == 1:
+					Tools.Rect(14, 37, 17, 39, (255, 210, 90))
+		else:
+			if Tool == "Bow":
+				Tools.Line(11, 8, 16, 5, Wood)
+				Tools.Line(16, 5, 21, 8, Wood)
+			else:
+				Tools.Rect(15, 2, 16, 14, Metal)
 	elif Tool == "Can":
 		if Dir == "Down":
 			_Can(Tools, 19, 23 if Frame == 0 else 29, Frame == 1, [] if Frame == 0 else [(29, 36), (27, 38), (30, 39)])
@@ -253,7 +290,8 @@ def DrawFarmerUse(Dir, Tool, Frame):
 	return C
 
 
-USE_POSES = {"Hoe": [0.2, 0.22], "Can": [0.16, 0.3], "Axe": [0.2, 0.22], "Pick": [0.2, 0.22]}  # 도구 → 프레임 길이
+USE_POSES = {"Hoe": [0.2, 0.22], "Can": [0.16, 0.3], "Axe": [0.2, 0.22], "Pick": [0.2, 0.22], "Sword": [0.12, 0.22], "Bow": [0.2, 0.3],
+			 "Gun": [0.15, 0.5]}  # 도구·무기 → 프레임 길이
 
 
 # ---- 보부상 (수상한 떠돌이 상인: 후드 망토 + 커다란 등짐 + 그림자 속 빛나는 눈) -----------------------------------------------------
@@ -341,6 +379,12 @@ def DrawMushroom(bPicked):
 	return C
 
 
+def _Bar(Col):
+	C = FCanvas(16, 3)
+	C.Rect(0, 0, 15, 2, Col)
+	return C
+
+
 def DrawShadow():
 	C = FCanvas(24, 10)
 	C.Ellipse(12, 5, 11, 4.5, (20, 16, 28), 110)
@@ -375,9 +419,24 @@ def WriteSprites(Folder):
 		Forage.Add(Name + "Picked", Draw(True))
 	Forage.Save(Folder, "Forage")
 	_SetUnits(Folder, "Forage", 100.0 / 16.0)
-	Fx = FAtlas(128)
+	Fx = FAtlas(256)
 	Fx.Add("Shadow", DrawShadow(), (0.5, 0.5))
+	Warn = FCanvas(20, 30)
+	Warn.Rect(9, 12, 10, 29, (110, 72, 40))
+	Warn.Rect(2, 1, 17, 13, (200, 40, 40))
+	Warn.Rect(3, 2, 16, 12, (232, 70, 60))
+	Warn.Ellipse(9.5, 6, 3.5, 3, (240, 236, 220))
+	Warn.Px(8, 6, (40, 20, 20))
+	Warn.Px(11, 6, (40, 20, 20))
+	Warn.Rect(8, 9, 11, 10, (240, 236, 220))
+	Warn.Outline((40, 18, 16))
+	Fx.Add("Warn", Warn, (0.5, 0.0))
+	Fx.Add("HpBack", _Bar((30, 20, 24)), (0.5, 0.5))
+	Fx.Add("HpFill", _Bar((230, 60, 60)), (0.0, 0.5))
+	import FarmBieZombies
+	FarmBieZombies.WriteSprites(Folder, Fx)
 	Fx.Save(Folder, "Fx")
+	FarmBieZombies.WriteFxFlipbooks(Folder)
 
 
 # ---- 바닥 텍스처 ---------------------------------------------------------------------------------------------------------

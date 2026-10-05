@@ -1,0 +1,30 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/SpecialAmmo.estruct",
+  "Rows": [
+    {
+      "Name": "FireArrow",
+      "Values": {
+        "For": "Bow",
+        "DamageMul": 1.7,
+        "Slice": "FireArrow"
+      }
+    },
+    {
+      "Name": "EyeArrow",
+      "Values": {
+        "For": "Bow",
+        "DamageMul": 1.4,
+        "Slice": "Arrow"
+      }
+    },
+    {
+      "Name": "GhostShell",
+      "Values": {
+        "For": "Shotgun",
+        "DamageMul": 1.5,
+        "Slice": "Pellet"
+      }
+    }
+  ]
+}

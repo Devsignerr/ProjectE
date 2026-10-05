@@ -1,0 +1,97 @@
+{
+  "Version": 1,
+  "Name": "Night",
+  "Description": "밤 디펜스 수치",
+  "Fields": [
+    {
+      "Name": "BaseCount",
+      "Type": "Int",
+      "Default": 6,
+      "Description": "기본 좀비 수"
+    },
+    {
+      "Name": "PerDay",
+      "Type": "Float",
+      "Default": 0.55,
+      "Description": "계절 일차당 더해지는 수"
+    },
+    {
+      "Name": "PerSeason",
+      "Type": "Int",
+      "Default": 4,
+      "Description": "계절당 더해지는 수"
+    },
+    {
+      "Name": "HpPerDay",
+      "Type": "Float",
+      "Default": 0.03,
+      "Description": "일차당 체력 배율 증가"
+    },
+    {
+      "Name": "HpPerSeason",
+      "Type": "Float",
+      "Default": 0.3,
+      "Description": "계절당 체력 배율 증가"
+    },
+    {
+      "Name": "SpawnWindow",
+      "Type": "Float",
+      "Default": 0.55,
+      "Description": "밤 앞부분 이 비율 동안 나옴"
+    },
+    {
+      "Name": "EntrancesPerNight",
+      "Type": "Int",
+      "Default": 2,
+      "Description": "그 밤의 진입로 수"
+    },
+    {
+      "Name": "CrystalAlertRadius",
+      "Type": "Int",
+      "Default": 900,
+      "Description": "크리스탈 발견 호출 반경"
+    },
+    {
+      "Name": "BlockCost",
+      "Type": "Float",
+      "Default": 6.0,
+      "Description": "흐름장 설치물 비용"
+    },
+    {
+      "Name": "LossCropsPerZombie",
+      "Type": "Int",
+      "Default": 2,
+      "Description": "시간 초과: 남은 좀비당 먹히는 작물"
+    },
+    {
+      "Name": "LossStructureDamage",
+      "Type": "Int",
+      "Default": 40,
+      "Description": "시간 초과: 남은 좀비당 가까운 설치물 피해"
+    },
+    {
+      "Name": "LossCrystalDamage",
+      "Type": "Int",
+      "Default": 12,
+      "Description": "시간 초과: 크리스탈을 알아챈 남은 좀비당 크리스탈 피해"
+    },
+    {
+      "Name": "RespawnTime",
+      "Type": "Float",
+      "Default": 10.0,
+      "Description": "쓰러진 뒤 부활 (초)"
+    },
+    {
+      "Name": "SlowMul",
+      "Type": "Float",
+      "Default": 0.6,
+      "Description": "둔화 이동 속도 배율"
+    },
+    {
+      "Name": "AbsentTurretShare",
+      "Type": "Float",
+      "Default": 0.6,
+      "Description": "부재 중 덫·포탑 처리 효율"
+    }
+  ]
+}

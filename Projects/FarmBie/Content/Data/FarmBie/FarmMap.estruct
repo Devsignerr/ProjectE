@@ -100,6 +100,35 @@
       ],
       "Description": "크리스탈 처음 칸",
       "Element": "Int"
+    },
+    {
+      "Name": "StaticBlocked",
+      "Type": "String",
+      "Default": "",
+      "Description": "좀비가 못 지나가는 칸 tx,ty; (울타리·건물 — 생성기가 콜라이더에서 계산)"
+    },
+    {
+      "Name": "AttractTiles",
+      "Type": "String",
+      "Default": "",
+      "Description": "좀비가 모여드는 칸 (집 앞마당)"
+    },
+    {
+      "Name": "Entrances",
+      "Type": "Array",
+      "Default": [],
+      "Description": "진입로 \"이름,x,y\" (밤 좀비가 나오는 곳)",
+      "Element": "String"
+    },
+    {
+      "Name": "Workbench",
+      "Type": "Array",
+      "Default": [
+        0.0,
+        0.0
+      ],
+      "Description": "작업대 위치",
+      "Element": "Float"
     }
   ]
 }

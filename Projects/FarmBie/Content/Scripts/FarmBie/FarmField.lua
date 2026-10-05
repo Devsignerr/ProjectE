@@ -211,6 +211,7 @@ function Field:ApplyUse(Key, TX, TY)
 		self:Harvest(T)
 	end
 	self:RefreshTile(T)
+	if self.SyncCropTiles then self:SyncCropTiles() end
 	return true
 end
 
@@ -270,6 +271,7 @@ function Field:GrowField()
 		T.Wet = false
 		self:RefreshTile(T)
 	end
+	if self.SyncCropTiles then self:SyncCropTiles() end
 	return Grown
 end
 
@@ -282,6 +284,7 @@ function Field:WitherField()
 		end
 	end
 	self.Report.Withered = (self.Report.Withered or 0) + Count
+	if self.SyncCropTiles then self:SyncCropTiles() end
 	return Count
 end
 

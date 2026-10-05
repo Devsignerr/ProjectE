@@ -1,0 +1,83 @@
+{
+  "Version": 1,
+  "Name": "Weapon",
+  "Description": "무기 (도구 포함)",
+  "Fields": [
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Default": "Melee",
+      "Description": "근접 / 투사체",
+      "Values": [
+        "Melee",
+        "Shot"
+      ]
+    },
+    {
+      "Name": "Damage",
+      "Type": "Int",
+      "Default": 10,
+      "Description": "피해"
+    },
+    {
+      "Name": "Range",
+      "Type": "Int",
+      "Default": 120,
+      "Description": "거리 (cm)"
+    },
+    {
+      "Name": "Arc",
+      "Type": "Int",
+      "Default": 120,
+      "Description": "근접 부채꼴 (도)"
+    },
+    {
+      "Name": "Cooldown",
+      "Type": "Float",
+      "Default": 0.4,
+      "Description": "재사용 (초)"
+    },
+    {
+      "Name": "Knockback",
+      "Type": "Int",
+      "Default": 300,
+      "Description": "밀쳐냄"
+    },
+    {
+      "Name": "Ammo",
+      "Type": "String",
+      "Default": "",
+      "Description": "탄약 물건"
+    },
+    {
+      "Name": "Shots",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "한 번에 쏘는 수"
+    },
+    {
+      "Name": "Spread",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "퍼짐 (도)"
+    },
+    {
+      "Name": "ShotSpeed",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "투사체 속도"
+    },
+    {
+      "Name": "Slice",
+      "Type": "String",
+      "Default": "",
+      "Description": "투사체 그림"
+    },
+    {
+      "Name": "Pose",
+      "Type": "String",
+      "Default": "",
+      "Description": "농부 동작 (Farmer_<Pose><방향>)"
+    }
+  ]
+}

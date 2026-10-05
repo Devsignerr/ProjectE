@@ -139,6 +139,22 @@ function Hud:UpdateHotbar()
 	end
 end
 
+function Hud:UpdateDefensePanel(GM)
+	local Dc = GM.Defense
+	local bNight = GM.Phase == "Night" and GM.MapId == "Farm" and Dc ~= nil
+	self:Show("DefensePanel", bNight)
+	if not bNight then return end
+	local Left = math.ceil(GM:NightSecondsLeft())
+	local Pending = GM.TonightPlan and math.max(0, #GM.TonightPlan.Spawns - (GM.SpawnIndex or 1) + 1) or 0
+	local Text = GM.bNightCleared and string.format("밤을 버텼다 · 처치 %d", Dc.Kills)
+		or string.format("새벽까지 %d:%02d · 남은 좀비 %d · 처치 %d", math.floor(Left / 60), Left % 60, Dc.Alive + Pending, Dc.Kills)
+	self:Set("DefenseText", "Text", Text)
+	local Cr = GM.Crystal
+	if Cr and Cr.Comp then
+		self:Set("CrystalBar", "Percent", math.floor(Cr.Comp.Hp / math.max(1, Cr.Comp.MaxHp) * 100 + 0.5) / 100)
+	end
+end
+
 function Hud:SetFade(Alpha)
 	Alpha = math.max(0, math.min(1, Alpha))
 	local Q = math.floor(Alpha * 50 + 0.5) / 50
@@ -155,6 +171,7 @@ function Hud:OnUpdate(Dt)
 	local bMoon = GM.Phase == "Night" or GM.Hour >= GM.Calendar.NightStartHour
 	self:Set("ClockIcon", "Texture", bMoon and "UI/FarmBie/Moon.png" or "UI/FarmBie/Sun.png")
 	self:Set("GoldText", "Text", tostring(GM.Gold or 0))
+	self:UpdateDefensePanel(GM)
 	if GM.Vitals then
 		local V = GM.Vitals
 		self:Set("HealthBar", "Percent", math.floor(GM.Health / V.MaxHealth * 100 + 0.5) / 100)

@@ -8272,6 +8272,11 @@
     },
     {
       "Components": {
+        "FarmDefenseComponent": {
+          "Active": false,
+          "Width": 0,
+          "Height": 0
+        },
         "ScriptComponent": {
           "ExecutionLocation": 0,
           "ScriptAsset": "Scripts/FarmBie/FarmGame.lua",

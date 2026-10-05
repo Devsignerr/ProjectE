@@ -11,7 +11,8 @@ local D = Script.Require("Scripts/FarmBie/FarmData.lua")
 local Build = {}
 
 local Prefabs = "Prefabs/FarmBie/"
-local BarIds = { "WallWood", "WallStone", "WallIron", "Gate", "Spike", "Mine", "Turret", "CrystalUp" }
+local BarIds = { "WallWood", "WallStone", "WallIron", "Gate", "Spike", "Mine", "Turret", "Special", "CrystalUp" }
+local SpecialIds = { "SkullMine", "ScreamMine", "FangSpike" } -- 작업대에서 만든 작물 덫 (가진 것 먼저)
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
 
@@ -76,6 +77,12 @@ end
 function Build:BuildEntry(Index)
 	local Id = BarIds[Index]
 	if not Id then return nil end
+	if Id == "Special" then
+		Id = SpecialIds[1]
+		for _, S in ipairs(SpecialIds) do
+			if self:CountItem(S) > 0 then Id = S break end
+		end
+	end
 	if Id == "CrystalUp" then
 		local Next = self.Crystal and D.Rows("CrystalLevels.etable")[self.Crystal.Level + 1]
 		return { Id = Id, Name = "크리스탈 강화", Icon = "UI/FarmBie/Icons/CrystalUp.png",
@@ -206,6 +213,11 @@ function Build:SpawnStructure(S)
 		S.Comp.TX, S.Comp.TY = S.TX, S.TY
 		S.Comp.MaxHp = S.MaxHp or (Row and Row.Hp) or S.Comp.MaxHp
 		S.Comp.Hp = S.Hp or S.Comp.MaxHp
+		if Row then
+			S.Comp.Damage, S.Comp.Radius, S.Comp.Cooldown, S.Comp.Range = Row.Damage, Row.Radius, Row.Cooldown, Row.Range
+			if S.Id == "SkullMine" or S.Id == "ScreamMine" then S.Comp.Kind = "Mine" end -- 디펜스는 지뢰로 다룬다
+			if S.Id == "FangSpike" then S.Comp.Kind = "Spike" end
+		end
 		if S.Rot ~= 0 then E:SetRotation(Quat.FromEuler(0, S.Rot, 0)) end
 	end)
 end

@@ -76,6 +76,7 @@ function FarmGame:OnStart()
 	if not self.bResumed and not (SaveGame.Exists(self:SlotName()) and self:LoadGame()) then
 		self:GiveStartItems()
 		self:GiveStartGold()
+		self.bNewGame = true
 	end
 	if self.MapId == "Farm" and not self.Crystal then self:EnsureCrystal() end
 	self:SyncCropTiles()
@@ -83,6 +84,7 @@ function FarmGame:OnStart()
 	if self.bResumed and self.Phase == "Night" then self:ResumeNight() end
 	self:InitTower() -- 세션(TowerRun)을 불러온 뒤 — 탑 씬이면 층을 꾸민다
 	self:InitSound()
+	if self.bNewGame and self.MapId == "Farm" and self.Properties.Slot ~= "Test" then self:OpenIntro() end
 	self:ApplyDayNight(true)
 	self.bReady = true
 end

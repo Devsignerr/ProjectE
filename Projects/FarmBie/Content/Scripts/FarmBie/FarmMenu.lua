@@ -37,6 +37,17 @@ function Menu:CloseMenu()
 	Game.SetTimeScale(1.0)
 end
 
+-- ---- 새 게임 첫 화면: 배경 이야기 (게임 오버 창 모양을 같이 씀)
+function Menu:OpenIntro()
+	self:OpenMenu("Intro")
+	local Hud = self:Hud()
+	Hud:Show("GameOverWindow", true, "Visible")
+	Hud:Set("GameOverTitle", "Text", "할아버지의 농장")
+	Hud:Set("GameOverBody", "Text", self.Economy.IntroText)
+	Hud:Set("GameOverHint", "Text", "E  시작하기")
+	self.Report.Intro = (self.Report.Intro or 0) + 1
+end
+
 -- ---- 일시정지 (Esc): 계속하기 · 설정 · 타이틀로 · 게임 끝내기 — 저장은 잠잘 때만이므로 나갈 때 경고
 function Menu:OpenPause()
 	self:OpenMenu("Pause")
@@ -86,6 +97,15 @@ function Menu:OpenBag()
 end
 
 function Menu:MenuInput(In)
+	if self.Menu == "Intro" then
+		if In.Confirm or In.Cancel then
+			local Hud = self:Hud()
+			Hud:Show("GameOverWindow", false)
+			Hud:Set("GameOverHint", "Text", "E  처음부터 다시     Esc  타이틀로")
+			self:CloseMenu()
+		end
+		return
+	end
 	if self.Menu == "Pause" then
 		O.Input(self, self:Hud(), In, function(Name) self:Sfx(Name, 0.7) end)
 		return

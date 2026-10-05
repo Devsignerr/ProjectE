@@ -253,9 +253,9 @@ def HudWidgets():
 		Widget("Canvas", "GameOverCanvas", BoxSlot(), "HitTestInvisible", [
 			Text("GameOverTitle", "", 48, CanvasSlot((0.5, 0.5), 0, -90, 0, 0, (0.5, 0.5), True), (0.85, 0.6, 1.0, 1), "Center", Outline=3),
 			Text("GameOverBody", "", 22, CanvasSlot((0.5, 0.5), 0, 0, 900, 120, (0.5, 0)), TEXT_LIGHT, "Center", Wrap=True),
-			Text("GameOverHint", "E  처음부터 다시     Esc  타이틀로", 20, CanvasSlot((0.5, 1), 0, -60, 0, 0, (0.5, 1), True), TEXT_GOLD, "Center"),
+			Text("GameOverHint", "E  처음부터 다시     Esc  타이틀로", 20, CanvasSlot((0.5, 0.5), 0, 160, 0, 0, (0.5, 0), True), TEXT_GOLD, "Center"),
 		]),
-	], Brush=Brush((0.02, 0.0, 0.04, 0.9)), ContentPadding=[0, 0, 0, 0]))
+	], Brush=Brush((0.02, 0.0, 0.04, 0.94)), ContentPadding=[0, 0, 0, 0]))
 	C.append(ShopWindow())
 	C.append(BagWindow())
 	C.append(OptionWindow())

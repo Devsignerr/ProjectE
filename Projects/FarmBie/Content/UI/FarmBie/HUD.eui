@@ -4195,7 +4195,7 @@
             0.02,
             0.0,
             0.04,
-            0.9
+            0.94
           ],
           "CornerRadius": 0,
           "BorderWidth": 0,
@@ -4353,21 +4353,21 @@
                 "Slot": {
                   "AnchorMin": [
                     0.5,
-                    1
+                    0.5
                   ],
                   "AnchorMax": [
                     0.5,
-                    1
+                    0.5
                   ],
                   "Offsets": [
                     0,
-                    -60,
+                    160,
                     0,
                     0
                   ],
                   "Alignment": [
                     0.5,
-                    1
+                    0
                   ],
                   "AutoSize": true,
                   "ZOrder": 0

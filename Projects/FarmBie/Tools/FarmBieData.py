@@ -304,7 +304,7 @@ BOSS_ROWS = [
 					"CropEat": 0.4, "Radius": 56, "AggroTime": 3.5, "SummonKind": "Harvester", "SummonInterval": 12.0, "SummonCount": 1, "AuraRadius": 0, "AuraStructureDps": 0,
 					"AuraHeal": 0, "AuraSlow": False, "Cell": 64, "RewardGold": 1000, "RewardItems": "CrystalShard*3,Iron*5",
 					"Description": "낫 한 번에 밭 한 줄. 작물을 거둘 때마다 더 빨라진다."}),
-	("FrostColossus", {"DisplayName": "서리 거상",  "Kind": "Season", "Season": "Winter", "Hp": 2600, "Speed": 60,  "Damage": 40, "Interval": 1.8, "StructureMul": 3.5,
+	("FrostColossus", {"DisplayName": "서리 거상",  "Kind": "Season", "Season": "Winter", "Hp": 2100, "Speed": 60,  "Damage": 40, "Interval": 1.8, "StructureMul": 3.5,
 					"CropEat": 3.0, "Radius": 80, "AggroTime": 4.0, "SummonKind": "", "SummonInterval": 0, "SummonCount": 0, "AuraRadius": 420, "AuraStructureDps": 0,
 					"AuraHeal": 0, "AuraSlow": True, "Cell": 72, "RewardGold": 1200, "RewardItems": "CrystalShard*4,Iron*8",
 					"Description": "한 해의 끝을 얼리는 거상. 곁에 서면 몸이 굳는다."}),
@@ -583,7 +583,12 @@ ECONOMY = {
 	"MerchantOpenHour": 6.0, "MerchantCloseHour": 18.0,  # 방문 요일의 머무는 시각
 	"RandomStockPicks": 3,                               # 고정 목록 밖에서 무작위로 고르는 물건 수
 	"MerchantLines": ["흐흐… 오늘도 살아 있었군. 뭘 찾나?", "밤이 길어지고 있어. 울타리는 튼튼한가?", "이 씨앗들, 어디서 났는지는 묻지 말게.",
-					  "자네 밭에서 이상한 소리가 나더군. 좋은 징조야.", "물건은 한정이야. 망설이면 다른 이가 가져가지.", "크리스탈은 잘 숨겨 두었나? 놈들은 냄새를 맡는다네."],
+					  "자네 밭에서 이상한 소리가 나더군. 좋은 징조야.", "물건은 한정이야. 망설이면 다른 이가 가져가지.", "크리스탈은 잘 숨겨 두었나? 놈들은 냄새를 맡는다네.",
+					  "자네 할아버지도 이 천막에서 씨앗을 샀지. 끝까지 크리스탈을 놓지 않았어.", "북쪽 탑? 올라간 자들은 반쯤만 돌아오더군. 돌아온 자들은 부자였고.",
+					  "레어 씨앗은 비료를 먹고 깨어난다네. 꿈을 꾸는 씨앗이니까.", "계절이 바뀌는 날 밤엔 큰 놈이 온다. 벽을 두 겹으로 쌓게.",
+					  "땅이 숨을 쉬는 소리가 들리나? 크리스탈이 자네를 마음에 들어 하는 모양이야.", "온실은 좋은 생각이야. 서리 거상은 작물부터 얼려 버리거든."],
+	"IntroText": "할아버지가 남긴 외딴 농장. 밭 한가운데 묻혀 있던 크리스탈은 땅을 살찌우지만, 밤마다 그 빛을 맡은 시체들이 숲 너머에서 몰려온다.\n\n"
+				 "낮에는 밭을 일구고 출하해 벽과 덫을 쌓아라. 밤에는 크리스탈을 지켜라 — 크리스탈이 무너지면 모든 것이 끝난다.",
 }
 
 ECONOMY_FIELDS = [
@@ -592,6 +597,7 @@ ECONOMY_FIELDS = [
 	Field("MerchantCloseHour", "Float", 18.0, "보부상이 떠나는 시각"),
 	Field("RandomStockPicks", "Int", 3, "무작위 재고 고르는 수"),
 	Field("MerchantLines", "Array", [], "보부상 인사말 (방문 날마다 돌아가며)", Element="String"),
+	Field("IntroText", "String", "", "새 게임 첫 화면 배경 이야기"),
 ]
 
 

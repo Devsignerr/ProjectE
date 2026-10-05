@@ -2,7 +2,8 @@
 --   일행: 골드·소지품(아이템 id → 개수)·장비(무기 Equipped / 방어구 Armor / 장신구 Accessory) — 능력치는 플레이어 RecalcStats가 장비에서 다시 계산.
 --   진행: 메인 퀘스트 단계(Quests.etable — 촌장 보고 AdvanceOnTalk / 처치 KillGoal / 맵 보스 BossGoal, 보상·새 목표·엔딩은 단계 행),
 --         서브 퀘스트(SubQuests.etable — 상태 nil → Active → Done, 진행 Count), 연 보물상자(맵:번호), 보스 처치(맵별 — 마을은 BossDead, 다른 맵은 Defeated[맵]).
---   저장(SaveGame 슬롯 Balance.SaveSlot = "HD2D"): BuildSave/ApplySave — 골드·소지품·장비·레벨/경험치/HP/MP/BP·퀘스트·서브 퀘스트·상자·보스·현재 씬·위치.
+--   저장(SaveGame 슬롯 "HD2D_1"~"HD2D_3" — HD2DMeta.lua, 예전 Balance.SaveSlot = "HD2D"는 슬롯 1로 옮김): BuildSave/ApplySave — 골드·소지품·장비·
+--         레벨/경험치/HP/MP/BP·퀘스트·서브 퀘스트·상자·보스·현재 씬·위치 + Meta(강화·도감·기록·추적 퀘스트·슬롯 번호).
 --   맵 이동(HD2DTravel.lua → TravelTo): 같은 저장 형식을 세션 슬롯 "HD2D_Session"에 쓰고 Game.SetPersistent("HD2D_Session", true) 후 Game.OpenScene.
 --     도착한 씬의 관리자는 플래그가 있으면 세션을 불러와 "Spawn_<SpawnName>" 엔티티(위치 = 발 자리) 위에 플레이어를 둔다 (플래그는 바로 지움 —
 --     프로세스 안에서만 유효하므로 지난 실행의 세션 파일이 남아 있어도 타이틀을 건너뛰지 않는다).
@@ -77,7 +78,7 @@ function Party:RemoveItem(Id, N)
 end
 
 function Party:GetWeapon()
-	return D.Weapon(self.Equipped)
+	return self:GetWeaponById(self.Equipped) -- 강화 보너스를 더한 무기 (HD2DMeta)
 end
 
 -- 장비 칸 (무기 / 방어구 / 장신구) 이름 → 지금 낀 아이템 id
@@ -229,7 +230,7 @@ end
 
 function Party:RefreshQuest()
 	local H = self:Hud()
-	if H and self.QuestStage then H:SetQuest(D.Quest(self.QuestStage).Title, self:MainObjective()) end
+	if H and self.QuestStage then H:SetQuest(self:TrackedQuest(D.Quest(self.QuestStage).Title, self:MainObjective())) end -- 추적 퀘스트 (HD2DMeta)
 	if self.RefreshMarkers then self:RefreshMarkers() end
 end
 
@@ -275,9 +276,9 @@ function Party:TalkSubQuest(Npc)
 	elseif S.State == "Active" and self:SubReady(Id) then
 		self:StartDialog(Name, Q.DoneLines, function() self:CompleteSubQuest(Id) end, Portrait)
 	elseif S.State == "Active" then
-		self:StartDialog(Name, Q.ProgressLines, nil, Portrait)
+		self:StartDialog(Name, Q.ProgressLines, function() self:OnSubQuestTalkDone(Npc) end, Portrait) -- 대장장이 = 대장간 (HD2DCrafting)
 	else
-		self:StartDialog(Name, Q.AfterLines, nil, Portrait)
+		self:StartDialog(Name, Q.AfterLines, function() self:OnSubQuestTalkDone(Npc) end, Portrait)
 	end
 end
 
@@ -314,6 +315,7 @@ end
 
 -- 서브 퀘스트 상태가 바뀌면: 표시(머리 위 !)·고양이 보이기
 function Party:OnSubQuestChanged()
+	self:RefreshQuest() -- 추적 중인 서브 퀘스트 진행 (HUD 퀘스트 칸)
 	if self.RefreshMarkers then self:RefreshMarkers() end
 	if self.RefreshProps then self:RefreshProps() end
 end
@@ -333,7 +335,7 @@ function Party:BuildSave(Pos)
 		Gold = self.Gold, Items = Items, Equipped = self.Equipped, Armor = self.Armor or "", Accessory = self.Accessory or "",
 		Level = Player and Player.Level or 1, Exp = Player and Player.Exp or 0, Health = Player and Player.Health or 1, Mana = Player and Player.Mana or 0,
 		BP = Player and Player.BP or 1, QuestStage = self.QuestStage, QuestKills = self.QuestKills, Sub = Sub, Opened = Opened,
-		BossDead = self.BossDead, Defeated = self:CopyDefeated(), PlayTime = (self.PlayTime or 0),
+		BossDead = self.BossDead, Defeated = self:CopyDefeated(), PlayTime = (self.PlayTime or 0), Meta = self:BuildMetaSave(),
 	}
 end
 
@@ -359,14 +361,15 @@ function Party:ApplySave(Data)
 	self.Defeated = {}
 	for K, V in pairs(Data.Defeated or {}) do self.Defeated[K] = V == true end
 	self.PlayTime = Data.PlayTime or 0
+	self:ApplyMetaSave(Data.Meta)
 	self.PendingPlayer = Data -- 플레이어 OnStart가 아직이면 거기서 적용
 	local Player = self:GetPlayer()
 	if Player and Player.bStarted then Player:ApplySave(Data) end
 	self:RefreshQuest()
 end
 
-function Party:SaveGame()
-	local Slot = D.Balance().SaveSlot
+function Party:SaveGame(SlotIndex)
+	local Slot = self:SlotName(SlotIndex or self.CurrentSlot or 1) -- 슬롯 "HD2D_<n>" (HD2DMeta)
 	local Data = self:BuildSave()
 	local bOk = SaveGame.Save(Slot, Data)
 	self.Report.Saves = self.Report.Saves + (bOk and 1 or 0)
@@ -389,7 +392,7 @@ function Party:StateSignature()
 		self.Equipped, self.Armor or "-", self.Accessory or "-", self.QuestStage, self.QuestKills, tostring(self.BossDead),
 		Sorted(self.Defeated or {}, function(K) return K end),
 		Sorted(self.Items, function(K, V) return K .. ":" .. V end), Sorted(self.Sub, function(K, V) return K .. ":" .. V.State .. ":" .. V.Count end),
-		Sorted(self.Opened, function(K) return K end))
+		Sorted(self.Opened, function(K) return K end)) .. self:MetaSignature()
 end
 
 -- 맵 이동 (HD2DTravel.lua가 부른다): 페이드 아웃 → 세션 저장 → 씬 열기
@@ -436,8 +439,8 @@ function Party:TryResumeSession()
 end
 
 -- 이어하기: 저장한 씬이 지금 씬이면 그 자리에서, 아니면 세션으로 넘겨 그 씬을 연다
-function Party:ContinueGame()
-	local Slot = D.Balance().SaveSlot
+function Party:ContinueGame(SlotName)
+	local Slot = SlotName or self:SlotName(self.CurrentSlot or 1)
 	local Data = SaveGame.Load(Slot)
 	if not Data then return false end
 	self.Report.Loads = (self.Report.Loads or 0) + 1

@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "Name": "BestiaryEntry",
+  "Description": "HD2D 도감 (Bestiary.etable, 행 이름 = 적 종류 — 순서 = 도감 순서)",
+  "Fields": [
+    {
+      "Name": "Habitat",
+      "Type": "String",
+      "Default": "",
+      "Description": "서식지"
+    },
+    {
+      "Name": "Description",
+      "Type": "String",
+      "Default": "",
+      "Description": "설명"
+    },
+    {
+      "Name": "Picture",
+      "Type": "String",
+      "Default": "",
+      "Description": "도감 그림 (UI 텍스처)"
+    },
+    {
+      "Name": "PictureW",
+      "Type": "Int",
+      "Default": 128,
+      "Description": "그림 너비 (UI 단위)"
+    },
+    {
+      "Name": "PictureH",
+      "Type": "Int",
+      "Default": 128,
+      "Description": "그림 높이"
+    }
+  ]
+}

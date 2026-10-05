@@ -1,0 +1,32 @@
+{
+  "Version": 1,
+  "Name": "Recipe",
+  "Description": "HD2D 물약 조합 (Recipes.etable, 행 이름 = 조합 id)",
+  "Fields": [
+    {
+      "Name": "Result",
+      "Type": "String",
+      "Default": "",
+      "Description": "만들어지는 아이템"
+    },
+    {
+      "Name": "Count",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "만들어지는 개수"
+    },
+    {
+      "Name": "Gold",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "비용 골드"
+    },
+    {
+      "Name": "Materials",
+      "Type": "Array",
+      "Default": [],
+      "Description": "재료 (아이템*개수 — 소모품도 된다)",
+      "Element": "String"
+    }
+  ]
+}

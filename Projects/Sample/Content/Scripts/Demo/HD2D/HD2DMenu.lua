@@ -1,5 +1,6 @@
 -- HD-2D 데모 관리자 확장 ② 메뉴 (HD2DGame.lua가 Script.Require로 받아 메서드로 붙인다 — 상태는 관리자 self에).
---   Menu: nil | "Title" | "Dialog" | "Inventory" | "Shop" | "Travel" | "Ending". 열려 있는 동안 Game.SetTimeScale(0) — 글자·커서·페이드는 실제 시간.
+--   Menu: nil | "Title" | "Dialog" | "Inventory" | "Shop" | "Travel" | "Ending" (+ 메타: "Pause" | "Slots" | "Confirm" | "Forge" | "Leaving" — HD2DPause/HD2DCrafting).
+--         열려 있는 동안 Game.SetTimeScale(0) — 글자·커서·페이드는 실제 시간.
 --   입력은 플레이어 스크립트가 넘긴다 (MenuInput — In: MenuUp/MenuDown/MenuLeft/MenuRight/Confirm/Cancel/Inventory).
 --   대화 줄: "대사" 또는 "이름|초상화 id|대사" (이름이 비면 해설 — 이름표 숨김, 초상화 id = UI/Demo/HD2D/Portraits/<id>.png).
 --   인벤토리 탭: 1 도구(소모품·재료) / 2 장비(무기·방어구·장신구 — 바꿨을 때 능력치 비교 ↑초록 ↓빨강) / 3 퀘스트(메인 + 받은 서브 퀘스트).
@@ -50,7 +51,7 @@ function Menu:UpdateDialog(UDt, In)
 	local Dlg = self.Dialog
 	local Total = utf8.len(Dlg.Text) or #Dlg.Text
 	if Dlg.Chars < Total then
-		Dlg.Chars = math.min(Total, Dlg.Chars + UDt * 42.0)
+		Dlg.Chars = math.min(Total, Dlg.Chars + UDt * 42.0 * self:TextSpeed()) -- 설정: 글자 속도 (HD2DMeta)
 	end
 	if In.Confirm then
 		if Dlg.Chars < Total then
@@ -75,6 +76,7 @@ function Menu:CloseMenu()
 	local H = self:Hud()
 	if Was == "Dialog" then H:HideDialog() else H:ShowMenu(nil) end
 	Audio.PlayOneShot(self.Sounds.Close)
+	self:AfterMenuClosed(Was) -- 일시정지 메뉴에서 연 인벤토리면 일시정지로 (HD2DPause)
 end
 
 -- ================================================================ 타이틀
@@ -82,7 +84,7 @@ function Menu:OpenTitle()
 	self.Mode = "Title"
 	self.Menu = "Title"
 	self.MenuIndex = 1
-	self.bCanContinue = SaveGame.Exists(D.Balance().SaveSlot)
+	self.bCanContinue = self:AnySaveExists() -- 슬롯 1~3 중 하나라도 (HD2DMeta)
 	self:SetPaused(true)
 	local H = self:Hud()
 	H:SetHudVisible(false)
@@ -100,15 +102,7 @@ function Menu:TitleConfirm()
 			return
 		end
 		Audio.PlayOneShot(self.Sounds.Confirm)
-		self.Menu = nil
-		H:ShowTitle(false)
-		H:SetHudVisible(true)
-		self:SetPaused(false)
-		self.Mode = "Play"
-		if self:ContinueGame() then
-			H:FadeFrom(1.0, 0.8)
-			H:Announce("이어하기", "기록한 곳에서 다시 시작한다", 2.0)
-		end
+		self:OpenSlots("Load", "Title") -- 슬롯 고르기 → ContinueFromSlot (HD2DPause)
 		return
 	end
 	-- 처음부터: 시작 연출 (해설 + 주인공 대사, 카메라는 제자리)
@@ -198,7 +192,7 @@ function Menu:CompareLines(Row, Id)
 		end
 	end
 	if Row.Kind == "Weapon" then
-		local Cur, New = D.Weapon(self.Equipped), D.Weapon(Row.Weapon)
+		local Cur, New = self:GetWeaponById(self.Equipped), self:GetWeaponById(Row.Weapon) -- 강화 포함 (HD2DMeta)
 		Add("공격력", Cur.Damage, New.Damage, "%.0f")
 		Add("사거리", Cur.Range, New.Range, "%.0f")
 		Add("공격 속도", 1.0 / (Cur.AttackTime + Cur.Cooldown * 0.25), 1.0 / (New.AttackTime + New.Cooldown * 0.25), "%.1f")
@@ -244,7 +238,7 @@ function Menu:RefreshMenu()
 			else
 				Right = string.format("×%d", self:Count(Id))
 			end
-			Lines[I] = { Icon = Row.Icon, Name = Row.DisplayName, Right = Right, bDim = self.Menu == "Shop" and Row.Price > self.Gold and Right ~= "보유" }
+			Lines[I] = { Icon = Row.Icon, Name = self:ItemDisplayName(Id), Right = Right, bDim = self.Menu == "Shop" and Row.Price > self.Gold and Right ~= "보유" }
 		end
 	end
 	local Status = Player and string.format("Lv %d   HP %d/%d   MP %d/%d   방어 %.0f   BP %d", Player.Level, math.ceil(Player.Health), Player.MaxHealth,
@@ -280,7 +274,7 @@ function Menu:RefreshMenu()
 		elseif Row.Kind == "Armor" or Row.Kind == "Accessory" then
 			Type = Row.Kind == "Armor" and "방어구" or "장신구"
 		elseif Row.Kind == "Material" then
-			Type = "귀중품"
+			Type = self:MaterialKindName(Id) -- 대장간 재료 / 귀중품 (HD2DMeta)
 			Stats = string.format("소지 %d개", self:Count(Id))
 		else
 			Type = ({ Heal = "회복 아이템", Mana = "마나 회복 아이템", Elixir = "귀한 회복 아이템" })[Row.Kind] or ""
@@ -396,6 +390,7 @@ end
 
 function Menu:MenuInput(In)
 	local UDt = Time.GetUnscaledDelta()
+	if self:MetaMenuInput(UDt, In) then return end -- 일시정지·슬롯·확인·대장간 (HD2DPause/HD2DCrafting)
 	if self.Menu == "Travel" then
 		self:UpdateTravel(UDt)
 		return

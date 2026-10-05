@@ -27,6 +27,7 @@ import HD2DEnvironment as Env  # noqa: E402
 import HD2DGameplay  # noqa: E402
 import HD2DArt  # noqa: E402
 import HD2DCaveLayout as Layout  # noqa: E402
+import HD2DMapArt  # noqa: E402
 
 CONTENT  = Main.CONTENT
 PH       = "Asset/PolyHaven"
@@ -653,7 +654,7 @@ def BuildScene(Height, Start=Layout.PLAYER_START, Overview=None, AutoPlay=""):
 		Boss=Layout.BOSS_SPOT, BossKind="SpiderQueen", BossReward=Layout.BOSS_REWARD, Respawn=False,
 		Extra={"Traps": ";".join(f"{X:.0f},{Y:.0f},{Z:.1f},{HX:.0f},{HY:.0f}" for X, Y, Z, HX, HY in TrapSpots),
 			   "Gate": f"{GX:.0f},{GY:.0f},{GateZ:.0f},{GATE_DOWN:.0f}", "Arena": f"{Layout.BOSS_SPOT[0]:.0f},{Layout.BOSS_SPOT[1]:.0f},{Layout.BOSS_ARENA_RADIUS + 120.0:.0f}"})
-	HD2DGameplay.AddGame(S, Height, CAVE_PATH, AutoPlay, Layout=CaveLayout, Title=False, NavMesh=NAV_ASSET)
+	HD2DGameplay.AddGame(S, Height, CAVE_PATH, AutoPlay, Layout=CaveLayout, Title=False, NavMesh=NAV_ASSET, Minimap=MINIMAP)
 	StartZ = Height(*Start) + HD2DGameplay.PLAYER_RADIUS + HD2DGameplay.PLAYER_HALF + 4.0
 	Forward = (0.0, -math.cos(math.radians(-Main.CAMERA_PITCH)), -math.sin(math.radians(-Main.CAMERA_PITCH)))
 	Focus = (Start[0], Start[1], StartZ - 85.0 + 70.0)
@@ -688,7 +689,32 @@ AUTO_SCENES = {
 	"Shot_Boss":   ((3500.0, -200.0), "CaveBoss"),        # 보스전
 	"Shot_Trap":   ((1250.0, 60.0), "CaveTrap"),          # 가시 함정 경고·솟음
 	"Shot_Ending": (Layout.PLAYER_START, "CaveEnding"),   # 엔딩·크레딧 화면 (마지막 단계로 바로)
+	"Shot_Map":    ((2300.0, 150.0), "MapScreen"),       # 일시정지 메뉴 지도 화면 (동굴 지도 — HD2DMetaPilot)
 }
+
+
+# 지도 화면·미니맵 (HD2DMapArt): 놀이 영역 + 방 이름 (이름, X, Y, Place|Exit)
+MINIMAP = HD2DMapArt.Info("Cave", (Layout.PLAY_MIN[0] - 100.0, Layout.PLAY_MIN[1] - 100.0, Layout.PLAY_MAX[0] + 100.0, Layout.PLAY_MAX[1] + 100.0),
+						  "폭포 옆 동굴 유적", [
+	("입구 홀", -2650.0, -640.0, "Place"), ("갈림길", -850.0, 330.0, "Place"), ("보물 단", -620.0, -1420.0, "Place"),
+	("함정 복도", 820.0, 260.0, "Place"), ("수정 호수", 2650.0, -700.0, "Place"), ("여왕의 둥지", 3900.0, 260.0, "Place"),
+	("마을로", -3480.0, -120.0, "Exit")])
+
+
+def WriteMinimap():
+	# 지도 그림: 걷는 방(흙 바닥 / 유적 바닥돌 / 호숫가 이끼) + 지하 호수 + 구덩이(다리만 남김) + 벽 가장자리 바위, 나머지는 어둠
+	def Classify(X, Y):
+		D = WalkDistance(X, Y)
+		Ruin = np.zeros(np.shape(X), dtype=bool)
+		for Name, Kind, V in ROOMS:
+			if Name in ("Corridor", "Boss", "Ledge"):
+				Ruin |= RoomDistance(X, Y, Kind, V) < 0.0
+		Lake = Main.EllipseValue(X, Y, LAKE)
+		Out = np.where(D < 0.0, np.where(Ruin, HD2DMapArt.K_TILE, HD2DMapArt.K_FLOOR), np.where(D < 160.0, HD2DMapArt.K_ROCK, HD2DMapArt.K_VOID))
+		Out = np.where((D < 0.0) & (Lake < 1.45) & ~Ruin, HD2DMapArt.K_MOSS, Out)
+		Out = np.where(Lake < 1.0, HD2DMapArt.K_WATER, Out)
+		return np.where(InPit(X, Y) & (np.abs(Y) >= BRIDGE_HALF_W) & (D < 160.0), HD2DMapArt.K_VOID, Out)
+	HD2DMapArt.WriteMinimap(CONTENT, MINIMAP, Classify)
 
 
 def NavBakeHeight(Height):
@@ -720,6 +746,7 @@ def Main_():
 	HD2DArt.WriteCaveArt(os.path.join(CONTENT, "Sprites", "HD2D"), os.path.join(CONTENT, *HD2DGameplay.UI_DIR.split("/")))
 	WriteGatePrefab()
 	Scene, Grass = BuildScene(Sampler)
+	WriteMinimap()
 	WriteFoliage(os.path.join(CONTENT, "Foliage", "Demo", "HD2DCave.efoliage"), [(CAVE_GRASS_TYPE, Grass)])
 	Scene.Save(os.path.join(CONTENT, *SCENE.split("/")))
 	print(f"HD2D 동굴 생성: 엔티티 {len(Scene.Entities)}개, 풀 {len(Grass)}개, 높이 {H.min():.0f}~{H.max():.0f}cm")

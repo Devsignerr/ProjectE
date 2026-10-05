@@ -1,0 +1,174 @@
+{
+  "Name": "HD2DWaterfall",
+  "BlendMode": "Translucent",
+  "TwoSided": true,
+  "Parameters": [
+    {
+      "Name": "Streaks",
+      "Type": "Texture",
+      "Value": "Textures/WaterfallStreaks.png",
+      "Usage": "Linear"
+    },
+    {
+      "Name": "DeepColor",
+      "Type": "Vector",
+      "Value": [
+        0.16,
+        0.3,
+        0.32,
+        1.0
+      ]
+    },
+    {
+      "Name": "FoamColor",
+      "Type": "Vector",
+      "Value": [
+        0.95,
+        0.97,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "uv0",
+        "Type": "TexCoord"
+      },
+      {
+        "Id": "uvA",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "uv0",
+          "B": [
+            1.0,
+            0.6
+          ]
+        }
+      },
+      {
+        "Id": "panA",
+        "Type": "Panner",
+        "Inputs": {
+          "UV": "uvA",
+          "Speed": [
+            0.0,
+            -0.55
+          ]
+        }
+      },
+      {
+        "Id": "uvB",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "uv0",
+          "B": [
+            1.7,
+            1.1
+          ]
+        }
+      },
+      {
+        "Id": "panB",
+        "Type": "Panner",
+        "Inputs": {
+          "UV": "uvB",
+          "Speed": [
+            0.03,
+            -1.05
+          ]
+        }
+      },
+      {
+        "Id": "a",
+        "Type": "TextureSample",
+        "Texture": "Streaks",
+        "Inputs": {
+          "UV": "panA"
+        }
+      },
+      {
+        "Id": "b",
+        "Type": "TextureSample",
+        "Texture": "Streaks",
+        "Inputs": {
+          "UV": "panB"
+        }
+      },
+      {
+        "Id": "sum",
+        "Type": "Add",
+        "Inputs": {
+          "A": "a:2",
+          "B": "b:2"
+        }
+      },
+      {
+        "Id": "half",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "sum",
+          "B": 0.5
+        }
+      },
+      {
+        "Id": "foam",
+        "Type": "Saturate",
+        "Inputs": {
+          "A": "half"
+        }
+      },
+      {
+        "Id": "deep",
+        "Type": "VectorParameter",
+        "Parameter": "DeepColor"
+      },
+      {
+        "Id": "white",
+        "Type": "VectorParameter",
+        "Parameter": "FoamColor"
+      },
+      {
+        "Id": "color",
+        "Type": "Lerp",
+        "Inputs": {
+          "A": "deep:1",
+          "B": "white:1",
+          "Alpha": "foam"
+        }
+      },
+      {
+        "Id": "op0",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "foam",
+          "B": 0.75
+        }
+      },
+      {
+        "Id": "op",
+        "Type": "Add",
+        "Inputs": {
+          "A": "op0",
+          "B": 0.18
+        }
+      },
+      {
+        "Id": "glow",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "color",
+          "B": 0.12
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": "color",
+      "Roughness": 0.15,
+      "Metallic": 0.0,
+      "Opacity": "op",
+      "Emissive": "glow"
+    }
+  }
+}

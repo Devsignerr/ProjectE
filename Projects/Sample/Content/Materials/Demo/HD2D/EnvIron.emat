@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DEnvIron",
+  "BaseColorFactor": [
+    0.06,
+    0.06,
+    0.065,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 1.0,
+  "Roughness": 0.45,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

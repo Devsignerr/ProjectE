@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DEnvWindowLit",
+  "BaseColorFactor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    3.2,
+    1.75,
+    0.7
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.6,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

@@ -1,0 +1,41 @@
+{
+  "Name": "HD2DEnvSoil",
+  "Parent": "HD2DTriplanar.emat",
+  "Parameters": [
+    {
+      "Name": "Albedo",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/forest_ground_04/forest_ground_04_diff_2k.jpg"
+    },
+    {
+      "Name": "Arm",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/forest_ground_04/forest_ground_04_arm_2k.jpg"
+    },
+    {
+      "Name": "Normal",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/forest_ground_04/forest_ground_04_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.004545454545454545
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.62,
+        0.5,
+        0.4,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

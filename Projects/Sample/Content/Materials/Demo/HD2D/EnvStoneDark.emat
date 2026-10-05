@@ -1,0 +1,41 @@
+{
+  "Name": "HD2DEnvStoneDark",
+  "Parent": "HD2DTriplanar.emat",
+  "Parameters": [
+    {
+      "Name": "Albedo",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/modular_fort_01/textures/modular_fort_01_wall_diff_2k.jpg"
+    },
+    {
+      "Name": "Arm",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/modular_fort_01/textures/modular_fort_01_wall_arm_2k.jpg"
+    },
+    {
+      "Name": "Normal",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/modular_fort_01/textures/modular_fort_01_wall_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.0033333333333333335
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.62,
+        0.6,
+        0.56,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

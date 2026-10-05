@@ -1,0 +1,383 @@
+{
+  "Name": "HD2DPondPetals",
+  "Version": 2,
+  "Emitters": [
+    {
+      "Name": "HD2DPondPetals",
+      "Enabled": true,
+      "SimTarget": "GPU",
+      "LocalSpace": false,
+      "Duration": 10.0,
+      "Loop": true,
+      "MaxParticles": 1200,
+      "Seed": 803,
+      "FixedBounds": {
+        "Min": [
+          -1950.0,
+          -1950.0,
+          -300.0
+        ],
+        "Max": [
+          1950.0,
+          1950.0,
+          1250.0
+        ]
+      },
+      "EmitterUpdate": [
+        {
+          "Module": "SpawnRate",
+          "Enabled": true,
+          "Inputs": {
+            "SpawnRate": {
+              "Mode": 0,
+              "A": [
+                9.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "ParticleSpawn": [
+        {
+          "Module": "InitializeParticle",
+          "Enabled": true,
+          "Inputs": {
+            "Lifetime": {
+              "Mode": 1,
+              "A": [
+                8.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                13.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Color": {
+              "Mode": 1,
+              "A": [
+                0.62,
+                0.45,
+                0.95,
+                1.0
+              ],
+              "B": [
+                0.8,
+                0.66,
+                1.0,
+                1.0
+              ]
+            },
+            "SpriteSize": {
+              "Mode": 1,
+              "A": [
+                3.0,
+                1.8,
+                0.0,
+                0.0
+              ],
+              "B": [
+                5.5,
+                3.2,
+                0.0,
+                0.0
+              ]
+            },
+            "SpriteRotation": {
+              "Mode": 1,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                360.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Mass": {
+              "Mode": 0,
+              "A": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "ShapeLocation",
+          "Enabled": true,
+          "Inputs": {
+            "Shape": {
+              "Mode": 0,
+              "A": [
+                2.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Radius": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "BoxSize": {
+              "Mode": 0,
+              "A": [
+                900.0,
+                900.0,
+                120.0,
+                0.0
+              ]
+            },
+            "Height": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SurfaceOnly": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Offset": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                650.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "AddVelocity",
+          "Enabled": true,
+          "Inputs": {
+            "Velocity": {
+              "Mode": 1,
+              "A": [
+                20.0,
+                -15.0,
+                -45.0,
+                0.0
+              ],
+              "B": [
+                60.0,
+                15.0,
+                -25.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "ParticleUpdate": [
+        {
+          "Module": "CurlNoiseForce",
+          "Enabled": true,
+          "Inputs": {
+            "Strength": {
+              "Mode": 0,
+              "A": [
+                70.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Frequency": {
+              "Mode": 0,
+              "A": [
+                0.004,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "PanSpeed": {
+              "Mode": 0,
+              "A": [
+                30.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "Drag",
+          "Enabled": true,
+          "Inputs": {
+            "Drag": {
+              "Mode": 0,
+              "A": [
+                0.4,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "SpriteRotationRate",
+          "Enabled": true,
+          "Inputs": {
+            "RotationRate": {
+              "Mode": 1,
+              "A": [
+                -160.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                160.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "ScaleColor",
+          "Enabled": true,
+          "Inputs": {
+            "Scale": {
+              "Mode": 2,
+              "A": [
+                1.0,
+                1.0,
+                1.0,
+                0.0
+              ],
+              "Curve": [
+                {
+                  "T": 0.0,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0
+                  ]
+                },
+                {
+                  "T": 0.08,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "T": 0.85,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "T": 1.0,
+                  "V": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "Module": "Collision",
+          "Enabled": true,
+          "Inputs": {
+            "PlaneHeight": {
+              "Mode": 0,
+              "A": [
+                -20.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Restitution": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Friction": {
+              "Mode": 0,
+              "A": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "KillOnCollide": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "Renderers": [
+        {
+          "Type": 0,
+          "Enabled": true,
+          "BlendMode": 0,
+          "Texture": "",
+          "SubImageColumns": 1,
+          "SubImageRows": 1,
+          "Alignment": 0,
+          "VelocityStretch": 0.02,
+          "Mesh": "primitive:sphere",
+          "RibbonWidth": 1.0
+        }
+      ]
+    }
+  ]
+}

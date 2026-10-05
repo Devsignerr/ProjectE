@@ -45,7 +45,8 @@ float3 F_Schlick(float3 F0, float VdotH)
 }
 
 // 한 광원의 기여 (Radiance = 색 * 강도, L = 표면 → 광원)
-float3 EvaluateDirectLight(FSurface Surface, float3 L, float3 Radiance)
+// SpecularScale: 광원별 정반사 배율 (로컬 라이트 SpecularScale — 1이면 EvaluateDirectLight와 비트 동일)
+float3 EvaluateDirectLightEx(FSurface Surface, float3 L, float3 Radiance, float SpecularScale)
 {
 	const float NdotL = saturate(dot(Surface.N, L));
 	if (NdotL <= 0.0f)
@@ -63,7 +64,12 @@ float3 EvaluateDirectLight(FSurface Surface, float3 L, float3 Radiance)
 	const float3 Specular = D_GGX(NdotH, Alpha) * V_SmithGGXCorrelated(NdotV, NdotL, Alpha) * F;
 	const float3 Diffuse  = (1.0f - F) * (1.0f - Surface.Metallic) * Surface.Albedo / E_PI;
 
-	return (Diffuse + Specular) * Radiance * NdotL;
+	return (Diffuse + Specular * SpecularScale) * Radiance * NdotL;
+}
+
+float3 EvaluateDirectLight(FSurface Surface, float3 L, float3 Radiance)
+{
+	return EvaluateDirectLightEx(Surface, L, Radiance, 1.0f);
 }
 
 // Karis, "Physically Based Shading on Mobile" — 분석적 환경 BRDF 근사 (분할 합의 스케일/바이어스)

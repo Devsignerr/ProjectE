@@ -10,6 +10,7 @@ static const uint E_LOCAL_LIGHT_SPOT  = 1;
 static const uint E_LOCAL_LIGHT_RECT  = 2;
 static const uint E_LOCAL_LIGHT_DISC  = 3;
 static const uint E_LOCAL_LIGHT_FLAG_TWO_SIDED = 1u;
+static const uint E_LOCAL_LIGHT_SPECULAR_SHIFT = 8u; // LightMath::LocalLightSpecularShift — 비트 8~15 정반사 감소량
 
 // ShaderTypes.h FLocalLightGpuData와 1:1 (128바이트)
 struct FLocalLight
@@ -34,6 +35,12 @@ struct FLocalLight
 	float  ShadowFar;
 	float4 CookieTransform; // uv = 투영 좌표 × xy + zw
 };
+
+// 정반사 배율 (LightMath::DecodeSpecularScale와 같은 식): 1 - 감소량 / 255 — 기본 0 = 정확히 1
+float GetLocalLightSpecularScale(FLocalLight Light)
+{
+	return 1.0f - (float)((Light.Flags >> E_LOCAL_LIGHT_SPECULAR_SHIFT) & 255u) / 255.0f;
+}
 
 // ShaderTypes.h FClusterConstants와 1:1. 레지스터는 포함하는 쪽이 E_CLUSTER_CONSTANTS_REGISTER로 바꿀 수 있다 (메시 b5, 컬링 b0)
 #ifndef E_CLUSTER_CONSTANTS_REGISTER

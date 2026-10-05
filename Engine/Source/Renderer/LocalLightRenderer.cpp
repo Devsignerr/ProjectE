@@ -562,6 +562,7 @@ void FLocalLightRenderer::CollectLights(FScene& Scene, const FCamera& Camera)
 		if (FLocalLightGpuData* Light = AddLight(Transform.GetWorldPosition(), Point.Color, Intensity, Point.Radius, Point.Radius, Point.bCastShadows))
 		{
 			Light->Type = static_cast<uint32>(LightMath::ELocalLightType::Point);
+			Light->Flags |= LightMath::EncodeSpecularScale(Point.SpecularScale);
 			if (Ies >= 0 || !Point.CookieTexture.empty())
 			{
 				// 방향이 필요한 경우에만 축을 채운다 (없으면 Phase 23 값 그대로 — 화면 비트 동일)
@@ -578,6 +579,7 @@ void FLocalLightRenderer::CollectLights(FScene& Scene, const FCamera& Camera)
 		{
 			const LightMath::FConeParams Cone = LightMath::ComputeConeParams(Spot.InnerConeAngle, Spot.OuterConeAngle);
 			Light->Type            = static_cast<uint32>(LightMath::ELocalLightType::Spot);
+			Light->Flags          |= LightMath::EncodeSpecularScale(Spot.SpecularScale);
 			Light->Direction       = Transform.GetWorldForward();
 			Light->ConeScale       = Cone.Scale;
 			Light->ConeOffset      = Cone.Offset;
@@ -609,7 +611,7 @@ void FLocalLightRenderer::CollectLights(FScene& Scene, const FCamera& Camera)
 			Light->HalfHeight   = HalfHeight;
 			Light->ConeScale    = Cone.Scale;
 			Light->ConeOffset   = Cone.Offset;
-			Light->Flags        = Area.bTwoSided ? LightMath::LocalLightFlag_TwoSided : 0u;
+			Light->Flags        = (Area.bTwoSided ? LightMath::LocalLightFlag_TwoSided : 0u) | LightMath::EncodeSpecularScale(Area.SpecularScale);
 			Light->SourceRadius = Type == LightMath::ELocalLightType::Disc ? Extent : std::sqrt(HalfWidth * HalfWidth + HalfHeight * HalfHeight);
 			Light->IesTexture   = Ies;
 			// 그림자·쿠키 투영 반각 = 문 덮개 각 (없으면 상한 80°)

@@ -944,4 +944,6 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] 스프라이트 TAA: Masked 움직임 벡터 + 반응형 0, 정지 반투명 스프라이트는 알파 보존 PSO (Tilemap2D 정지 떨림 16.6 → 1.1%) — HD-2D 대비
 - [x] Workshop 보관함: glTF BLEND인데 알파 없는 불투명 에셋 → `BlendAsMasked` (반투명이라 사전 패스·움직임 벡터·그림자가 빠지고 TAA 반응형)
 - [x] TAA 깜빡임 감지 (TSR식 1단계): 정지 화소 뒤집힘 빈도 통계로 가는 기하·잎 떨림 감소 (Workshop 선반 10.5 → 0.7%, Hub 0.69 → 0.15%, 움직이는 물체 잔상 없음) — `Docs/Rules/RenderingPipeline.md`
+- [x] 로컬 라이트 정반사 배율(`SpecularScale`, 언리얼식): Alley 네온 보조광 0 → 젖은 바닥·물에 맺히던 둥근 하이라이트 제거 (반사는 발광 막대가 담당)
+- [ ] (조사) Tests/Materials가 TAA를 꺼도 실행마다 최대 2/255 다름 (CLAUDE.md는 비트 동일 기대 — TAA 앞 단계, 2026-10-05 발견)
 - [ ] (후보) TSR 2단계: 가려짐 판정 강화·움직임 벡터 다듬기 / 반투명 메시도 정지면 반응형 끄기 / Alley 에어컨 실외기 `BlendAsMasked` / 안티에일리어싱 선택지(FXAA·SMAA)

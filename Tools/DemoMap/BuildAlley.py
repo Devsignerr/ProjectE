@@ -424,8 +424,10 @@ def BuildScene(Left, Right):
 			Comps["ScriptComponent"] = FlickerScript(Intensity, **Flicker)
 		return S.Add(Name, Comps, Pos, QuatFromEuler(Pitch=Pitch, Yaw=Yaw))
 
-	def Point(Name, Pos, Color, Intensity, Radius, Shadows=False, Flicker=None, Parent=-1):
+	def Point(Name, Pos, Color, Intensity, Radius, Shadows=False, Flicker=None, Parent=-1, SpecularScale=1.0):
 		Comps = {"PointLightComponent": {"Color": list(Color), "Intensity": Intensity, "Radius": Radius, "CastShadows": Shadows}}
+		if SpecularScale != 1.0:
+			Comps["PointLightComponent"]["SpecularScale"] = SpecularScale
 		if Flicker:
 			Comps["ScriptComponent"] = FlickerScript(Intensity, **Flicker)
 		return S.Add(Name, Comps, Pos, Parent=Parent)
@@ -546,7 +548,9 @@ def BuildScene(Left, Right):
 	for Row, Z in enumerate((292.0, 280.0)):
 		S.Add(f"Neon_Pink_{Row}", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": f"{MAT}/AlleyNeonPink.emat"}},
 			  (DoorX, -HALF_WIDTH + 12.0, Z), None, (1.5 - Row * 0.4, 0.03, 0.03))
-	Point("Neon_Pink_Light", (DoorX, -HALF_WIDTH + 45.0, 270.0), (1.0, 0.12, 0.55), 9.0, 650.0, Flicker={"Style": "Neon", "Seed": 5})
+	# 네온 보조광은 벽·안개를 물들이는 확산만 (정반사 0): 젖은 바닥·물의 반사는 발광 막대가 화면 반사로 만들고, 점광원 하이라이트는
+	# 막대 앞 둥근 점으로 따로 맺혀 어색했다 (2026-10-05 사용자 보고)
+	Point("Neon_Pink_Light", (DoorX, -HALF_WIDTH + 45.0, 270.0), (1.0, 0.12, 0.55), 9.0, 650.0, Flicker={"Style": "Neon", "Seed": 5}, SpecularScale=0.0)
 	S.Model("Trash_L", Model("metal_trash_can"), (1650.0, -HALF_WIDTH + 55.0, 0.0), -90.0, 1.0)
 	S.Model("Trashbag_L1", Model("trashbag"), (1530.0, -HALF_WIDTH + 50.0, 0.0), 30.0, 1.1)
 	S.Model("Trashbag_L2", Model("trashbag"), (1490.0, -HALF_WIDTH + 85.0, 0.0), 170.0, 0.95)
@@ -571,7 +575,7 @@ def BuildScene(Left, Right):
 		  (NeonX, HALF_WIDTH - 10.0, 250.0), None, (0.025, 0.025, 1.3))
 	S.Add("Neon_Cyan_Top", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": f"{MAT}/AlleyNeonCyan.emat"}},
 		  (NeonX + 30.0, HALF_WIDTH - 10.0, 314.0), None, (0.6, 0.025, 0.025))
-	Point("Neon_Cyan_Light", (NeonX, HALF_WIDTH - 45.0, 260.0), (0.1, 0.75, 1.0), 9.0, 650.0)
+	Point("Neon_Cyan_Light", (NeonX, HALF_WIDTH - 45.0, 260.0), (0.1, 0.75, 1.0), 9.0, 650.0, SpecularScale=0.0) # 정반사 0 — 분홍 네온과 같은 이유
 	GarageX = RightLocalToEngine(R1_DOOR_X(Right, "garage"), 0)[0]
 	S.Model("Car_R", Model("covered_car"), (GarageX + 40.0, HALF_WIDTH - 115.0, 0.0), 0.0, 1.0)
 	Collider("Car_R_Collision", (GarageX + 40.0, HALF_WIDTH - 115.0, 70.0), (440.0, 185.0, 140.0))

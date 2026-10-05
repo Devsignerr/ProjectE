@@ -164,7 +164,8 @@ float3 EvaluateHitLighting(FHitSurface Hit, float3 View)
 			const float AreaAtten = AreaLightApproxAttenuation(Light, Hit.Position, AreaL);
 			if (AreaAtten > 0.0f)
 			{
-				Color += EvaluateDirectLight(Surface, AreaL, Light.Color * AreaAtten * RtLightProfile(Light, ToLightLocal(Light, -AreaL)));
+				Color += EvaluateDirectLightEx(Surface, AreaL, Light.Color * AreaAtten * RtLightProfile(Light, ToLightLocal(Light, -AreaL)),
+				                               GetLocalLightSpecularScale(Light));
 			}
 			continue;
 		}
@@ -183,7 +184,7 @@ float3 EvaluateHitLighting(FHitSurface Hit, float3 View)
 			{
 				Radiance *= RtLightProfile(Light, ToLightLocal(Light, -L));
 			}
-			Color += EvaluateDirectLight(Surface, L, Radiance);
+			Color += EvaluateDirectLightEx(Surface, L, Radiance, GetLocalLightSpecularScale(Light));
 		}
 	}
 	// IBL (Mesh.hlsl EvaluateImageBasedLightingEx와 같은 식, SSR 없음)

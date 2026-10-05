@@ -35,6 +35,18 @@ namespace LightMath
 
 	// FLocalLightGpuData::Flags (Lighting.hlsli E_LOCAL_LIGHT_FLAG_*)
 	constexpr uint32 LocalLightFlag_TwoSided = 1u << 0; // 면광원 양면 발광
+	// 비트 8~15 = 정반사 감소량 R (0~255): 정반사 배율 = 1 - R / 255 (Lighting.hlsli GetLocalLightSpecularScale).
+	// 감소량으로 두어 기본 0 = 배율 정확히 1 (기존 광원 화면 비트 동일)
+	constexpr uint32 LocalLightSpecularShift = 8;
+	inline uint32 EncodeSpecularScale(float Scale)
+	{
+		const float Reduction = 1.0f - FMath::Clamp(Scale, 0.0f, 1.0f);
+		return static_cast<uint32>(Reduction * 255.0f + 0.5f) << LocalLightSpecularShift;
+	}
+	inline float DecodeSpecularScale(uint32 Flags)
+	{
+		return 1.0f - static_cast<float>((Flags >> LocalLightSpecularShift) & 255u) / 255.0f;
+	}
 
 	inline bool IsAreaLightType(uint32 Type)
 	{

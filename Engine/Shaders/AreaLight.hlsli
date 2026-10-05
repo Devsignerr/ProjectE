@@ -143,7 +143,7 @@ float3 EvaluateAreaLight(FLocalLight Light, FSurface Surface, float3 WorldPositi
 	const float  Specular = LtcEvaluateAreaPolygon(Light, N, T1, T2, WorldPosition, Table1, bBehind);
 	const float3 F0       = GetF0(Surface);
 	const float3 SpecularColor = F0 * Table2.x + (1.0f - F0) * Table2.y;
-	return Light.Color * Profile * (Diffuse * Surface.Albedo * (1.0f - Surface.Metallic) + Specular * SpecularColor);
+	return Light.Color * Profile * (Diffuse * Surface.Albedo * (1.0f - Surface.Metallic) + Specular * GetLocalLightSpecularScale(Light) * SpecularColor);
 }
 
 // 방향광 쿠키 (FClusterConstants DirectionalCookie*): 빛에 수직인 평면 좌표. 미분이 있는 곳(픽셀 셰이더 본 흐름)에서만 부른다

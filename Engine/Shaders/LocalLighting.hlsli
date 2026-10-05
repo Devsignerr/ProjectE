@@ -207,7 +207,7 @@ float3 EvaluateLocalLights(FSurface Surface, float2 PixelPosition, float3 WorldP
 		{
 			Radiance *= EvaluateLightProfile(Light, ToLightLocal(Light, -L)); // IES/쿠키 (Phase 52)
 		}
-		const float3 Direct = EvaluateDirectLight(Surface, L, Radiance);
+		const float3 Direct = EvaluateDirectLightEx(Surface, L, Radiance, GetLocalLightSpecularScale(Light));
 		if (any(Direct > 0.0f))
 		{
 			Color += Direct * ComputeLocalShadow(Light, WorldPosition, GeometricNormal, L);

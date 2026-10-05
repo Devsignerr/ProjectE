@@ -105,7 +105,7 @@
 - RTAO: 결과는 SSAO와 같은 형식(t16), 파라미터는 경로 추적 기준(`--rtao-reference`)과 rmse로 정한다
 - 면광원/IES/쿠키: `AreaLightMath.h` ↔ hlsl 같은 식. 새 메시 패스·루트 시그니처도 공간 3 무제한 표(`RootParam_LightTextures`)를 묶는다
 - 하늘·대기/구름/물/HDR: 대기 안은 km(`WorldToAtmosphere`로만), 방향광은 `PerFrame.DirectionalLight`, 조명 표는 `FIblRenderer::GetLightingTable()`, 씬 출력은 `Rhi->GetSceneOutput()`
-- 로컬 라이트: `LightMath.h` ↔ `Lighting.hlsli` 함께(+`LightTests`), 새 메시 패스는 b5/t9~t12 바인딩
+- 로컬 라이트: `LightMath.h` ↔ `Lighting.hlsli` 함께(+`LightTests`), 새 메시 패스는 b5/t9~t12 바인딩. 정반사 배율 `SpecularScale`(Flags 비트 8~15 감소량) — 로컬 라이트를 평가하는 새 경로도 정반사 항에 곱한다
 - 방향광 그림자 캐시: 새 그림자 캐스터 종류는 정적/동적을 알린다(`bShadowStatic` 또는 상태 해시), 해시에 안 담기는 변경은 `InvalidateCache()`, 병렬 단계에 콜백·리소스 생성 금지
 
 ### [`Docs/Rules/RenderingMeshes.md`](Docs/Rules/RenderingMeshes.md) — 렌더링 메시·머티리얼 (스킨·스킨 캐시·블렌드·머티리얼 그래프·파티클·지형)

@@ -199,6 +199,7 @@ struct FPointLightComponent
 	float    Intensity    = 10.0f;
 	float    Radius       = 1000.0f; // cm: 영향 반경 (이 거리에서 0)
 	bool     bCastShadows = false;   // 큐브 그림자 (6면)
+	float    SpecularScale = 1.0f;   // 정반사 배율 0~1 (언리얼 Specular Scale — 0 = 벽을 물들이는 보조광처럼 하이라이트 없이 확산만)
 	// ---- Phase 52: IES 배광 / 쿠키
 	std::string IesProfile;               // Content 기준 .ies (비우면 없음)
 	bool        bUseIesIntensity  = false; // true = Intensity 대신 프로필 최대 칸델라 × 0.01 × IesIntensityScale
@@ -218,6 +219,7 @@ struct FSpotLightComponent
 	float    InnerConeAngle = 20.0f;   // 도 (중심축과의 반각)
 	float    OuterConeAngle = 35.0f;   // 도 (반각, 최대 80)
 	bool     bCastShadows   = false;   // 그림자 맵 1장
+	float    SpecularScale  = 1.0f;    // 정반사 배율 0~1 (점광원과 같은 뜻)
 	// ---- Phase 52: IES 배광 / 쿠키 (점광원과 같은 뜻)
 	std::string IesProfile;
 	bool        bUseIesIntensity  = false;
@@ -251,6 +253,7 @@ struct FAreaLightComponent
 	float    BarnDoorAngle  = 90.0f;   // 도 (90 = 문 덮개 없음)
 	float    BarnDoorLength = 20.0f;   // cm
 	bool     bCastShadows   = false;
+	float    SpecularScale  = 1.0f;    // 정반사 배율 0~1 (점광원과 같은 뜻)
 	std::string IesProfile;
 	bool        bUseIesIntensity  = false;
 	float       IesIntensityScale = 1.0f;

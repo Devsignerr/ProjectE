@@ -207,3 +207,17 @@ E_TEST(Light_ComponentsSerializeRoundTrip)
 	E_EXPECT_EQ(PointCount, 1);
 	E_EXPECT_EQ(SpotCount, 1);
 }
+
+// 정반사 배율 (Flags 비트 8~15 감소량): 기본 1 = 비트 0 (기존 광원 화면 그대로), 0 = 하이라이트 없음, 양면 비트와 공존
+E_TEST(Light_SpecularScaleFlags)
+{
+	E_EXPECT_TRUE(LightMath::EncodeSpecularScale(1.0f) == 0u);
+	E_EXPECT_TRUE(LightMath::DecodeSpecularScale(0u) == 1.0f);
+	E_EXPECT_TRUE(LightMath::DecodeSpecularScale(LightMath::EncodeSpecularScale(0.0f)) == 0.0f);
+	E_EXPECT_NEAR(LightMath::DecodeSpecularScale(LightMath::EncodeSpecularScale(0.5f)), 0.5f, 1.0f / 255.0f);
+	E_EXPECT_TRUE(LightMath::DecodeSpecularScale(LightMath::EncodeSpecularScale(-3.0f)) == 0.0f); // 범위 밖은 자른다
+	E_EXPECT_TRUE(LightMath::DecodeSpecularScale(LightMath::EncodeSpecularScale(7.0f)) == 1.0f);
+	const uint32 Flags = LightMath::LocalLightFlag_TwoSided | LightMath::EncodeSpecularScale(0.25f);
+	E_EXPECT_TRUE((Flags & LightMath::LocalLightFlag_TwoSided) != 0u);
+	E_EXPECT_NEAR(LightMath::DecodeSpecularScale(Flags), 0.25f, 1.0f / 255.0f);
+}

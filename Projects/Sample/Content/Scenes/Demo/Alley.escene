@@ -2379,7 +2379,8 @@
           ],
           "Intensity": 9.0,
           "Radius": 650.0,
-          "CastShadows": false
+          "CastShadows": false,
+          "SpecularScale": 0.0
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
@@ -2930,7 +2931,8 @@
           ],
           "Intensity": 9.0,
           "Radius": 650.0,
-          "CastShadows": false
+          "CastShadows": false,
+          "SpecularScale": 0.0
         },
         "TransformComponent": {
           "Position": [

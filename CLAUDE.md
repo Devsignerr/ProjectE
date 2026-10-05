@@ -136,6 +136,10 @@
 
 - Crypt2D 예제: 에셋은 `FetchAssets.ps1`, 스프라이트·데이터·씬·`Rooms.lua`는 생성물(`Tools/BuildCrypt2D.py`를 고쳐 다시 만듦), 자동 검증 씬 5종
 
+### [`Docs/Rules/FarmBie.md`](Docs/Rules/FarmBie.md) — FarmBie 예제 프로젝트 (농장 + 좀비 디펜스)
+
+- FarmBie: 콘텐츠는 `Projects/FarmBie/Tools/BuildFarmBie.py` 생성물, 거의 수직 탑뷰라 캐릭터는 전체 빌보드, 대량 처리는 게임 모듈(C++)·흐름은 Lua, 자동 검증 `Scenes/Tests/Farm*`
+
 ### [`Docs/Rules/Animation.md`](Docs/Rules/Animation.md) — 애니메이션 (그래프·몽타주·IK·노티파이·리타기팅·루트 모션·병렬 갱신)
 
 - 애니메이션 그래프(.eanimgraph): 재생·전이·노티파이 규칙은 `AnimGraph.h` 머리 주석, 파라미터는 비복제

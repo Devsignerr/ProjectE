@@ -18,8 +18,8 @@ STONE_D = FMaterialDef("BuildStoneDark", Tint=(0.17, 0.14, 0.11), Rough=1.0)
 IRON   = FMaterialDef("BuildIron", Tint=(0.09, 0.09, 0.1), Rough=0.9, Metal=0.0)  # 금속성이 높으면 위에서 하늘만 비친다
 IRON_L = FMaterialDef("BuildIronLight", Tint=(0.32, 0.3, 0.27), Rough=0.8, Metal=0.1)
 GLOW_R = FMaterialDef("BuildGlowRed", Tint=(0.9, 0.2, 0.15), Rough=0.4, Emissive=(3.0, 0.4, 0.2))
-CRYSTAL = FMaterialDef("BuildCrystal", Tint=(0.62, 0.36, 0.95), Rough=0.15, Emissive=(0.9, 0.35, 1.6))
-CRYSTAL_L = FMaterialDef("BuildCrystalLight", Tint=(0.85, 0.7, 1.0), Rough=0.1, Emissive=(1.6, 1.0, 2.4))
+CRYSTAL = FMaterialDef("BuildCrystal", Tint=(0.42, 0.2, 0.72), Rough=0.2, Emissive=(0.35, 0.12, 0.6))
+CRYSTAL_L = FMaterialDef("BuildCrystalLight", Tint=(0.7, 0.55, 0.95), Rough=0.15, Emissive=(0.7, 0.45, 1.1))
 GLASS  = FMaterialDef("BuildGlass", Tint=(0.75, 0.9, 0.95), Rough=0.08, Blend=True, Alpha=0.28, DoubleSided=True)
 
 
@@ -168,9 +168,23 @@ def Greenhouse(W, H):
 	return B
 
 
+def Workbench():
+	B = _New(WOOD, WOOD_D, IRON_L, ROPE)
+	B.Box("BuildWood", (0, 0, 78.0), (150.0, 70.0, 10.0))
+	for X in (-65.0, 65.0):
+		for Y in (-27.0, 27.0):
+			B.Box("BuildWoodDark", (X, Y, 38.0), (10.0, 10.0, 76.0))
+	B.Box("BuildWoodDark", (0, 0, 22.0), (140.0, 60.0, 6.0))
+	B.Box("BuildIronLight", (-30.0, 0, 86.0), (36.0, 18.0, 6.0))   # 모루
+	B.Box("BuildRope", (40.0, 8.0, 88.0), (30.0, 30.0, 10.0))      # 섬유 묶음
+	B.Cylinder("BuildWoodDark", (10.0, -18.0, 84.0), (42.0, -24.0, 84.0), 2.5, 6)  # 망치 자루
+	B.Box("BuildIronLight", (44.0, -24.0, 86.0), (8.0, 14.0, 8.0))
+	return B
+
+
 MODELS = {
 	"WallWood": WallWood, "WallStone": WallStone, "WallIron": WallIron, "Gate": Gate, "Spike": Spike, "Mine": Mine, "Turret": Turret,
-	"Crystal": Crystal,
+	"Crystal": Crystal, "Workbench": Workbench,
 }
 
 

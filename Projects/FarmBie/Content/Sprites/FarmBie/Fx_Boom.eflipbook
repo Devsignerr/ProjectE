@@ -1,0 +1,23 @@
+{
+  "Version": 1,
+  "Sprite": "Fx.esprite",
+  "Fps": 12.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Boom0"
+    },
+    {
+      "Slice": "Boom1"
+    },
+    {
+      "Slice": "Boom2"
+    },
+    {
+      "Slice": "Boom3"
+    },
+    {
+      "Slice": "Boom4"
+    }
+  ]
+}

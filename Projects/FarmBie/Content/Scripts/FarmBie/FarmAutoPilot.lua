@@ -6,6 +6,7 @@
 --   Sanity: 먹기(체력·정신력·희귀 버프)·버프는 아침에 끝·정신력 낮음 속도 감소·잠 회복·정신력 0 쓰러짐(소지금 20%·10시 기상)·저장
 --   Forest(씬 4번): 농장 도구 → 서쪽 입구로 숲 → 나무·바위 캐기·풀 줍기·먹기·시간 이어짐 → 새벽 잠 → 집 침대 → 3일 뒤 숲 자원 다시 자람
 --   Build : 건설 모드·벽(가로/세로)·문 통과·덫·지뢰(물건)·포탑·철거 반환·수리·부서짐 정리·크리스탈 옮기기/강화·온실(계절 넘김에도 삶)·저장
+--   Defense: 진입로 예고·생성·덫/지뢰/포탑·검/활·작물 먹힘·밤 정리 → 침대 / DefenseLoss: 플레이어 피해·쓰러짐·부활·크리스탈 발견·시간 초과 패배·부재 정산 / GameOver
 --   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
@@ -14,8 +15,15 @@ AutoPilot.__index = AutoPilot
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
 
+-- 밤 좀비가 나오는 시나리오 (그 밖에는 좀비 없는 밤 — 시간·농사·경제 검증이 디펜스에 흔들리지 않게)
+local DefenseScenarios = { Defense = true, DefenseLoss = true, GameOver = true, NightShot = true, Boss = true, BossLoss = true, SeasonBoss = true, BossShot = true }
+
 function AutoPilot.New(Scenario, Player, GM)
 	local A = setmetatable({ Scenario = Scenario, Player = Player, GM = GM, Time = 0, Frame = 0, Failures = {}, Checks = 0 }, AutoPilot)
+	if not DefenseScenarios[Scenario] then
+		GM.bPeacefulNights = true
+		GM:PlanNight()
+	end
 	-- 여러 씬에 걸친 시나리오: 단계(Phase)와 실패·확인 수를 Persistent로 잇는다 → Run<시나리오><단계>
 	local Phase = Game.GetPersistent("FarmBie_AutoPhase", "")
 	if Phase ~= "" then
@@ -752,7 +760,7 @@ function AutoPilot:RunBuild()
 	-- 크리스탈 강화
 	self:Press("Build")
 	self:StandAbove(NX, NY)
-	self.In.Slot = 8
+	self.In.Slot = 9
 	self:Yield()
 	self:Press("UseTool")
 	self:Expect(Cr.Level == 2 and Cr.Comp.MaxHp == 600 and GM.Gold == 2000 - 300, "크리스탈 2단계")
@@ -799,6 +807,215 @@ function AutoPilot:RunBuildShot()
 	GM:PlaceStructure("WallWood", TX0 - 1, TY + 2, 90, nil)
 	P:Teleport(Vector3(-200, -150, P.entity:GetWorldPosition().Z))
 	GM:ToggleBuildMode()
+	while true do self:Yield() end
+end
+
+-- 살아 있는 좀비 중 가장 가까운 것
+function AutoPilot:NearestZombie()
+	local Best, BestD = nil, math.huge
+	for _, Z in ipairs(self.GM:LiveZombies()) do
+		local D_ = Flat(Z.Entity:GetWorldPosition() - self:Pos()):Length()
+		if D_ < BestD then Best, BestD = Z, D_ end
+	end
+	return Best, BestD
+end
+
+-- 좀비 쪽을 바라보게 (네 방향 중 가까운 쪽)
+function AutoPilot:FaceTo(Pos)
+	local D_ = Flat(Pos - self:Pos())
+	local P = self.Player
+	if math.abs(D_.X) >= math.abs(D_.Y) then P.Facing = D_.X > 0 and "Right" or "Left" else P.Facing = D_.Y > 0 and "Down" or "Up" end
+end
+
+-- 좀비 하나를 골라 붙어서 공격 (Timeout까지). 처치 수가 오르면 true
+function AutoPilot:FightNearest(Key, Range, Timeout)
+	local GM = self.GM
+	local Kills0 = GM.Defense.Kills
+	local Until = self.Time + Timeout
+	self:SelectKey(Key)
+	while self.Time < Until do
+		local Z = self:NearestZombie()
+		if not Z then self:Yield() else
+			local ZP = Z.Entity:GetWorldPosition()
+			if Flat(ZP - self:Pos()):Length() > Range then
+				self.In.Move = Flat(ZP - self:Pos()):Normalized()
+				self:Yield()
+			else
+				self:FaceTo(ZP)
+				self:Press("UseTool")
+				self:Wait(0.25)
+			end
+		end
+		if GM.Defense.Kills > Kills0 then return true end
+	end
+	return false
+end
+
+function AutoPilot:StartNight()
+	local GM = self.GM
+	GM:SetHour(19.98)
+	return self:WaitUntil(function() return GM.Phase == "Night" end, 5)
+end
+
+function AutoPilot:RunDefense()
+	local GM, P = self.GM, self.Player
+	local R = GM.Report
+	local Dc = GM.Defense
+	self:Wait(1.0)
+	local Plan = GM.TonightPlan
+	self:Expect(Plan and #Plan.Entrances == 2 and #Plan.Spawns >= 6, string.format("밤 계획 %d곳 %d마리", Plan and #Plan.Entrances or 0, Plan and #Plan.Spawns or 0))
+	local E1 = Plan.Entrances[1]
+	self:Expect(Scene.Find("Warn_" .. E1.Name):GetComponent("SpriteComponent").Visible, "진입로 예고 표지 " .. E1.Name)
+	GM:Give("Sword", 1, true)
+	GM:Give("Bow", 1, true)
+	GM:Give("Arrow", 30, true)
+	-- 무기를 핫바로
+	for _, Key in ipairs({ "Sword", "Bow" }) do
+		for I = 10, GM.BagSize do
+			if GM.Bag[I] and GM.Bag[I].Key == Key then
+				local Free = 9
+				for H = 9, 1, -1 do if not GM.Bag[H] then Free = H end end
+				GM.Bag[Free], GM.Bag[I] = GM.Bag[I], GM.Bag[Free]
+			end
+		end
+	end
+	-- 첫 진입로 안쪽에 덫·지뢰·포탑 + 그 앞 작물 (좀비 길목)
+	-- 진입로 틈 바로 안쪽 한 줄 (좀비가 반드시 지나는 칸): 가시덫 줄 + 가운데 지뢰, 옆에 포탑
+	local Inward = Flat(Vector3(0, 0, 0) - E1.Pos):Normalized()
+	local Across = Vector3(-Inward.Y, Inward.X, 0)
+	if math.abs(Inward.X) > math.abs(Inward.Y) then Inward = Vector3(Inward.X > 0 and 1 or -1, 0, 0) Across = Vector3(0, 1, 0)
+	else Inward = Vector3(0, Inward.Y > 0 and 1 or -1, 0) Across = Vector3(1, 0, 0) end
+	local Gate = E1.Pos + Inward * 260
+	for K = -3, 3 do
+		local TX, TY = GM:TileOf(Gate + Across * (K * 100))
+		if not GM:StructureAt(TX, TY) then GM:PlaceStructure(K == 0 and "Mine" or "Spike", TX, TY, 0, nil) end
+	end
+	-- 포탑은 두 번째 진입로 쪽 (첫 진입로 덫까지 좀비가 오게)
+	local E2 = Plan.Entrances[2]
+	local TX, TY = GM:TileOf(E2.Pos + Flat(Vector3(0, 0, 0) - E2.Pos):Normalized() * 500)
+	GM:PlaceStructure("Turret", TX, TY, 0, nil)
+	local CX, CY = GM:TileOf(E1.Pos + Flat(Vector3(0, 0, 0) - E1.Pos):Normalized() * 750)
+	local Crop = { TX = CX, TY = CY, Wet = false, Fert = 0, Crop = { Id = "EyeRadish", R = 0, Age = 4, Dead = false } }
+	GM.Tiles[GM:TileIndex(CX, CY)] = Crop
+	GM:RefreshTile(Crop)
+	GM:SyncCropTiles()
+	self:Wait(0.3)
+	self:Expect(self:StartNight() and Dc.Active, "밤 시작 · 디펜스 켜짐")
+	self:Expect(not Scene.Find("Warn_" .. E1.Name):GetComponent("SpriteComponent").Visible, "밤엔 표지 숨김")
+	self:Expect(self:WaitUntil(function() return (R.Spawned or 0) >= 2 and Dc.Alive >= 1 end, 40), string.format("좀비 나옴 %d (살아 있음 %d)", R.Spawned or 0, Dc.Alive))
+	self:Expect(self:WaitUntil(function() return Dc.TurretShots > 0 end, 40), "포탑 발사 " .. Dc.TurretShots)
+	self:Expect(self:WaitUntil(function() return Dc.TrapHits > 0 end, 40), "덫·지뢰 " .. Dc.TrapHits .. " 폭발 " .. Dc.Explosions)
+	self:Expect(self:WaitUntil(function() return (R.CropsEaten or 0) > 0 or Dc.Kills >= 3 end, 40), "작물 먹힘 " .. tostring(R.CropsEaten) .. " / 처치 " .. Dc.Kills)
+	self:Expect(Dc.FlowBuilds > 0, "흐름장 " .. Dc.FlowBuilds)
+	-- 검으로 처치
+	self:Expect(self:FightNearest("Sword", 110, 25), "검으로 처치")
+	-- 활: 화살이 맞는다
+	local Arrows = GM:CountItem("Arrow")
+	local Hits = 0
+	local Shots0 = R.Shots or 0
+	self:SelectKey("Bow")
+	local Until = self.Time + 15
+	while self.Time < Until and Hits == 0 do
+		local Z = self:NearestZombie()
+		if Z then
+			local ZP = Z.Entity:GetWorldPosition()
+			local D_ = Flat(ZP - self:Pos())
+			if D_:Length() > 600 then self.In.Move = D_:Normalized() self:Yield()
+			else
+				-- 축에 맞춰 선다 (네 방향으로만 쏜다)
+				if math.abs(D_.X) < math.abs(D_.Y) then
+					if math.abs(D_.X) > 25 then self.In.Move = Vector3(D_.X > 0 and 1 or -1, 0, 0) self:Yield() else self:FaceTo(ZP) self:Press("UseTool") self:Wait(0.4) end
+				else
+					if math.abs(D_.Y) > 25 then self.In.Move = Vector3(0, D_.Y > 0 and 1 or -1, 0) self:Yield() else self:FaceTo(ZP) self:Press("UseTool") self:Wait(0.4) end
+				end
+				if (R.Shots or 0) > Shots0 then Hits = Dc.AttackKind == "Shot" and Dc.AttackHits or 0 end
+			end
+		else self:Yield() end
+	end
+	self:Expect(GM:CountItem("Arrow") < Arrows and Hits > 0, string.format("활 명중 %d (화살 %d → %d)", Hits, Arrows, GM:CountItem("Arrow")))
+	-- 밤 정리: 남은 일정·좀비를 치우고(시험 단축) → 버팀 → 침대
+	GM.SpawnIndex = #Plan.Spawns + 1
+	for _, Z in ipairs(GM:LiveZombies()) do Z.Comp.Hp = 0 Z.Comp.Dead = true end
+	self:Expect(self:WaitUntil(function() return GM:IsNightCleared() end, 5), "밤을 버텼다")
+	self:Expect(GM:Hud().LastAnnounce == "밤을 버텼다!", "버팀 알림")
+	self:Expect(self:GoTo(GM.SleepSpot + Vector3(0, 80, 0), 40, 20), "문 앞")
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(self:WaitMorning() and GM.Day == 2 and not Dc.Active, "잠 → 2일")
+	self:Expect(string.find(GM:Hud().Cache["BannerSub.Text"] or "", "오늘 밤") ~= nil, "아침 밤 예고 " .. tostring(GM:Hud().Cache["BannerSub.Text"]))
+	self:Finish()
+end
+
+function AutoPilot:RunDefenseLoss()
+	local GM, P = self.GM, self.Player
+	local R = GM.Report
+	local Dc = GM.Defense
+	self:Wait(1.0)
+	for _, S in ipairs(GM.TonightPlan.Spawns) do S.T = 0.5 end -- 시험: 바로 다 나옴
+	self:Expect(self:StartNight(), "밤 시작")
+	self:Expect(self:WaitUntil(function() return #GM:LiveZombies() >= 4 end, 10), "좀비 나옴")
+	-- 크리스탈 발견: 좀비 하나를 크리스탈 옆으로
+	local Z = GM:LiveZombies()[1]
+	local CP = GM:CrystalPos()
+	Z.Entity:SetPosition(Vector3(CP.X + 160, CP.Y, 0))
+	self:Expect(self:WaitUntil(function() return Dc.CrystalFound end, 5) and GM:Hud().LastAnnounce == "크리스탈이 들켰다!", "크리스탈 발견")
+	self:Expect(self:WaitUntil(function() return GM.Crystal.Comp.Hp < GM.Crystal.Comp.MaxHp end, 15), "크리스탈 공격받음 " .. GM.Crystal.Comp.Hp)
+	-- 플레이어 피해 → 쓰러짐 → 10초 뒤 부활
+	local Z2 = GM:LiveZombies()[2]
+	local San = GM.Sanity
+	GM.Health = 8
+	P:Teleport(Z2.Entity:GetWorldPosition() + Vector3(60, 0, 90))
+	self:Expect(self:WaitUntil(function() return GM.PlayerDown ~= nil end, 15), "쓰러짐")
+	self:Expect(GM.Sanity == San - GM.Vitals.DeathSanityLoss and not P.Sprite.Visible, "쓰러짐 정신력 -12")
+	self:Expect(self:WaitUntil(function() return GM.PlayerDown == nil end, 13) and GM.Health >= 50 and P.Sprite.Visible, "부활 " .. GM.Health)
+	self:Wait(0.2)
+	self:Expect(Flat(self:Pos() - GM.SleepSpot):Length() < 200, string.format("집 앞에서 부활 %.0fcm", Flat(self:Pos() - GM.SleepSpot):Length()))
+	-- 시간 초과: 새벽까지 못 잡음 → 라운드 패배
+	local San2 = GM.Sanity
+	GM:SetHour(25.97)
+	self:Expect(self:WaitMorning(), "새벽 → 아침")
+	self:Expect(R.RoundsLost == 1 and GM.Sanity == math.min(100, San2 - GM.Vitals.RoundLossSanity + GM.Vitals.DawnSanity), string.format("라운드 패배 정신력 %d → %d", San2, GM.Sanity))
+	self:Expect(string.find(GM:Hud().Cache["BannerSub.Text"] or "", "막지 못했다") ~= nil, "패배 알림")
+	self:Expect(#GM:LiveZombies() == 0 and not Dc.Active, "아침엔 좀비 없음")
+	-- 부재 정산: 설치물 없이 → 좀비가 날뜀
+	local Crop = { TX = 20, TY = 25, Wet = false, Fert = 0, Crop = { Id = "EyeRadish", R = 0, Age = 2, Dead = false } }
+	GM.Tiles[GM:TileIndex(20, 25)] = Crop
+	GM:ResolveAbsentNight()
+	self:Expect(R.AbsentNights == 1 and GM.Tiles[GM:TileIndex(20, 25)].Crop == nil and string.find((GM.PendingNightNotes or {})[1] or "", "비운") ~= nil,
+		"부재 정산 " .. tostring((GM.PendingNightNotes or {})[1]))
+	self:Finish()
+end
+
+function AutoPilot:RunGameOver()
+	local GM = self.GM
+	self:Wait(1.0)
+	GM:SaveGame()
+	for _, S in ipairs(GM.TonightPlan.Spawns) do S.T = 0.5 end
+	self:Expect(self:StartNight(), "밤 시작")
+	self:Expect(self:WaitUntil(function() return #GM:LiveZombies() >= 2 end, 10), "좀비 나옴")
+	GM.Crystal.Comp.Hp = 5
+	local CP = GM:CrystalPos()
+	for _, Z in ipairs(GM:LiveZombies()) do Z.Entity:SetPosition(Vector3(CP.X + 150, CP.Y + 10, 0)) end
+	self:Expect(self:WaitUntil(function() return GM.Phase == "GameOver" end, 15), "크리스탈 파괴 → 게임 오버")
+	self:Expect(not SaveGame.Exists(GM:SlotName()) and GM:Hud().Cache["GameOverWindow.Visibility"] == "Visible", "저장 삭제·게임 오버 화면")
+	self:Expect(string.find(GM:Hud().Cache["GameOverBody.Text"] or "", "버텼다") ~= nil, "기록 " .. tostring(GM:Hud().Cache["GameOverBody.Text"]))
+	self:Finish()
+end
+
+function AutoPilot:RunNightShot()
+	local GM, P = self.GM, self.Player
+	for _, S in ipairs(GM.TonightPlan.Spawns) do S.T = 0.5 end
+	local E1 = GM.TonightPlan.Entrances[1]
+	local In = E1.Pos + Flat(Vector3(0, 0, 0) - E1.Pos):Normalized() * 600
+	local TX, TY = GM:TileOf(In)
+	for K = -2, 2 do GM:PlaceStructure(K == 0 and "Gate" or "WallWood", TX + K, TY, 0, nil) end
+	GM:PlaceStructure("Turret", TX + 3, TY + 1, 0, nil)
+	GM:PlaceStructure("Spike", TX, TY + 1, 0, nil)
+	GM:Give("Sword", 1, true)
+	GM:SetHour(19.98)
+	self:Wait(6.0)
+	P:Teleport(Vector3(In.X, In.Y + 250, P.entity:GetWorldPosition().Z))
+	P.Facing = "Up"
 	while true do self:Yield() end
 end
 

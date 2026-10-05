@@ -17,7 +17,7 @@ function Menu:OpenMenu(Name)
 	Game.SetTimeScale(0.0)
 	if self.CursorSprite then self.CursorSprite.Visible = false end
 	local Hud = self:Hud()
-	Hud:Show("ShopWindow", Name == "Shop")
+	Hud:Show("ShopWindow", Name == "Shop" or Name == "Craft")
 	Hud:Show("BagWindow", Name == "Bag")
 	Hud:ShowPrompt(nil)
 	self:RefreshMenu()
@@ -34,6 +34,9 @@ end
 
 function Menu:OpenShop()
 	self:OpenMenu("Shop")
+	self:Hud():Set("ShopTitle", "Text", "떠돌이 보부상")
+	self:Hud():Set("ShopHint", "Text", "W/S 고르기   E 사기   Esc 닫기")
+	self:Hud():Set("ShopPortrait", "Texture", "UI/FarmBie/Peddler.png")
 	local Lines = self.Economy.MerchantLines
 	local Say = Lines and #Lines > 0 and Lines[(self:TotalDays() % #Lines) + 1] or ""
 	self:Hud():Set("ShopSay", "Text", Say)
@@ -53,6 +56,16 @@ function Menu:MenuInput(In)
 		if In.Confirm then
 			local bOk, Text = self:Buy(self.MenuIndex)
 			if Text ~= "" then self:Hud():Toast(bOk and self:ItemInfo(self.Stock[self.MenuIndex].Key).Icon or "", Text, bOk and nil or { 1.0, 0.55, 0.45, 1.0 }) end
+		end
+		if In.Cancel or In.Inventory then self:CloseMenu() return end
+	elseif self.Menu == "Craft" then
+		local Count = #self.CraftList
+		if In.MenuUp then self.MenuIndex = math.max(1, self.MenuIndex - 1) end
+		if In.MenuDown then self.MenuIndex = math.min(math.max(1, Count), self.MenuIndex + 1) end
+		if In.Confirm then
+			local R = self.CraftList[self.MenuIndex]
+			local bOk, Text = self:DoCraft(R)
+			self:Hud():Toast(bOk and self:ItemInfo(R.Output).Icon or "", Text, bOk and nil or { 1.0, 0.55, 0.45, 1.0 })
 		end
 		if In.Cancel or In.Inventory then self:CloseMenu() return end
 	elseif self.Menu == "Bag" then
@@ -130,6 +143,26 @@ function Menu:RefreshMenu()
 		local Sel = self.Stock[self.MenuIndex]
 		self:ShowDetail("Shop", Sel and Sel.Key, Sel and (self.Gold < Sel.Price and "돈이 모자라다" or nil))
 		if Count == 0 then Hud:Set("ShopSay", "Text", "오늘은 팔 물건이 없네…") end
+	elseif self.Menu == "Craft" then
+		Hud:Set("ShopGold", "Text", tostring(self.Gold))
+		local List = self.CraftList
+		if self.MenuIndex > self.MenuOffset + ShopRows then self.MenuOffset = self.MenuIndex - ShopRows end
+		if self.MenuIndex <= self.MenuOffset then self.MenuOffset = self.MenuIndex - 1 end
+		for Row = 0, ShopRows - 1 do
+			local I = self.MenuOffset + Row + 1
+			local R = List[I]
+			Hud:Show("ShopRow" .. Row, R ~= nil)
+			Hud:Show("ShopSel" .. Row, I == self.MenuIndex)
+			if R then
+				local Info = self:ItemInfo(R.Output)
+				Hud:Set("ShopIcon" .. Row, "Texture", Info.Icon)
+				Hud:Set("ShopName" .. Row, "Text", string.format("%s ×%d", Info.Name, R.Count))
+				Hud:Set("ShopPrice" .. Row, "Text", self:CanCraft(R) and "제작" or "부족")
+				Hud:Set("ShopStock" .. Row, "Text", "가짐 " .. self:CountItem(R.Output))
+			end
+		end
+		local Sel = List[self.MenuIndex]
+		self:ShowDetail("Shop", Sel and Sel.Output, Sel and ("재료\n" .. self:InputsText(Sel)) or nil)
 	elseif self.Menu == "Bag" then
 		for I = 1, self.BagSize do
 			local W = I - 1

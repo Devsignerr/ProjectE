@@ -1,0 +1,17 @@
+{
+  "Version": 1,
+  "Sprite": "Zombie_Harvester.esprite",
+  "Fps": 8.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "DieDown0"
+    },
+    {
+      "Slice": "DieDown1"
+    },
+    {
+      "Slice": "DieDown2"
+    }
+  ]
+}

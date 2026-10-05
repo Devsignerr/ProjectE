@@ -22,6 +22,7 @@ import FarmBieBuild  # noqa: E402
 import FarmBieCrops  # noqa: E402
 import FarmBieData  # noqa: E402
 import FarmBieUI  # noqa: E402
+import FarmBieZombies  # noqa: E402
 import ModelBounds  # noqa: E402
 from SceneBuilder import FScene, QuatFromEuler  # noqa: E402
 
@@ -245,6 +246,65 @@ def WriteBuildPrefabs():
 	])
 
 
+def WriteZombiePrefabs():
+	# 좀비: 루트(FarmZombieComponent — FarmDefense.lua가 Zombies.etable 값을 채움, C++가 움직임) > Body(빌보드 도트) · Shadow · HpBack·HpFill(맞으면 보임)
+	for Kind, Info in FarmBieZombies.KINDS.items():
+		Size = Info["Cell"]
+		WritePrefab(f"Zombie_{Kind}", [
+			{"Name": f"Zombie_{Kind}", "Parent": -1, "Components": {
+				"FarmZombieComponent": {"Kind": Kind, "SpriteBase": f"{SPRITES}/Zombie_{Kind}", "Hp": 30.0, "MaxHp": 30.0, "Speed": 110.0, "Damage": 6.0,
+										"AttackInterval": 1.0, "StructureDamageMul": 1.0, "CropEatTime": 2.5, "BodyRadius": 26.0, "Explode": False,
+										"ExplodeRadius": 0.0, "ExplodeDamage": 0.0, "RegenPerSec": 0.0, "SlowOnHit": 0.0, "Boss": False, "AggroTime": 0.0,
+										"Alerted": False, "Dead": False},
+				"PrefabLinkComponent": Link(1), "TransformComponent": Transform()}},
+			{"Name": "Body", "Parent": 0, "Components": {
+				"SpriteComponent": Sprite(f"{SPRITES}/Zombie_{Kind}.esprite", "WalkDown0", Billboard=1),
+				"FlipbookComponent": Flipbook(f"{SPRITES}/Zombie_{Kind}_WalkDown.eflipbook"),
+				"PrefabLinkComponent": Link(2), "TransformComponent": Transform()}},
+			{"Name": "Shadow", "Parent": 0, "Components": {
+				"SpriteComponent": Sprite(f"{SPRITES}/Fx.esprite", "Shadow", Lit=False, Shadows=False, Blend=0),
+				"PrefabLinkComponent": Link(3), "TransformComponent": Transform((0, 0, 1.5), FLAT, (Size / 32.0 * 0.8, 1.0, Size / 32.0 * 0.8))}},
+		])
+
+
+def ColliderCells(Scene):
+	# 씬 콜라이더(울타리·건물·소품·등불)가 덮는 농장 격자 칸 → 좀비가 못 지나가는 칸 (경계 벽·트리거 제외)
+	Cells = set()
+	for E in Scene.Entities:
+		Box = E["Components"].get("BoxColliderComponent")
+		if not Box or Box.get("IsTrigger") or E["Name"].startswith("Bound_") or E["Name"].startswith("Merchant"):
+			continue
+		P = E["Components"]["TransformComponent"]["Position"]
+		Q = E["Components"]["TransformComponent"]["Rotation"]
+		Yaw = math.atan2(2.0 * (Q[3] * Q[2] + Q[0] * Q[1]), 1.0 - 2.0 * (Q[1] * Q[1] + Q[2] * Q[2]))
+		HX, HY = Box["HalfExtents"][0], Box["HalfExtents"][1]
+		CY, SY = math.cos(Yaw), math.sin(Yaw)
+		Steps = 20.0
+		IX = max(1, int(HX * 2 / Steps))
+		IY = max(1, int(HY * 2 / Steps))
+		for A in range(IX + 1):
+			for Bv in range(IY + 1):
+				LX = -HX + 2 * HX * A / IX
+				LY = -HY + 2 * HY * Bv / IY
+				X = P[0] + LX * CY - LY * SY
+				Y = P[1] + LX * SY + LY * CY
+				TX = int(math.floor((X - GRID_ORIGIN[0]) / TILE))
+				TY = int(math.floor((Y - GRID_ORIGIN[1]) / TILE))
+				if 0 <= TX < GRID_W and 0 <= TY < GRID_H:
+					Cells.add((TX, TY))
+	return Cells
+
+
+STATIC_BLOCKED = [""]
+
+
+def AttractTiles():
+	# 집 앞마당 3×2칸 (좀비가 크리스탈을 모르면 작물과 함께 여기로 모여든다)
+	TX = int(math.floor((SLEEP_SPOT[0] - GRID_ORIGIN[0]) / TILE))
+	TY = int(math.floor((SLEEP_SPOT[1] - GRID_ORIGIN[1]) / TILE))
+	return ";".join(f"{TX + DX},{TY + DY}" for DX in (-1, 0, 1) for DY in (0, 1))
+
+
 def WritePrefabs():
 	Foot = -(PLAYER_RADIUS + PLAYER_HALF)
 	WritePrefab("Player", [
@@ -261,6 +321,10 @@ def WritePrefabs():
 		{"Name": "Shadow", "Parent": 1, "Components": {
 			"SpriteComponent": Sprite(f"{SPRITES}/Fx.esprite", "Shadow", Lit=False, Shadows=False, Blend=0),
 			"PrefabLinkComponent": Link(4), "TransformComponent": Transform((0, 0, Foot + 1.5), FLAT, (0.75, 1.0, 0.75))}},
+		# 밤 등불 (FarmTime이 낮밤 LampScale로 켠다 — 어둠 속 좀비가 보이게)
+		{"Name": "Lantern", "Parent": 0, "Components": {
+			"PointLightComponent": {"Color": [1.0, 0.78, 0.5], "Intensity": 0.0, "Radius": 750.0, "CastShadows": False},
+			"PrefabLinkComponent": Link(5), "TransformComponent": Transform((0, 30, 60))}},
 	])
 
 
@@ -385,6 +449,17 @@ def AddFarmstead(B):
 		B.S.Add(f"GreenhouseStake_{I}", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": f"{MATS}/WoodPost.emat"}},
 				(X, Y, B.Height(X, Y) + 40.0), None, (0.1, 0.1, 0.8))
 	B.Reserve((X0 + X1) * 0.5, (Y0 + Y1) * 0.5, 250.0)
+	# 작업대 (제작 — FarmCraft.lua)
+	B.S.Add("Workbench", {"ModelComponent": {"AssetPath": f"{FarmBieBuild.FOLDER}/Workbench.gltf"}}, (WORKBENCH[0], WORKBENCH[1], B.Height(*WORKBENCH)),
+			QuatFromEuler(Yaw=0.0))
+	B.BoxCollider("Workbench_Collision", (WORKBENCH[0], WORKBENCH[1], B.Height(*WORKBENCH) + 45.0), (75.0, 35.0, 45.0))
+	B.Reserve(WORKBENCH[0], WORKBENCH[1], 120.0)
+	# 오늘 밤 진입로 경고 표지 (FarmDefense.lua가 낮에 그 밤 진입로만 보이게)
+	for Name, (X, Y) in ENTRANCE_SPAWNS.items():
+		IX = X + (220.0 if Name in ("North", "South") else 0.0)
+		IY = Y + (230.0 if Name in ("West", "East") else 0.0)
+		B.S.Add(f"Warn_{Name}", {"SpriteComponent": Sprite(f"{SPRITES}/Fx.esprite", "Warn", Billboard=2, Visible=False, Shadows=True)},
+				(IX, IY, B.Height(IX, IY)), None, (1.4, 1.4, 1.4))
 	# 남쪽 입구 보부상 천막 자리 (F3에서 보부상이 온다)
 	B.Place("MerchantTent", "tent", 700.0, 1650.0, -90.0, KS * 1.3, Collide=True)
 	B.Place("MerchantCrate", "crate_B_small", 450.0, 1720.0, 15.0, KS * 1.4)
@@ -442,6 +517,10 @@ MERCHANT_SPOT = (520.0, 1480.0)  # 남쪽 입구 천막 앞
 SHIPPING_BIN = (380.0, -950.0)
 GREENHOUSE_TILES = (38, 23, 6, 4)   # 온실 부지 (TX, TY, 가로, 세로 칸) — 밭 동쪽
 CRYSTAL_START = (18, 11)            # 크리스탈 처음 칸 (집 서쪽 마당)
+WORKBENCH = (760.0, -1120.0)        # 작업대 (헛간 앞)
+# 밤 진입로 (울타리 틈 바깥쪽 — 격자 안): 이름, 좀비가 나오는 자리
+ENTRANCE_SPAWNS = {"North": (ENTRANCES["North"][0], PLAY_MIN[1] + 70.0), "South": (ENTRANCES["South"][0], PLAY_MAX[1] - 70.0),
+				   "West": (PLAY_MIN[0] + 70.0, ENTRANCES["West"][1]), "East": (PLAY_MAX[0] - 70.0, ENTRANCES["East"][1])}
 SLEEP_SPOT = (HOUSE[0], HOUSE[1] + 260.0)  # 집 문 앞 (잠자기 상호작용)
 LAMPS = [(-420.0, -1000.0), (420.0, -1200.0), (-1300.0, -600.0), (1300.0, -600.0), (-900.0, 500.0), (900.0, 500.0), (0.0, 1250.0), (-2000.0, 150.0), (2000.0, -300.0)]
 
@@ -455,7 +534,7 @@ def AddLamps(B):
 		B.S.Add(f"LampPost_{I}_Box", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": f"{MATS}/LampGlow.emat"}},
 				(X, Y, Ground + 212.0), QuatFromEuler(Yaw=I * 23.0), (0.26, 0.26, 0.3))
 		B.S.Add(f"Lamp_{I}", {"PointLightComponent": {"Color": [1.0, 0.72, 0.4], "Intensity": 0.0, "Radius": 900.0, "CastShadows": False}},
-				(X, Y + 20.0, Ground + 230.0))
+				(X, Y + 20.0, Ground + 360.0))  # 높게 — 기둥 바로 아래 스프라이트가 하얗게 날아가지 않게
 		B.BoxCollider(f"LampPost_{I}_Collision", (X, Y, Ground + 100.0), (16.0, 16.0, 100.0))
 		B.Reserve(X, Y, 60.0)
 
@@ -476,7 +555,7 @@ def CameraBounds(Min, Max):
 
 
 def AddGame(B, AutoPlay, Map="Farm", Bounds=None):
-	B.S.Add("FarmGame", {"ScriptComponent": Script(f"{SCRIPTS}/FarmGame.lua", 0, AutoPlay=AutoPlay, Map=Map,
+	B.S.Add("FarmGame", {"FarmDefenseComponent": {"Active": False, "Width": 0, "Height": 0}, "ScriptComponent": Script(f"{SCRIPTS}/FarmGame.lua", 0, AutoPlay=AutoPlay, Map=Map,
 												   CameraBounds=Bounds or CameraBounds(PLAY_MIN, PLAY_MAX),
 												   SleepSpot=f"{SLEEP_SPOT[0]},{SLEEP_SPOT[1]}", Slot="Test" if AutoPlay else "1",
 												   ShipSpot=f"{SHIPPING_BIN[0]},{SHIPPING_BIN[1]}", MerchantSpot=f"{MERCHANT_SPOT[0]},{MERCHANT_SPOT[1]}")})
@@ -630,16 +709,21 @@ def Main():
 	FarmBieData.WriteAll(CONTENT)
 	FarmBieCrops.WriteSprites(os.path.join(CONTENT, *SPRITES.split("/")))
 	X0, Y0 = PLAY_MIN[0] + FENCE_INSET + 60.0, PLAY_MIN[1] + FENCE_INSET + 60.0
-	FarmBieData.WriteFarmMap(CONTENT, {"Tile": TILE, "Width": GRID_W, "Height": GRID_H, "OriginX": GRID_ORIGIN[0], "OriginY": GRID_ORIGIN[1],
-									   "FarmMinX": X0, "FarmMinY": Y0, "FarmMaxX": -X0, "FarmMaxY": -Y0, "Well": [WELL[0], WELL[1]],
-									   "Greenhouse": list(GREENHOUSE_TILES), "GreenhouseCost": FarmBieData.GREENHOUSE["Cost"],
-									   "GreenhouseGold": FarmBieData.GREENHOUSE["Gold"], "CrystalStart": list(CRYSTAL_START)})
-	FarmBieBuild.WriteModels(CONTENT, GREENHOUSE_TILES[2:])
-	WriteBuildPrefabs()
-	FarmBieUI.WriteHud(CONTENT)
 	_, _, H, Weights = BuildTerrain()
 	WriteTerrain(os.path.join(CONTENT, "Terrain", "FarmBie", "Farm.eterrain"), H, Weights)
 	Height = FHeight(H)
+	STATIC_BLOCKED[0] = ";".join(f"{X},{Y}" for X, Y in sorted(ColliderCells(BuildScene(Height))))
+	FarmBieData.WriteFarmMap(CONTENT, {"Tile": TILE, "Width": GRID_W, "Height": GRID_H, "OriginX": GRID_ORIGIN[0], "OriginY": GRID_ORIGIN[1],
+									   "FarmMinX": X0, "FarmMinY": Y0, "FarmMaxX": -X0, "FarmMaxY": -Y0, "Well": [WELL[0], WELL[1]],
+									   "Greenhouse": list(GREENHOUSE_TILES), "GreenhouseCost": FarmBieData.GREENHOUSE["Cost"],
+									   "GreenhouseGold": FarmBieData.GREENHOUSE["Gold"], "CrystalStart": list(CRYSTAL_START),
+									   "StaticBlocked": STATIC_BLOCKED[0], "AttractTiles": AttractTiles(),
+									   "Entrances": [f"{N},{X:.0f},{Y:.0f}" for N, (X, Y) in ENTRANCE_SPAWNS.items()],
+									   "Workbench": [WORKBENCH[0], WORKBENCH[1]]})
+	FarmBieBuild.WriteModels(CONTENT, GREENHOUSE_TILES[2:])
+	WriteZombiePrefabs()
+	WriteBuildPrefabs()
+	FarmBieUI.WriteHud(CONTENT)
 	WritePrefabs()
 	Scene = BuildScene(Height)
 	Scene.Save(os.path.join(CONTENT, "Scenes", "Farm.escene"))
@@ -651,11 +735,15 @@ def Main():
 	os.makedirs(os.path.join(CONTENT, "Scenes", "Tests"), exist_ok=True)
 	BuildScene(Height, AutoPlay="Basic").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmAutoPlay.escene"))
 	BuildScene(Height, AutoPlay="Time").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmTime.escene"))
+	BuildScene(Height, AutoPlay="Defense").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmDefense.escene"))
+	BuildScene(Height, AutoPlay="DefenseLoss").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmDefenseLoss.escene"))
+	BuildScene(Height, AutoPlay="GameOver").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmGameOver.escene"))
 	BuildScene(Height, AutoPlay="Build").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmBuild.escene"))
 	BuildScene(Height, AutoPlay="Sanity").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmSanity.escene"))
 	BuildScene(Height, AutoPlay="Economy").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmEconomy.escene"))
 	BuildScene(Height, AutoPlay="Farm").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmFarming.escene"))
 	if "--views" in sys.argv:
+		BuildScene(Height, AutoPlay="NightShot").Save(os.path.join(CONTENT, "Scenes", "_FarmNightShot.escene"))
 		BuildScene(Height, AutoPlay="BuildShot").Save(os.path.join(CONTENT, "Scenes", "_FarmBuildShot.escene"))
 		BuildForestScene(ForestHeight, "Shot10").Save(os.path.join(CONTENT, "Scenes", "_ForestShot.escene"))
 		# 확인용 (커밋하지 않음): 시각별 화면

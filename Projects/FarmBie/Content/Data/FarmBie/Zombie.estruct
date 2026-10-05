@@ -1,0 +1,110 @@
+{
+  "Version": 1,
+  "Name": "Zombie",
+  "Description": "좀비",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "",
+      "Description": "이름"
+    },
+    {
+      "Name": "Hp",
+      "Type": "Int",
+      "Default": 30,
+      "Description": "체력 (밤 배율을 곱함)"
+    },
+    {
+      "Name": "Speed",
+      "Type": "Int",
+      "Default": 110,
+      "Description": "속도 (cm/s)"
+    },
+    {
+      "Name": "Damage",
+      "Type": "Int",
+      "Default": 6,
+      "Description": "한 번 공격"
+    },
+    {
+      "Name": "Interval",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "공격 간격 (초)"
+    },
+    {
+      "Name": "StructureMul",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "설치물 피해 배율"
+    },
+    {
+      "Name": "CropEat",
+      "Type": "Float",
+      "Default": 2.5,
+      "Description": "작물 한 칸 먹는 시간 (초)"
+    },
+    {
+      "Name": "Radius",
+      "Type": "Int",
+      "Default": 26,
+      "Description": "몸 반지름 (cm)"
+    },
+    {
+      "Name": "Explode",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "자폭"
+    },
+    {
+      "Name": "ExplodeRadius",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "자폭 반경"
+    },
+    {
+      "Name": "ExplodeDamage",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "자폭 피해"
+    },
+    {
+      "Name": "Regen",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "초당 회복"
+    },
+    {
+      "Name": "Slow",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "때리면 플레이어 둔화"
+    },
+    {
+      "Name": "Weight",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "등장 가중치"
+    },
+    {
+      "Name": "MinDay",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "계절 몇 일차부터"
+    },
+    {
+      "Name": "Season",
+      "Type": "Enum",
+      "Default": "Any",
+      "Description": "변종 계절",
+      "Values": [
+        "Any",
+        "Spring",
+        "Summer",
+        "Autumn",
+        "Winter"
+      ]
+    }
+  ]
+}

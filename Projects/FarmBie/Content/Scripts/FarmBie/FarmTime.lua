@@ -33,7 +33,7 @@ function Time_:InitTime()
 		local L = Scene.Find("Lamp_" .. I)
 		if not L then break end
 		local P = L:GetComponent("PointLightComponent")
-		self.Lamps[#self.Lamps + 1] = { Light = P, Base = 4.0, Radius = P.Radius }
+		self.Lamps[#self.Lamps + 1] = { Light = P, Base = 5.0, Radius = P.Radius }
 	end
 end
 
@@ -105,8 +105,13 @@ function Time_:UpdateTime(Dt)
 		self:Hud():Announce("밤이 찾아온다", self:IsSeasonBossNight() and "계절의 마지막 밤 — 무언가 다가온다" or
 			(self:IsBossNight() and "불길한 기운이 느껴진다" or "날이 밝을 때까지 버텨라"), 3.5)
 		Log.Info(string.format("[FarmBie] 밤 시작: %s", self:DateText()))
+		if self.Defense then
+			self.Defense.CrystalFound = false
+			self.bAlertShown = false
+		end
 		if self.OnNightStart then self:OnNightStart() end
 	elseif self.Phase == "Night" and self.Hour >= C.NightEndHour + 24 then
+		if self.OnNightEnd and self:OnNightEnd() then return end -- 게임 오버
 		self:BeginSleep("Dawn")
 	end
 	self:ApplyDayNight(false)
@@ -262,6 +267,10 @@ function Time_:ApplyDayNight(bForce)
 	local Level = K.LampScale
 	if bForce or math.abs(Level - (self.AppliedLamp or -1)) > 0.004 then
 		self.AppliedLamp = Level
+		-- 플레이어 등불
+		local P = self.Player and self:Player()
+		local Lantern = P and P.entity:FindChild("Lantern")
+		if Lantern then Lantern:GetComponent("PointLightComponent").Intensity = 2.6 * Level end
 		for _, L in ipairs(self.Lamps) do
 			L.Light.Intensity = L.Base * Level
 			L.Light.Radius = L.Radius * (0.8 + 0.2 * Level)

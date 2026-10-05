@@ -131,6 +131,105 @@
         "Price": 60,
         "Description": "밟은 좀비 둘레를 날려 버린다. 한 번 쓰면 사라진다. (건설 모드에서 설치)"
       }
+    },
+    {
+      "Name": "Sword",
+      "Values": {
+        "DisplayName": "농부의 검",
+        "Kind": "Weapon",
+        "Price": 450,
+        "Description": "날이 선 한손검. 넓게 베어 여러 좀비를 밀어낸다."
+      }
+    },
+    {
+      "Name": "Bow",
+      "Values": {
+        "DisplayName": "사냥 활",
+        "Kind": "Weapon",
+        "Price": 600,
+        "Description": "멀리서 화살을 쏜다. 화살이 필요하다 (작업대에서 제작)."
+      }
+    },
+    {
+      "Name": "Shotgun",
+      "Values": {
+        "DisplayName": "산탄총",
+        "Kind": "Weapon",
+        "Price": 1600,
+        "Description": "가까운 좀비 무리를 한 번에 날린다. 산탄이 필요하다."
+      }
+    },
+    {
+      "Name": "Arrow",
+      "Values": {
+        "DisplayName": "화살",
+        "Kind": "Ammo",
+        "Price": 3,
+        "Description": "활에 쓴다."
+      }
+    },
+    {
+      "Name": "Shell",
+      "Values": {
+        "DisplayName": "산탄",
+        "Kind": "Ammo",
+        "Price": 12,
+        "Description": "산탄총에 쓴다."
+      }
+    },
+    {
+      "Name": "EyeArrow",
+      "Values": {
+        "DisplayName": "눈알 화살",
+        "Kind": "Ammo",
+        "Price": 0,
+        "Description": "레어 눈알무로 촉을 단 화살. 약점을 노려 피해가 크다."
+      }
+    },
+    {
+      "Name": "FireArrow",
+      "Values": {
+        "DisplayName": "불화살",
+        "Kind": "Ammo",
+        "Price": 0,
+        "Description": "레어 혈관고추 즙을 바른 화살. 아주 뜨겁다."
+      }
+    },
+    {
+      "Name": "GhostShell",
+      "Values": {
+        "DisplayName": "유령 산탄",
+        "Kind": "Ammo",
+        "Price": 0,
+        "Description": "레어 유령마늘 가루를 채운 산탄. 언데드에게 잘 듣는다."
+      }
+    },
+    {
+      "Name": "SkullMine",
+      "Values": {
+        "DisplayName": "해골 지뢰",
+        "Kind": "Trap",
+        "Price": 0,
+        "Description": "레어 해골수박을 터뜨리는 지뢰. 아주 넓게 폭발한다."
+      }
+    },
+    {
+      "Name": "ScreamMine",
+      "Values": {
+        "DisplayName": "비명 지뢰",
+        "Kind": "Trap",
+        "Price": 0,
+        "Description": "레어 비명호박 속을 채운 지뢰. 소리와 함께 크게 터진다."
+      }
+    },
+    {
+      "Name": "FangSpike",
+      "Values": {
+        "DisplayName": "이빨 덫",
+        "Kind": "Trap",
+        "Price": 0,
+        "Description": "레어 이빨옥수수 송곳니를 박은 덫. 가시덫보다 훨씬 아프다."
+      }
     }
   ]
 }

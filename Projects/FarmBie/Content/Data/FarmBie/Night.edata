@@ -1,0 +1,21 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Night.estruct",
+  "Values": {
+    "BaseCount": 6,
+    "PerDay": 0.55,
+    "PerSeason": 4,
+    "HpPerDay": 0.03,
+    "HpPerSeason": 0.3,
+    "SpawnWindow": 0.55,
+    "EntrancesPerNight": 2,
+    "CrystalAlertRadius": 900,
+    "BlockCost": 6.0,
+    "LossCropsPerZombie": 2,
+    "LossStructureDamage": 40,
+    "LossCrystalDamage": 12,
+    "RespawnTime": 10.0,
+    "SlowMul": 0.6,
+    "AbsentTurretShare": 0.6
+  }
+}

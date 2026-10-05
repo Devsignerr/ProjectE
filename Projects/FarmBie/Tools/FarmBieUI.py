@@ -229,6 +229,25 @@ def HudWidgets():
 			Text("BuffText", "", 15, BoxSlot((0, 2, 0, 0)), (0.75, 1.0, 0.7, 1)),
 		]),
 	], Brush=FrameBrush(36), ContentPadding=[16, 10, 18, 8]))
+	# 위 가운데: 밤 디펜스 (남은 시간·좀비·처치) + 크리스탈 내구도
+	C.append(Widget("Border", "DefensePanel", CanvasSlot((0.5, 0), 0, 14, 0, 0, (0.5, 0), AutoSize=True, Z=1), "Collapsed", [
+		Widget("VerticalBox", "DefenseBox", BoxSlot(), "HitTestInvisible", [
+			Text("DefenseText", "", 20, BoxSlot((0, 0, 0, 6), HAlign="Center"), TEXT_LIGHT, "Center"),
+			Widget("HorizontalBox", "CrystalRow", BoxSlot(HAlign="Center"), "HitTestInvisible", [
+				Text("CrystalLabel", "크리스탈", 15, BoxSlot((0, 0, 8, 0), VAlign="Center"), (0.85, 0.7, 1.0, 1)),
+				Widget("ProgressBar", "CrystalBar", BoxSlot(VAlign="Center"), MinSize=[220, 12], Brush=Brush((0.05, 0.04, 0.08, 0.92), 2, 1, (0, 0, 0, 1)),
+					   FillBrush=Brush((0.7, 0.45, 1.0, 1), 1), Percent=1.0, FillDirection="LeftToRight"),
+			]),
+		]),
+	], Brush=FrameBrush(36), ContentPadding=[18, 8, 18, 10]))
+	C.append(Text("RespawnText", "", 30, CanvasSlot((0.5, 0.5), 0, 0, 0, 0, (0.5, 0.5), True, 4), TEXT_RED, "Center", "Collapsed", Outline=3))
+	C.append(Widget("Border", "GameOverWindow", StretchSlot(Z=12), "Collapsed", [
+		Widget("Canvas", "GameOverCanvas", BoxSlot(), "HitTestInvisible", [
+			Text("GameOverTitle", "", 48, CanvasSlot((0.5, 0.5), 0, -90, 0, 0, (0.5, 0.5), True), (0.85, 0.6, 1.0, 1), "Center", Outline=3),
+			Text("GameOverBody", "", 22, CanvasSlot((0.5, 0.5), 0, 0, 900, 120, (0.5, 0)), TEXT_LIGHT, "Center", Wrap=True),
+			Text("GameOverHint", "E  처음부터 다시", 20, CanvasSlot((0.5, 1), 0, -60, 0, 0, (0.5, 1), True), TEXT_GOLD, "Center"),
+		]),
+	], Brush=Brush((0.02, 0.0, 0.04, 0.9)), ContentPadding=[0, 0, 0, 0]))
 	C.append(ShopWindow())
 	C.append(BagWindow())
 	# 화면 전체 어둡게 (잠들기·새 날 전환)

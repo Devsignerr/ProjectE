@@ -1,0 +1,25 @@
+{
+  "Version": 1,
+  "Name": "SpecialAmmo",
+  "Description": "특수 탄약",
+  "Fields": [
+    {
+      "Name": "For",
+      "Type": "String",
+      "Default": "",
+      "Description": "무기"
+    },
+    {
+      "Name": "DamageMul",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "피해 배율"
+    },
+    {
+      "Name": "Slice",
+      "Type": "String",
+      "Default": "",
+      "Description": "투사체 그림"
+    }
+  ]
+}

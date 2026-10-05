@@ -721,6 +721,46 @@ def DrawToolIcon(Name):
 			C.Rect(7 - W, Y + 3, 7 + W, Y + 3, (160, 90, 230))
 		C.Rect(12, 1, 13, 6, (120, 230, 120))
 		C.Rect(10, 3, 15, 4, (120, 230, 120))
+	elif Name == "Sword":
+		C.Line(3, 13, 12, 4, (220, 228, 240))
+		C.Line(4, 13, 13, 4, (150, 160, 180))
+		C.Rect(2, 11, 6, 12, (200, 160, 60))
+		C.Rect(1, 14, 3, 15, (110, 72, 40))
+	elif Name == "Bow":
+		for Y in range(2, 15):
+			X = int(3 + 6 * (1 - ((Y - 8) / 6.5) ** 2))
+			C.Px(X, Y, (140, 92, 48))
+		C.Line(3, 2, 3, 14, (230, 230, 220))
+	elif Name == "Shotgun":
+		C.Rect(1, 6, 14, 7, (90, 94, 104))
+		C.Rect(1, 8, 6, 10, (130, 84, 44))
+		C.Rect(7, 8, 9, 9, (70, 72, 80))
+	elif Name in ("Arrow", "EyeArrow", "FireArrow"):
+		Tip = {"Arrow": (200, 204, 214), "EyeArrow": (232, 116, 96), "FireArrow": (255, 160, 40)}[Name]
+		for K in range(3):
+			C.Line(2 + K * 3, 13, 11 + K * 2, 3, (150, 104, 60))
+			C.Rect(10 + K * 2, 2, 11 + K * 2, 3, Tip)
+	elif Name in ("Shell", "GhostShell"):
+		Body = (200, 60, 50) if Name == "Shell" else (190, 200, 230)
+		for K in range(3):
+			C.Rect(2 + K * 4, 5, 4 + K * 4, 12, Body)
+			C.Rect(2 + K * 4, 11, 4 + K * 4, 12, (220, 180, 70))
+	elif Name in ("SkullMine", "ScreamMine"):
+		Col = (90, 150, 80) if Name == "SkullMine" else (236, 136, 40)
+		C.Ellipse(8, 9, 6.5, 5, Col)
+		C.Rect(5, 8, 6, 9, (30, 20, 20))
+		C.Rect(10, 8, 11, 9, (30, 20, 20))
+		C.Rect(6, 11, 10, 11, (240, 236, 220))
+		C.Rect(7, 2, 8, 4, (240, 60, 40))
+	elif Name == "FangSpike":
+		C.Rect(1, 12, 14, 14, (140, 92, 52))
+		for X in (2, 6, 10):
+			C.Line(X + 1, 11, X + 2, 3, (250, 244, 220))
+	elif Name == "Workbench":
+		C.Rect(1, 6, 14, 8, (150, 100, 56))
+		C.Rect(2, 9, 3, 14, (110, 72, 40))
+		C.Rect(12, 9, 13, 14, (110, 72, 40))
+		C.Line(5, 5, 9, 2, (180, 186, 196))
 	elif Name in ("FertBasic", "FertPremium"):
 		Col = (120, 200, 110) if Name == "FertBasic" else (196, 130, 240)
 		C.Rect(3, 4, 12, 14, (186, 160, 120))
@@ -737,5 +777,6 @@ def WriteIcons(Folder, UpscaleSave):
 			UpscaleSave(DrawSeedPacket(Crop, R), os.path.join(Folder, f"Seed_{Crop['Id']}_{R}.png"))
 			UpscaleSave(DrawCropIcon(Crop, R), os.path.join(Folder, f"Crop_{Crop['Id']}_{R}.png"))
 	for Name in ("Hoe", "Can", "FertBasic", "FertPremium", "Axe", "Pick", "Wood", "Stone", "Fiber", "Herb", "Mushroom", "Iron", "CrystalShard", "Mine",
-				 "WallWood", "WallStone", "WallIron", "Gate", "Spike", "Turret", "Greenhouse", "CrystalUp"):
+				 "WallWood", "WallStone", "WallIron", "Gate", "Spike", "Turret", "Greenhouse", "CrystalUp", "Sword", "Bow", "Shotgun", "Arrow", "EyeArrow",
+				 "FireArrow", "Shell", "GhostShell", "SkullMine", "ScreamMine", "FangSpike", "Workbench"):
 		UpscaleSave(DrawToolIcon(Name), os.path.join(Folder, f"{Name}.png"))

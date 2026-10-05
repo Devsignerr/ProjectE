@@ -1,0 +1,25 @@
+{
+  "Version": 1,
+  "Name": "Recipe",
+  "Description": "작업대 제작",
+  "Fields": [
+    {
+      "Name": "Output",
+      "Type": "String",
+      "Default": "",
+      "Description": "결과 물건"
+    },
+    {
+      "Name": "Count",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "결과 수"
+    },
+    {
+      "Name": "Inputs",
+      "Type": "String",
+      "Default": "",
+      "Description": "재료 (작물 희귀도는 :<최소>+)"
+    }
+  ]
+}

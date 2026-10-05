@@ -116,7 +116,11 @@ function FarmPlayer:OnUpdate(Dt)
 	self.LastPos = Pos
 
 	local In = self:GatherInput()
-	if not self.GM.bReady or self.GM.Phase == "Sleep" or self.GM.TravelTarget then
+	if self.GM.Phase == "GameOver" then
+		if In.Interact or In.UseTool then self.GM:RestartGame() end
+		return
+	end
+	if not self.GM.bReady or self.GM.Phase == "Sleep" or self.GM.TravelTarget or self.bDown then
 		self:UpdateAnimation(Vector3(0, 0, 0))
 		return
 	end
@@ -152,11 +156,19 @@ function FarmPlayer:OnUpdate(Dt)
 		local Before = self.ToolTimer
 		self.ToolTimer = self.ToolTimer - Dt
 		local F = GM.Farming
-		if Before > F.ToolTime - F.ToolHitTime and self.ToolTimer <= F.ToolTime - F.ToolHitTime then
-			if self.ToolAnim == "Axe" or self.ToolAnim == "Pick" then
-				GM:HitNodeAt(self.ToolKey, self.entity:GetWorldPosition(), self:GetFacingVector())
+		local HitAt = self.bWeapon and self.ToolHitAt or (F.ToolTime - F.ToolHitTime)
+		if Before > HitAt and self.ToolTimer <= HitAt then
+			local Pos = self.entity:GetWorldPosition()
+			if self.bWeapon then
+				GM:PlayerAttack(self.ToolKey, Pos, self:GetFacingVector())
 			else
-				GM:ApplyUse(self.ToolKey, self.ToolTX, self.ToolTY)
+				if self.ToolAnim == "Axe" or self.ToolAnim == "Pick" then
+					GM:HitNodeAt(self.ToolKey, Pos, self:GetFacingVector())
+				else
+					GM:ApplyUse(self.ToolKey, self.ToolTX, self.ToolTY)
+				end
+				-- 도구도 밤에는 근접 무기 (좀비가 있을 때)
+				if GM.Defense and GM.Defense.Alive > 0 then GM:PlayerAttack(self.ToolKey, Pos, self:GetFacingVector()) end
 			end
 		end
 		self:UpdateAnimation(Vector3(0, 0, 0))
@@ -200,7 +212,14 @@ function FarmPlayer:StartUse()
 	local TX, TY = GM:TargetTile(self.entity:GetWorldPosition(), self:GetFacingVector())
 	local Action = GM:PlanUse(Key, TX, TY)
 	self.ToolKey, self.ToolTX, self.ToolTY = Key, TX, TY
-	if Key == "Axe" or Key == "Pick" then
+	self.bWeapon = false
+	local Weapon = GM:WeaponRow(Key)
+	if Key and GM:ItemInfo(Key).Kind == "Weapon" and Weapon then
+		self.bWeapon = true
+		self.ToolAnim = Weapon.Pose
+		self.ToolTimer = Weapon.Cooldown
+		self.ToolHitAt = Weapon.Cooldown * 0.6
+	elseif Key == "Axe" or Key == "Pick" then
 		self.ToolAnim = Key
 		self.ToolTimer = GM.Farming.ToolTime
 	elseif (Key == "Hoe" or Key == "Can") and Action ~= "Harvest" then
@@ -244,13 +263,34 @@ function FarmPlayer:CameraTarget()
 end
 
 -- 물리 뒤: 스프라이트 정면 유지 + 카메라 (OnUpdate에서 놓으면 한 프레임 늦게 따라가 떨린다)
+function FarmPlayer:UpdateHurt(Dt)
+	if (self.HurtTimer or 0) > 0 then
+		self.HurtTimer = self.HurtTimer - Dt
+		self.Sprite.FlashColor = Vector4(1, 0.25, 0.2, self.HurtTimer > 0 and 0.7 or 0)
+	end
+end
+
 function FarmPlayer:OnLateUpdate(Dt)
+	self:UpdateHurt(Dt)
 	self.Visual:SetRotation(self.entity:GetRotation():Inverse())
 	if self.Camera then
 		local Target = self:CameraTarget()
 		self.CamPos = Vector3.Lerp(self.CamPos, Target, 1.0 - math.exp(-self.Properties.CameraLag * Dt))
 		self.Camera:SetPosition(self.CamPos)
 	end
+end
+
+-- 맞음: 붉게 번쩍
+function FarmPlayer:OnHurt()
+	self.HurtTimer = 0.18
+end
+
+-- 밤 전투에서 쓰러짐 (FarmDefense) — 숨기고 입력을 막는다
+function FarmPlayer:SetDown(bDown)
+	self.bDown = bDown
+	self.Sprite.Visible = not bDown
+	local Shadow = self.Visual:FindChild("Shadow")
+	if Shadow then Shadow:GetComponent("SpriteComponent").Visible = not bDown end
 end
 
 function FarmPlayer:Teleport(Pos)

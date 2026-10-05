@@ -20,7 +20,8 @@
         "Material",
         "Food",
         "Weapon",
-        "Trap"
+        "Trap",
+        "Ammo"
       ]
     },
     {

@@ -158,6 +158,17 @@ ITEM_ROWS = [
 	("Iron",        {"DisplayName": "철",         "Kind": "Material", "Price": 45, "Description": "제련한 쇳덩이. 철벽과 포탑에 쓴다. 보부상이나 탑에서 얻는다."}),
 	("CrystalShard", {"DisplayName": "크리스탈 조각", "Kind": "Material", "Price": 220, "Description": "보랏빛으로 맥동하는 조각. 크리스탈을 강화한다. 탑 깊은 곳에 많다."}),
 	("Mine",        {"DisplayName": "지뢰",       "Kind": "Trap", "Price": 60, "Description": "밟은 좀비 둘레를 날려 버린다. 한 번 쓰면 사라진다. (건설 모드에서 설치)"}),
+	("Sword",       {"DisplayName": "농부의 검",  "Kind": "Weapon", "Price": 450, "Description": "날이 선 한손검. 넓게 베어 여러 좀비를 밀어낸다."}),
+	("Bow",         {"DisplayName": "사냥 활",    "Kind": "Weapon", "Price": 600, "Description": "멀리서 화살을 쏜다. 화살이 필요하다 (작업대에서 제작)."}),
+	("Shotgun",     {"DisplayName": "산탄총",     "Kind": "Weapon", "Price": 1600, "Description": "가까운 좀비 무리를 한 번에 날린다. 산탄이 필요하다."}),
+	("Arrow",       {"DisplayName": "화살",       "Kind": "Ammo", "Price": 3, "Description": "활에 쓴다."}),
+	("Shell",       {"DisplayName": "산탄",       "Kind": "Ammo", "Price": 12, "Description": "산탄총에 쓴다."}),
+	("EyeArrow",    {"DisplayName": "눈알 화살",  "Kind": "Ammo", "Price": 0, "Description": "레어 눈알무로 촉을 단 화살. 약점을 노려 피해가 크다."}),
+	("FireArrow",   {"DisplayName": "불화살",     "Kind": "Ammo", "Price": 0, "Description": "레어 혈관고추 즙을 바른 화살. 아주 뜨겁다."}),
+	("GhostShell",  {"DisplayName": "유령 산탄",  "Kind": "Ammo", "Price": 0, "Description": "레어 유령마늘 가루를 채운 산탄. 언데드에게 잘 듣는다."}),
+	("SkullMine",   {"DisplayName": "해골 지뢰",  "Kind": "Trap", "Price": 0, "Description": "레어 해골수박을 터뜨리는 지뢰. 아주 넓게 폭발한다."}),
+	("ScreamMine",  {"DisplayName": "비명 지뢰",  "Kind": "Trap", "Price": 0, "Description": "레어 비명호박 속을 채운 지뢰. 소리와 함께 크게 터진다."}),
+	("FangSpike",   {"DisplayName": "이빨 덫",    "Kind": "Trap", "Price": 0, "Description": "레어 이빨옥수수 송곳니를 박은 덫. 가시덫보다 훨씬 아프다."}),
 ]
 
 # 건설: 종류(Wall 벽 / Gate 문 / Trap 덫 / Turret 포탑), 재료("물건*수,…" — 수리는 잃은 내구도 비율만큼), 내구도, 길 막음, 플레이어 충돌,
@@ -175,6 +186,12 @@ BUILD_ROWS = [
 				   "Damage": 8,  "Radius": 55,  "Cooldown": 0.5, "Range": 0,   "Description": "위를 지나는 좀비를 계속 찌른다. 조금씩 닳는다."}),
 	("Mine",      {"DisplayName": "지뢰",        "Kind": "Trap",   "Cost": "Mine*1",                "Hp": 1,   "Blocks": False, "Solid": False,
 				   "Damage": 90, "Radius": 180, "Cooldown": 0,   "Range": 0,   "Description": "보부상에게 산 지뢰를 묻는다. 한 번 터진다."}),
+	("SkullMine", {"DisplayName": "해골 지뢰",   "Kind": "Trap",   "Cost": "SkullMine*1",           "Hp": 1,   "Blocks": False, "Solid": False,
+				   "Damage": 160, "Radius": 300, "Cooldown": 0, "Range": 0,   "Description": "제작한 해골 지뢰를 묻는다."}),
+	("ScreamMine", {"DisplayName": "비명 지뢰",  "Kind": "Trap",   "Cost": "ScreamMine*1",          "Hp": 1,   "Blocks": False, "Solid": False,
+				   "Damage": 120, "Radius": 260, "Cooldown": 0, "Range": 0,   "Description": "제작한 비명 지뢰를 묻는다."}),
+	("FangSpike", {"DisplayName": "이빨 덫",     "Kind": "Trap",   "Cost": "FangSpike*1",           "Hp": 200, "Blocks": False, "Solid": False,
+				   "Damage": 18, "Radius": 60,  "Cooldown": 0.45, "Range": 0, "Description": "제작한 이빨 덫을 놓는다."}),
 	("Turret",    {"DisplayName": "쇠뇌 포탑",   "Kind": "Turret", "Cost": "Stone*6,Wood*4,Iron*1", "Hp": 260, "Blocks": True,  "Solid": True,
 				   "Damage": 14, "Radius": 0,   "Cooldown": 1.1, "Range": 650, "Description": "가까운 좀비에게 저절로 화살을 쏜다."}),
 ]
@@ -189,6 +206,84 @@ CRYSTAL_ROWS = [
 ]
 
 GREENHOUSE = {"Cost": "Wood*40,Stone*20", "Gold": 500}
+
+# ---- 디펜스 (F7) ---------------------------------------------------------------------------------------------------------------
+# 좀비: 체력·속도(cm/s)·공격(한 번)·간격·설치물 피해 배율·작물 먹는 시간·몸 반지름·자폭·회복·둔화, 등장(가중치·처음 나오는 날·계절 변종)
+ZOMBIE_ROWS = [
+	("Walker",    {"DisplayName": "걷는 좀비",   "Hp": 30,  "Speed": 110, "Damage": 6,  "Interval": 1.1, "StructureMul": 1.0, "CropEat": 2.5, "Radius": 26,
+				   "Explode": False, "ExplodeRadius": 0,   "ExplodeDamage": 0,  "Regen": 0.0, "Slow": 0.0, "Weight": 60, "MinDay": 1, "Season": "Any"}),
+	("Runner",    {"DisplayName": "달리는 좀비", "Hp": 18,  "Speed": 230, "Damage": 4,  "Interval": 0.7, "StructureMul": 0.6, "CropEat": 1.5, "Radius": 22,
+				   "Explode": False, "ExplodeRadius": 0,   "ExplodeDamage": 0,  "Regen": 0.0, "Slow": 0.0, "Weight": 22, "MinDay": 3, "Season": "Any"}),
+	("Brute",     {"DisplayName": "거구 좀비",   "Hp": 110, "Speed": 75,  "Damage": 16, "Interval": 1.6, "StructureMul": 2.2, "CropEat": 3.0, "Radius": 40,
+				   "Explode": False, "ExplodeRadius": 0,   "ExplodeDamage": 0,  "Regen": 0.0, "Slow": 0.0, "Weight": 10, "MinDay": 6, "Season": "Any"}),
+	("Bomber",    {"DisplayName": "자폭 좀비",   "Hp": 26,  "Speed": 125, "Damage": 0,  "Interval": 1.0, "StructureMul": 1.0, "CropEat": 2.5, "Radius": 28,
+				   "Explode": True,  "ExplodeRadius": 170, "ExplodeDamage": 95, "Regen": 0.0, "Slow": 0.0, "Weight": 9,  "MinDay": 8, "Season": "Any"}),
+	("Mossling",  {"DisplayName": "이끼 좀비",   "Hp": 36,  "Speed": 105, "Damage": 6,  "Interval": 1.1, "StructureMul": 1.0, "CropEat": 2.2, "Radius": 26,
+				   "Explode": False, "ExplodeRadius": 0,   "ExplodeDamage": 0,  "Regen": 2.5, "Slow": 0.0, "Weight": 16, "MinDay": 2, "Season": "Spring"}),
+	("Scorcher",  {"DisplayName": "그을린 좀비", "Hp": 24,  "Speed": 200, "Damage": 5,  "Interval": 0.8, "StructureMul": 1.7, "CropEat": 1.8, "Radius": 22,
+				   "Explode": False, "ExplodeRadius": 0,   "ExplodeDamage": 0,  "Regen": 0.0, "Slow": 0.0, "Weight": 16, "MinDay": 2, "Season": "Summer"}),
+	("Harvester", {"DisplayName": "허수아비 좀비", "Hp": 34, "Speed": 115, "Damage": 6, "Interval": 1.1, "StructureMul": 0.8, "CropEat": 0.8, "Radius": 26,
+				   "Explode": False, "ExplodeRadius": 0,   "ExplodeDamage": 0,  "Regen": 0.0, "Slow": 0.0, "Weight": 16, "MinDay": 2, "Season": "Autumn"}),
+	("Frostbite", {"DisplayName": "서리 좀비",   "Hp": 120, "Speed": 70,  "Damage": 14, "Interval": 1.6, "StructureMul": 2.0, "CropEat": 3.0, "Radius": 40,
+				   "Explode": False, "ExplodeRadius": 0,   "ExplodeDamage": 0,  "Regen": 0.0, "Slow": 0.4, "Weight": 12, "MinDay": 2, "Season": "Winter"}),
+]
+
+# 밤 난이도 (해마다 같은 구성 반복): 좀비 수 = Base + PerDay×일 + PerSeason×계절, 체력 배율 = 1 + HpPerDay×일 + HpPerSeason×계절
+NIGHT = {
+	"BaseCount": 6, "PerDay": 0.55, "PerSeason": 4, "HpPerDay": 0.03, "HpPerSeason": 0.3,
+	"SpawnWindow": 0.55,     # 밤 길이의 앞 이 비율 동안 나온다
+	"EntrancesPerNight": 2,  # 그 밤에 쓰는 진입로 수 (낮에 예고)
+	"CrystalAlertRadius": 900, "BlockCost": 6.0,
+	"LossCropsPerZombie": 2, "LossStructureDamage": 40, "LossCrystalDamage": 12,  # 시간 초과: 남은 좀비 하나가 아침까지 입히는 피해
+	"RespawnTime": 10.0,     # 밤 전투에서 쓰러지면 부활까지 (초)
+	"SlowMul": 0.6,          # 서리 좀비에게 맞으면 이동 속도 배율
+	"AbsentTurretShare": 0.6,  # 플레이어가 없을 때 덫·포탑이 처리하는 비율 (피해량 계산 보정)
+}
+NIGHT_FIELDS = [
+	Field("BaseCount", "Int", 6, "기본 좀비 수"),
+	Field("PerDay", "Float", 0.55, "계절 일차당 더해지는 수"),
+	Field("PerSeason", "Int", 4, "계절당 더해지는 수"),
+	Field("HpPerDay", "Float", 0.03, "일차당 체력 배율 증가"),
+	Field("HpPerSeason", "Float", 0.3, "계절당 체력 배율 증가"),
+	Field("SpawnWindow", "Float", 0.55, "밤 앞부분 이 비율 동안 나옴"),
+	Field("EntrancesPerNight", "Int", 2, "그 밤의 진입로 수"),
+	Field("CrystalAlertRadius", "Int", 900, "크리스탈 발견 호출 반경"),
+	Field("BlockCost", "Float", 6.0, "흐름장 설치물 비용"),
+	Field("LossCropsPerZombie", "Int", 2, "시간 초과: 남은 좀비당 먹히는 작물"),
+	Field("LossStructureDamage", "Int", 40, "시간 초과: 남은 좀비당 가까운 설치물 피해"),
+	Field("LossCrystalDamage", "Int", 12, "시간 초과: 크리스탈을 알아챈 남은 좀비당 크리스탈 피해"),
+	Field("RespawnTime", "Float", 10.0, "쓰러진 뒤 부활 (초)"),
+	Field("SlowMul", "Float", 0.6, "둔화 이동 속도 배율"),
+	Field("AbsentTurretShare", "Float", 0.6, "부재 중 덫·포탑 처리 효율"),
+]
+
+# 무기: 종류(Melee 근접 / Shot 투사체), 피해, 거리, 부채꼴, 재사용, 밀쳐냄, 탄약, 발 수, 퍼짐, 투사체 속도·그림. 도구도 근접 무기로 쓴다
+WEAPON_ROWS = [
+	("Hoe",     {"Kind": "Melee", "Damage": 6,  "Range": 110, "Arc": 110, "Cooldown": 0.42, "Knockback": 300, "Ammo": "", "Shots": 1, "Spread": 0,  "ShotSpeed": 0,    "Slice": "", "Pose": "Hoe"}),
+	("Axe",     {"Kind": "Melee", "Damage": 11, "Range": 115, "Arc": 120, "Cooldown": 0.42, "Knockback": 420, "Ammo": "", "Shots": 1, "Spread": 0,  "ShotSpeed": 0,    "Slice": "", "Pose": "Axe"}),
+	("Pick",    {"Kind": "Melee", "Damage": 9,  "Range": 110, "Arc": 100, "Cooldown": 0.42, "Knockback": 350, "Ammo": "", "Shots": 1, "Spread": 0,  "ShotSpeed": 0,    "Slice": "", "Pose": "Pick"}),
+	("Sword",   {"Kind": "Melee", "Damage": 20, "Range": 140, "Arc": 150, "Cooldown": 0.34, "Knockback": 520, "Ammo": "", "Shots": 1, "Spread": 0,  "ShotSpeed": 0,    "Slice": "", "Pose": "Sword"}),
+	("Bow",     {"Kind": "Shot",  "Damage": 15, "Range": 950, "Arc": 0,   "Cooldown": 0.5,  "Knockback": 220, "Ammo": "Arrow", "Shots": 1, "Spread": 0, "ShotSpeed": 1700, "Slice": "Arrow", "Pose": "Bow"}),
+	("Shotgun", {"Kind": "Shot",  "Damage": 9,  "Range": 620, "Arc": 0,   "Cooldown": 0.95, "Knockback": 380, "Ammo": "Shell", "Shots": 5, "Spread": 32, "ShotSpeed": 1900, "Slice": "Pellet", "Pose": "Gun"}),
+]
+# 특수 탄약: 쏠 때 무기 기본 탄약 대신 먼저 쓴다 (피해 배율)
+SPECIAL_AMMO = [
+	("FireArrow", {"For": "Bow",     "DamageMul": 1.7, "Slice": "FireArrow"}),
+	("EyeArrow",  {"For": "Bow",     "DamageMul": 1.4, "Slice": "Arrow"}),
+	("GhostShell", {"For": "Shotgun", "DamageMul": 1.5, "Slice": "Pellet"}),
+]
+
+# 작업대 제작: 결과 물건·수, 재료 ("물건*수,…" — 작물 희귀도는 "Crop:<작물>:<최소 희귀도>+")
+RECIPE_ROWS = [
+	("Arrow",      {"Output": "Arrow",      "Count": 10, "Inputs": "Wood*1,Fiber*2"}),
+	("Shell",      {"Output": "Shell",      "Count": 5,  "Inputs": "Iron*1,Stone*2"}),
+	("EyeArrow",   {"Output": "EyeArrow",   "Count": 10, "Inputs": "Arrow*10,Crop:EyeRadish:1+*1"}),
+	("FireArrow",  {"Output": "FireArrow",  "Count": 10, "Inputs": "Arrow*10,Crop:VeinPepper:1+*1"}),
+	("GhostShell", {"Output": "GhostShell", "Count": 5,  "Inputs": "Shell*5,Crop:GhostGarlic:1+*1"}),
+	("SkullMine",  {"Output": "SkullMine",  "Count": 1,  "Inputs": "Stone*3,Crop:SkullMelon:1+*1"}),
+	("ScreamMine", {"Output": "ScreamMine", "Count": 1,  "Inputs": "Stone*3,Crop:ScreamPumpkin:1+*1"}),
+	("FangSpike",  {"Output": "FangSpike",  "Count": 1,  "Inputs": "Wood*2,Crop:FangCorn:1+*1"}),
+]
 
 # 숲 자원: 도구(Axe | Pick | Hand), 칠 횟수, 나오는 물건·수량 범위, 다시 자라는 날
 RESOURCE_ROWS = [
@@ -272,7 +367,7 @@ def WriteFarming(Content):
 	Values(Content, "Farming", "Farming", FARMING)
 	Struct(Content, "Item", "도구·비료 등 (씨앗·작물은 Crops 표에서 만든다)", [
 		Field("DisplayName", "String", "", "이름"),
-		Field("Kind", "Enum", "Tool", "종류", Values=["Tool", "Fertilizer", "Material", "Food", "Weapon", "Trap"]),
+		Field("Kind", "Enum", "Tool", "종류", Values=["Tool", "Fertilizer", "Material", "Food", "Weapon", "Trap", "Ammo"]),
 		Field("Price", "Int", 0, "보부상 값 (0 = 팔지 않음)"),
 		Field("Health", "Int", 0, "음식: 먹으면 체력 회복"),
 		Field("Sanity", "Int", 0, "음식: 먹으면 정신력 회복"),
@@ -310,6 +405,7 @@ def WriteFarming(Content):
 		Field("Gold", "Int", 0, "이 단계로 올리는 돈"),
 	])
 	Table(Content, "CrystalLevels", "CrystalLevel", CRYSTAL_ROWS)
+	WriteDefense(Content)
 
 
 # ---- 경제 ---------------------------------------------------------------------------------------------------------------------
@@ -344,6 +440,11 @@ def StockRows():
 	Rows.append(("Iron", {"Key": "Iron", "Price": 0, "Stock": 6, "Always": True, "Weight": 0, "Season": "Any"}))
 	Rows.append(("Mine", {"Key": "Mine", "Price": 0, "Stock": 3, "Always": True, "Weight": 0, "Season": "Any"}))
 	Rows.append(("CrystalShard", {"Key": "CrystalShard", "Price": 0, "Stock": 1, "Always": False, "Weight": 2, "Season": "Any"}))
+	Rows.append(("Arrow", {"Key": "Arrow", "Price": 0, "Stock": 30, "Always": True, "Weight": 0, "Season": "Any"}))
+	Rows.append(("Shell", {"Key": "Shell", "Price": 0, "Stock": 10, "Always": False, "Weight": 5, "Season": "Any"}))
+	Rows.append(("Sword", {"Key": "Sword", "Price": 0, "Stock": 1, "Always": False, "Weight": 4, "Season": "Any"}))
+	Rows.append(("Bow", {"Key": "Bow", "Price": 0, "Stock": 1, "Always": False, "Weight": 4, "Season": "Any"}))
+	Rows.append(("Shotgun", {"Key": "Shotgun", "Price": 0, "Stock": 1, "Always": False, "Weight": 2, "Season": "Any"}))
 	return Rows
 
 
@@ -359,6 +460,57 @@ def WriteEconomy(Content):
 		Field("Season", "Enum", "Any", "파는 계절", Values=["Any", "Spring", "Summer", "Autumn", "Winter"]),
 	])
 	Table(Content, "MerchantStock", "StockItem", StockRows())
+
+
+def WriteDefense(Content):
+	Struct(Content, "Zombie", "좀비", [
+		Field("DisplayName", "String", "", "이름"),
+		Field("Hp", "Int", 30, "체력 (밤 배율을 곱함)"),
+		Field("Speed", "Int", 110, "속도 (cm/s)"),
+		Field("Damage", "Int", 6, "한 번 공격"),
+		Field("Interval", "Float", 1.0, "공격 간격 (초)"),
+		Field("StructureMul", "Float", 1.0, "설치물 피해 배율"),
+		Field("CropEat", "Float", 2.5, "작물 한 칸 먹는 시간 (초)"),
+		Field("Radius", "Int", 26, "몸 반지름 (cm)"),
+		Field("Explode", "Bool", False, "자폭"),
+		Field("ExplodeRadius", "Int", 0, "자폭 반경"),
+		Field("ExplodeDamage", "Int", 0, "자폭 피해"),
+		Field("Regen", "Float", 0.0, "초당 회복"),
+		Field("Slow", "Float", 0.0, "때리면 플레이어 둔화"),
+		Field("Weight", "Int", 1, "등장 가중치"),
+		Field("MinDay", "Int", 1, "계절 몇 일차부터"),
+		Field("Season", "Enum", "Any", "변종 계절", Values=["Any", "Spring", "Summer", "Autumn", "Winter"]),
+	])
+	Table(Content, "Zombies", "Zombie", ZOMBIE_ROWS)
+	Struct(Content, "Night", "밤 디펜스 수치", NIGHT_FIELDS)
+	Values(Content, "Night", "Night", NIGHT)
+	Struct(Content, "Weapon", "무기 (도구 포함)", [
+		Field("Kind", "Enum", "Melee", "근접 / 투사체", Values=["Melee", "Shot"]),
+		Field("Damage", "Int", 10, "피해"),
+		Field("Range", "Int", 120, "거리 (cm)"),
+		Field("Arc", "Int", 120, "근접 부채꼴 (도)"),
+		Field("Cooldown", "Float", 0.4, "재사용 (초)"),
+		Field("Knockback", "Int", 300, "밀쳐냄"),
+		Field("Ammo", "String", "", "탄약 물건"),
+		Field("Shots", "Int", 1, "한 번에 쏘는 수"),
+		Field("Spread", "Int", 0, "퍼짐 (도)"),
+		Field("ShotSpeed", "Int", 0, "투사체 속도"),
+		Field("Slice", "String", "", "투사체 그림"),
+		Field("Pose", "String", "", "농부 동작 (Farmer_<Pose><방향>)"),
+	])
+	Table(Content, "Weapons", "Weapon", WEAPON_ROWS)
+	Struct(Content, "SpecialAmmo", "특수 탄약", [
+		Field("For", "String", "", "무기"),
+		Field("DamageMul", "Float", 1.0, "피해 배율"),
+		Field("Slice", "String", "", "투사체 그림"),
+	])
+	Table(Content, "SpecialAmmo", "SpecialAmmo", SPECIAL_AMMO)
+	Struct(Content, "Recipe", "작업대 제작", [
+		Field("Output", "String", "", "결과 물건"),
+		Field("Count", "Int", 1, "결과 수"),
+		Field("Inputs", "String", "", "재료 (작물 희귀도는 :<최소>+)"),
+	])
+	Table(Content, "Recipes", "Recipe", RECIPE_ROWS)
 
 
 def WriteFarmMap(Content, Grid):
@@ -378,6 +530,10 @@ def WriteFarmMap(Content, Grid):
 		Field("GreenhouseCost", "String", "", "온실 재료"),
 		Field("GreenhouseGold", "Int", 0, "온실 돈"),
 		Field("CrystalStart", "Array", [0, 0], "크리스탈 처음 칸", Element="Int"),
+		Field("StaticBlocked", "String", "", "좀비가 못 지나가는 칸 tx,ty; (울타리·건물 — 생성기가 콜라이더에서 계산)"),
+		Field("AttractTiles", "String", "", "좀비가 모여드는 칸 (집 앞마당)"),
+		Field("Entrances", "Array", [], "진입로 \"이름,x,y\" (밤 좀비가 나오는 곳)", Element="String"),
+		Field("Workbench", "Array", [0.0, 0.0], "작업대 위치", Element="Float"),
 	])
 	Values(Content, "FarmMap", "FarmMap", Grid)
 

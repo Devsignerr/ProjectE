@@ -1,0 +1,17 @@
+{
+  "Version": 1,
+  "Sprite": "Fx.esprite",
+  "Fps": 15.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Hit0"
+    },
+    {
+      "Slice": "Hit1"
+    },
+    {
+      "Slice": "Hit2"
+    }
+  ]
+}

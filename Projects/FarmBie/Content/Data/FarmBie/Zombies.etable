@@ -1,0 +1,174 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Zombie.estruct",
+  "Rows": [
+    {
+      "Name": "Walker",
+      "Values": {
+        "DisplayName": "걷는 좀비",
+        "Hp": 30,
+        "Speed": 110,
+        "Damage": 6,
+        "Interval": 1.1,
+        "StructureMul": 1.0,
+        "CropEat": 2.5,
+        "Radius": 26,
+        "Explode": false,
+        "ExplodeRadius": 0,
+        "ExplodeDamage": 0,
+        "Regen": 0.0,
+        "Slow": 0.0,
+        "Weight": 60,
+        "MinDay": 1,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "Runner",
+      "Values": {
+        "DisplayName": "달리는 좀비",
+        "Hp": 18,
+        "Speed": 230,
+        "Damage": 4,
+        "Interval": 0.7,
+        "StructureMul": 0.6,
+        "CropEat": 1.5,
+        "Radius": 22,
+        "Explode": false,
+        "ExplodeRadius": 0,
+        "ExplodeDamage": 0,
+        "Regen": 0.0,
+        "Slow": 0.0,
+        "Weight": 22,
+        "MinDay": 3,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "Brute",
+      "Values": {
+        "DisplayName": "거구 좀비",
+        "Hp": 110,
+        "Speed": 75,
+        "Damage": 16,
+        "Interval": 1.6,
+        "StructureMul": 2.2,
+        "CropEat": 3.0,
+        "Radius": 40,
+        "Explode": false,
+        "ExplodeRadius": 0,
+        "ExplodeDamage": 0,
+        "Regen": 0.0,
+        "Slow": 0.0,
+        "Weight": 10,
+        "MinDay": 6,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "Bomber",
+      "Values": {
+        "DisplayName": "자폭 좀비",
+        "Hp": 26,
+        "Speed": 125,
+        "Damage": 0,
+        "Interval": 1.0,
+        "StructureMul": 1.0,
+        "CropEat": 2.5,
+        "Radius": 28,
+        "Explode": true,
+        "ExplodeRadius": 170,
+        "ExplodeDamage": 95,
+        "Regen": 0.0,
+        "Slow": 0.0,
+        "Weight": 9,
+        "MinDay": 8,
+        "Season": "Any"
+      }
+    },
+    {
+      "Name": "Mossling",
+      "Values": {
+        "DisplayName": "이끼 좀비",
+        "Hp": 36,
+        "Speed": 105,
+        "Damage": 6,
+        "Interval": 1.1,
+        "StructureMul": 1.0,
+        "CropEat": 2.2,
+        "Radius": 26,
+        "Explode": false,
+        "ExplodeRadius": 0,
+        "ExplodeDamage": 0,
+        "Regen": 2.5,
+        "Slow": 0.0,
+        "Weight": 16,
+        "MinDay": 2,
+        "Season": "Spring"
+      }
+    },
+    {
+      "Name": "Scorcher",
+      "Values": {
+        "DisplayName": "그을린 좀비",
+        "Hp": 24,
+        "Speed": 200,
+        "Damage": 5,
+        "Interval": 0.8,
+        "StructureMul": 1.7,
+        "CropEat": 1.8,
+        "Radius": 22,
+        "Explode": false,
+        "ExplodeRadius": 0,
+        "ExplodeDamage": 0,
+        "Regen": 0.0,
+        "Slow": 0.0,
+        "Weight": 16,
+        "MinDay": 2,
+        "Season": "Summer"
+      }
+    },
+    {
+      "Name": "Harvester",
+      "Values": {
+        "DisplayName": "허수아비 좀비",
+        "Hp": 34,
+        "Speed": 115,
+        "Damage": 6,
+        "Interval": 1.1,
+        "StructureMul": 0.8,
+        "CropEat": 0.8,
+        "Radius": 26,
+        "Explode": false,
+        "ExplodeRadius": 0,
+        "ExplodeDamage": 0,
+        "Regen": 0.0,
+        "Slow": 0.0,
+        "Weight": 16,
+        "MinDay": 2,
+        "Season": "Autumn"
+      }
+    },
+    {
+      "Name": "Frostbite",
+      "Values": {
+        "DisplayName": "서리 좀비",
+        "Hp": 120,
+        "Speed": 70,
+        "Damage": 14,
+        "Interval": 1.6,
+        "StructureMul": 2.0,
+        "CropEat": 3.0,
+        "Radius": 40,
+        "Explode": false,
+        "ExplodeRadius": 0,
+        "ExplodeDamage": 0,
+        "Regen": 0.0,
+        "Slow": 0.4,
+        "Weight": 12,
+        "MinDay": 2,
+        "Season": "Winter"
+      }
+    }
+  ]
+}

@@ -68,7 +68,7 @@ HD2DData.WeaponOrder = { "Sword", "Spear", "Bow", "Staff", "CrystalSword" }
 HD2DData.ArmorOrder = { "LeatherVest", "ChainMail", "KnightPlate" }
 HD2DData.AccessoryOrder = { "LuckyRing", "SwiftCharm", "LifeAmulet", "CrystalCharm" }
 HD2DData.ConsumableOrder = { "Potion", "HiPotion", "Ether", "Elixir" }
-HD2DData.MaterialOrder = { "Jelly", "LostCat" }
+HD2DData.MaterialOrder = { "Jelly", "BatWing", "GoblinFang", "OldBone", "Spore", "CrystalShard", "GolemCore", "LostCat" } -- 재료는 HD2DMetaGen
 HD2DData.SubQuestOrder = { "Cat", "Smith", "Scarecrow" }
 
 return HD2DData

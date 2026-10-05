@@ -1,0 +1,31 @@
+{
+  "Version": 1,
+  "Name": "MaterialDrop",
+  "Description": "HD2D 적 재료 드랍 (MaterialDrops.etable, 행 이름 = 적 종류)",
+  "Fields": [
+    {
+      "Name": "Material",
+      "Type": "String",
+      "Default": "",
+      "Description": "떨어뜨리는 재료 (Items.etable 행)"
+    },
+    {
+      "Name": "Chance",
+      "Type": "Float",
+      "Default": 0.5,
+      "Description": "확률 0~1"
+    },
+    {
+      "Name": "Min",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "개수 최소"
+    },
+    {
+      "Name": "Max",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "개수 최대"
+    }
+  ]
+}

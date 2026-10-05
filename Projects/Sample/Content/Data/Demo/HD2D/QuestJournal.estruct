@@ -1,0 +1,31 @@
+{
+  "Version": 1,
+  "Name": "QuestJournal",
+  "Description": "HD2D 퀘스트 일지 (QuestJournal.etable, 행 이름 = Main_<장 번호> / Sub_<서브 퀘스트 id>)",
+  "Fields": [
+    {
+      "Name": "Title",
+      "Type": "String",
+      "Default": "",
+      "Description": "퀘스트 이름 (메인 장은 Quests.etable Title과 같아야 이어진다)"
+    },
+    {
+      "Name": "Summary",
+      "Type": "String",
+      "Default": "",
+      "Description": "일지 설명 (메인 장)"
+    },
+    {
+      "Name": "Objective",
+      "Type": "String",
+      "Default": "",
+      "Description": "한 줄 목표 (서브 퀘스트 — HUD 추적 칸)"
+    },
+    {
+      "Name": "Report",
+      "Type": "String",
+      "Default": "",
+      "Description": "보고할 수 있을 때 목표 (서브 퀘스트)"
+    }
+  ]
+}

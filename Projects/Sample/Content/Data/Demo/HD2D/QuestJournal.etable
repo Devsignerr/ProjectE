@@ -1,0 +1,69 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/QuestJournal.estruct",
+  "Rows": [
+    {
+      "Name": "Main_0",
+      "Values": {
+        "Title": "촌장의 부탁",
+        "Summary": "하르트 마을의 촌장 바르톨로가 들판에 들끓는 마물로 골머리를 앓고 있다. 마물을 몰아내 마을 사람들이 다시 밭에 나갈 수 있게 하자.",
+        "Objective": "",
+        "Report": ""
+      }
+    },
+    {
+      "Name": "Main_1",
+      "Values": {
+        "Title": "고대의 수호자",
+        "Summary": "마물이 날뛰는 까닭은 들판 동쪽 끝에서 깨어난 고대의 바위 골렘이라고 한다. 골렘을 잠재워 들판에 평화를 되찾자.",
+        "Objective": "",
+        "Report": ""
+      }
+    },
+    {
+      "Name": "Main_2",
+      "Values": {
+        "Title": "동굴 유적의 그림자",
+        "Summary": "골렘이 깨어난 밤부터 폭포 옆 벼랑의 동굴 유적에서 푸른 빛이 새어 나온다. 유적 깊은 곳에 둥지를 튼 것의 정체를 밝혀내자.",
+        "Objective": "",
+        "Report": ""
+      }
+    },
+    {
+      "Name": "Main_3",
+      "Values": {
+        "Title": "마을의 영웅",
+        "Summary": "들판과 유적의 위협이 사라지고 하르트 마을에 다시 아침이 찾아왔다. 이제 아르펜은 마을의 영웅이다.",
+        "Objective": "",
+        "Report": ""
+      }
+    },
+    {
+      "Name": "Sub_Cat",
+      "Values": {
+        "Title": "길 잃은 고양이",
+        "Summary": "",
+        "Objective": "연못 동쪽 바위 근처에서 고양이 미미를 찾자",
+        "Report": "리나에게 미미를 데려다주자"
+      }
+    },
+    {
+      "Name": "Sub_Smith",
+      "Values": {
+        "Title": "대장간의 담금질",
+        "Summary": "",
+        "Objective": "슬라임에게서 슬라임 젤리를 모으자",
+        "Report": "대장장이 브론에게 젤리를 건네자"
+      }
+    },
+    {
+      "Name": "Sub_Scarecrow",
+      "Values": {
+        "Title": "허수아비를 지켜라",
+        "Summary": "",
+        "Objective": "허수아비 근처의 마물을 쓰러뜨리자",
+        "Report": "농부 한스에게 돌아가 보고하자"
+      }
+    }
+  ]
+}

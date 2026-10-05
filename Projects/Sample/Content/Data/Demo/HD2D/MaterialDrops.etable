@@ -1,0 +1,87 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/MaterialDrop.estruct",
+  "Rows": [
+    {
+      "Name": "Slime",
+      "Values": {
+        "Material": "Jelly",
+        "Chance": 0.5,
+        "Min": 1,
+        "Max": 1
+      }
+    },
+    {
+      "Name": "Bat",
+      "Values": {
+        "Material": "BatWing",
+        "Chance": 0.45,
+        "Min": 1,
+        "Max": 1
+      }
+    },
+    {
+      "Name": "Goblin",
+      "Values": {
+        "Material": "GoblinFang",
+        "Chance": 0.45,
+        "Min": 1,
+        "Max": 1
+      }
+    },
+    {
+      "Name": "Archer",
+      "Values": {
+        "Material": "OldBone",
+        "Chance": 0.5,
+        "Min": 1,
+        "Max": 1
+      }
+    },
+    {
+      "Name": "Mushroom",
+      "Values": {
+        "Material": "Spore",
+        "Chance": 0.55,
+        "Min": 1,
+        "Max": 2
+      }
+    },
+    {
+      "Name": "Golem",
+      "Values": {
+        "Material": "GolemCore",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 1
+      }
+    },
+    {
+      "Name": "CaveBat",
+      "Values": {
+        "Material": "BatWing",
+        "Chance": 0.55,
+        "Min": 1,
+        "Max": 2
+      }
+    },
+    {
+      "Name": "CrystalSlime",
+      "Values": {
+        "Material": "CrystalShard",
+        "Chance": 0.6,
+        "Min": 1,
+        "Max": 2
+      }
+    },
+    {
+      "Name": "SpiderQueen",
+      "Values": {
+        "Material": "CrystalShard",
+        "Chance": 1.0,
+        "Min": 3,
+        "Max": 4
+      }
+    }
+  ]
+}

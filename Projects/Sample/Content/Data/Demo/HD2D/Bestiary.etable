@@ -1,0 +1,96 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/BestiaryEntry.estruct",
+  "Rows": [
+    {
+      "Name": "Slime",
+      "Values": {
+        "Habitat": "하르트 들판",
+        "Description": "들판 어디서나 볼 수 있는 말랑한 마물. 깡충 뛰어 몸으로 부딪친다. 떨어뜨리는 젤리는 대장장이가 반긴다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Slime.png",
+        "PictureW": 144,
+        "PictureH": 112
+      }
+    },
+    {
+      "Name": "Bat",
+      "Values": {
+        "Habitat": "들판 숲 그늘",
+        "Description": "해 질 녘이면 날아오르는 박쥐. 높이 떠 있다가 급강하하며 침을 뱉는다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Bat.png",
+        "PictureW": 135,
+        "PictureH": 65
+      }
+    },
+    {
+      "Name": "Goblin",
+      "Values": {
+        "Habitat": "들판 동쪽",
+        "Description": "떠돌이 도적 고블린. 몸을 웅크렸다가 단숨에 돌진한다. 웅크리면 옆으로 비켜서자.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Goblin.png",
+        "PictureW": 95,
+        "PictureH": 130
+      }
+    },
+    {
+      "Name": "Archer",
+      "Values": {
+        "Habitat": "옛 성채 터",
+        "Description": "성채 터를 지키던 병사의 해골. 거리를 두고 활을 당긴다. 시위를 당기는 틈을 노리자.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Archer.png",
+        "PictureW": 60,
+        "PictureH": 124
+      }
+    },
+    {
+      "Name": "Mushroom",
+      "Values": {
+        "Habitat": "연못가·밀밭",
+        "Description": "느릿느릿 걷는 독버섯. 보랏빛 포자를 뿜어 땅에 독 웅덩이를 남긴다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Mushroom.png",
+        "PictureW": 144,
+        "PictureH": 144
+      }
+    },
+    {
+      "Name": "Golem",
+      "Values": {
+        "Habitat": "들판 동쪽 끝",
+        "Description": "들판을 지키던 고대의 바위 골렘. 땅을 내리치고 바위를 던진다. 바닥의 붉은 원을 조심하라.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Golem.png",
+        "PictureW": 118,
+        "PictureH": 110
+      }
+    },
+    {
+      "Name": "CaveBat",
+      "Values": {
+        "Habitat": "동굴 유적",
+        "Description": "동굴 깊은 곳에 사는 푸른 박쥐. 들판의 박쥐보다 빠르고 사납다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/CaveBat.png",
+        "PictureW": 135,
+        "PictureH": 65
+      }
+    },
+    {
+      "Name": "CrystalSlime",
+      "Values": {
+        "Habitat": "동굴 유적",
+        "Description": "수정을 머금어 단단해진 슬라임. 몸이 무거워 부딪히면 꽤 아프다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/CrystalSlime.png",
+        "PictureW": 144,
+        "PictureH": 112
+      }
+    },
+    {
+      "Name": "SpiderQueen",
+      "Values": {
+        "Habitat": "유적 깊은 곳",
+        "Description": "유적 깊은 곳에 둥지를 튼 거대한 거미. 거미줄을 쏘고 수정 가시를 솟게 하며 덮쳐 온다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/SpiderQueen.png",
+        "PictureW": 77,
+        "PictureH": 55
+      }
+    }
+  ]
+}

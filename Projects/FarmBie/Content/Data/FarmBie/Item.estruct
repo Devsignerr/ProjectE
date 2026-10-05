@@ -30,6 +30,18 @@
       "Description": "보부상 값 (0 = 팔지 않음)"
     },
     {
+      "Name": "Health",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "음식: 먹으면 체력 회복"
+    },
+    {
+      "Name": "Sanity",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "음식: 먹으면 정신력 회복"
+    },
+    {
       "Name": "Description",
       "Type": "String",
       "Default": "",

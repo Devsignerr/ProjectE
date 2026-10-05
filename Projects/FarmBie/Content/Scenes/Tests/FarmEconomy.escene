@@ -11100,7 +11100,7 @@
         "ScriptComponent": {
           "ExecutionLocation": 0,
           "ScriptAsset": "Scripts/FarmBie/FarmGame.lua",
-          "PropertyOverrides": "{\"AutoPlay\": \"Economy\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"Test\", \"ShipSpot\": \"380.0,-950.0\", \"MerchantSpot\": \"520.0,1480.0\"}"
+          "PropertyOverrides": "{\"AutoPlay\": \"Economy\", \"Map\": \"Farm\", \"CameraBounds\": \"-1700.0,-1700.0,1700.0,1500.0\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"Test\", \"ShipSpot\": \"380.0,-950.0\", \"MerchantSpot\": \"520.0,1480.0\"}"
         },
         "TransformComponent": {
           "Position": [
@@ -11370,6 +11370,91 @@
     },
     {
       "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60.0,
+            230.0,
+            150.0
+          ],
+          "IsTrigger": true
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "ScriptAsset": "Scripts/FarmBie/FarmTravel.lua",
+          "PropertyOverrides": "{\"TargetScene\": \"Scenes/Forest.escene\", \"SpawnName\": \"FromFarm\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2540.0,
+            200.0,
+            77.44772793361331
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Travel_Forest",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2300.0,
+            200.0,
+            0.7983412263492244
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Spawn_FromForest",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -1030.0,
+            -1.1069905173969734
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Spawn_Bed",
+      "Parent": -1
+    },
+    {
+      "Components": {
         "CameraComponent": {
           "FovYDegrees": 30.0,
           "NearZ": 50.0,
@@ -11462,7 +11547,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 402
+          "Root": 405
         },
         "TransformComponent": {
           "Position": [

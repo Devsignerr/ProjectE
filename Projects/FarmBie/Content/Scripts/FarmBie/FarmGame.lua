@@ -7,7 +7,9 @@ local D = Script.Require("Scripts/FarmBie/FarmData.lua")
 
 local FarmGame = {
 	Properties = {
-		AutoPlay  = "",       -- 자동 검증 시나리오 (FarmAutoPilot.lua)
+		AutoPlay  = "",       -- 자동 검증 시나리오 (FarmAutoPilot.lua — 맵 이동으로 이어지면 Persistent "FarmBie_AutoPlay")
+		Map       = "Farm",   -- Farm | Forest (밭·출하·보부상은 농장에서만)
+		CameraBounds = "",    -- 카메라 초점 범위 "minx,miny,maxx,maxy"
 		Slot      = "1",      -- 저장 슬롯 ("Test" = 자동 검증 전용 — 시작할 때 지운다)
 		SleepSpot = "0,0",    -- 집 문 앞 "x,y" (잠자기 상호작용·기상 자리)
 		ShipSpot  = "0,0",    -- 출하 상자 "x,y"
@@ -15,11 +17,13 @@ local FarmGame = {
 	},
 }
 for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua", "Scripts/FarmBie/FarmInventory.lua", "Scripts/FarmBie/FarmField.lua",
-                         "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua", "Scripts/FarmBie/FarmVitals.lua" }) do
+                         "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua", "Scripts/FarmBie/FarmVitals.lua",
+                         "Scripts/FarmBie/FarmForage.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do FarmGame[Name] = Fn end
 end
 
-local SaveParts = { "Time", "Inventory", "Field", "Economy", "Vitals" }
+local SaveParts = { "Time", "Inventory", "Field", "Economy", "Vitals", "Forage" }
+local SessionSlot = "FarmBie_Session"
 local SaveVersion = 1
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
@@ -31,21 +35,29 @@ end
 function FarmGame:OnStart()
 	self.Report = {}
 	self.Interactables = {}
+	self.MapId = self.Properties.Map
+	-- 맵 이동으로 이어지는 자동 검증: 시나리오·슬롯을 Persistent로 받는다
+	local Auto = Game.GetPersistent("FarmBie_AutoPlay", "")
+	if self.Properties.AutoPlay == "" and Auto ~= "" then self.Properties.AutoPlay = Auto end
+	if self.Properties.AutoPlay ~= "" then self.Properties.Slot = "Test" end
 	self.SleepSpot = Parse2(self.Properties.SleepSpot)
 	self:InitVitals()
 	self:InitTime()
 	self:InitInventory()
 	self.RandState = 12345
 	self:InitField()
-	self:InitEconomy()
+	if self.MapId == "Farm" then self:InitEconomy() else self.Economy = Script.Require("Scripts/FarmBie/FarmData.lua").Values("Economy.edata"); self.Gold = 0; self.Shipped = {}; self.Stock = {}; self.StockDay = -1 end
+	self:InitForage()
 	self:AddInteractable({ Pos = self.SleepSpot, Radius = 170, Prompt = function()
 		if self.Phase == "Night" then return "E  잠자기 (하루를 마친다)" end
 		return nil
 	end, Act = function() self:BeginSleep("Bed") end })
-	if self.Properties.Slot == "Test" then
+	if self:TryResumeSession() then
+		-- 맵 이동으로 왔다 (상태는 세션에서)
+	elseif self.Properties.Slot == "Test" and Game.GetPersistent("FarmBie_AutoPhase", "") == "" then
 		SaveGame.Delete(self:SlotName())
 	end
-	if not (SaveGame.Exists(self:SlotName()) and self:LoadGame()) then
+	if not self.bResumed and not (SaveGame.Exists(self:SlotName()) and self:LoadGame()) then
 		self:GiveStartItems()
 		self:GiveStartGold()
 	end
@@ -70,8 +82,20 @@ function FarmGame:Player()
 end
 
 function FarmGame:OnUpdate(Dt)
+	if self.ArrivePos then
+		-- 맵 도착 자리 (플레이어 OnStart 뒤 첫 갱신)
+		local P = self:Player()
+		if P then
+			P:Teleport(self.ArrivePos)
+			self.ArrivePos = nil
+		end
+	end
+	if self.TravelTarget then
+		self:UpdateTravel()
+		return
+	end
 	self:UpdateTime(Dt)
-	self:UpdateMerchant()
+	if self.MapId == "Farm" then self:UpdateMerchant() end
 	self:UpdateVitals(Dt)
 end
 
@@ -121,12 +145,24 @@ function FarmGame:Interact()
 end
 
 -- ---- 시간 훅 (FarmTime이 부른다)
+-- 잠 전환이 끝났을 때 (FarmTime UpdateSleep) — 다른 맵에서 잠들었으면 집 침대로
+function FarmGame:OnWake(Title, Sub)
+	if self.bWakeTravel then
+		self.bWakeTravel = false
+		self.TravelBanner = { Title, Sub }
+		self:TravelTo("Scenes/Farm.escene", "Bed")
+		return true
+	end
+	return false
+end
+
 function FarmGame:OnDayStart(bNewSeason)
 	-- 아침 알림 띠 부제에 붙일 글 (FarmTime이 잠 전환 끝에 쓴다)
 	self.MorningNotes = {}
 	self:ApplySleepRecovery(self.MorningNotes)
 	local Grown = self:GrowField()
 	local Income = self:SettleShipping()
+	self:RefreshNodes()
 	if Income > 0 then self.MorningNotes[#self.MorningNotes + 1] = string.format("출하 수입 +%d", Income) end
 	if self:IsMerchantDay() then self.MorningNotes[#self.MorningNotes + 1] = "보부상이 남쪽 천막에 왔다" end
 	Log.Info(string.format("[FarmBie] 아침: 자란 작물 %d, 출하 수입 %d, 돈 %d", Grown, Income, self.Gold))
@@ -137,8 +173,55 @@ function FarmGame:OnSeasonChanged(OldSeason)
 	if Count > 0 then Log.Info(string.format("[FarmBie] 계절이 바뀌어 작물 %d개가 시듦", Count)) end
 end
 
--- 잠에서 깸: 집 문 앞으로
+-- ---- 맵 이동 (FarmTravel.lua 트리거 · 다른 맵에서 잠들면 집으로)
+function FarmGame:TravelTo(SceneAsset, SpawnName)
+	if self.TravelTarget then return end
+	self.TravelTarget, self.TravelSpawn, self.TravelTimer = SceneAsset, SpawnName, 0
+	self:Hud():ShowPrompt(nil)
+	self.Report.Travels = (self.Report.Travels or 0) + 1
+	Log.Info(string.format("[FarmBie] 맵 이동 → %s (Spawn_%s)", SceneAsset, SpawnName))
+end
+
+function FarmGame:UpdateTravel()
+	self.TravelTimer = self.TravelTimer + Time.GetUnscaledDelta()
+	self:Hud():SetFade(self.TravelTimer / 0.4)
+	if self.TravelTimer < 0.45 or self.bTravelSent then return end
+	self.bTravelSent = true
+	local Data = self:BuildSave()
+	Data.Session = { Hour = self.Hour, Phase = self.Phase == "Sleep" and "Day" or self.Phase, Spawn = self.TravelSpawn, Slot = self.Properties.Slot,
+	                 Banner = self.TravelBanner }
+	SaveGame.Save(SessionSlot, Data)
+	Game.SetPersistent("FarmBie_Session", true)
+	if self.Properties.AutoPlay ~= "" then Game.SetPersistent("FarmBie_AutoPlay", self.Properties.AutoPlay) end
+	Game.SetTimeScale(1.0)
+	Game.OpenScene(self.TravelTarget)
+end
+
+function FarmGame:TryResumeSession()
+	if Game.GetPersistent("FarmBie_Session", false) ~= true then return false end
+	Game.SetPersistent("FarmBie_Session", nil)
+	local Data = SaveGame.Load(SessionSlot)
+	if type(Data) ~= "table" or not Data.Session then return false end
+	local S = Data.Session
+	self.Properties.Slot = S.Slot or self.Properties.Slot
+	for _, Part in ipairs(SaveParts) do self["Load" .. Part](self, Data) end
+	self.Hour = S.Hour or self.Hour
+	self.Phase = S.Phase or "Day"
+	local Spawn = S.Spawn and Scene.Find("Spawn_" .. S.Spawn)
+	if Spawn then self.ArrivePos = Spawn:GetWorldPosition() + Vector3(0, 0, 89) end
+	if S.Banner then self:Hud():Announce(S.Banner[1], S.Banner[2], 3.5) end
+	self.bResumed = true
+	self.Report.Arrivals = (self.Report.Arrivals or 0) + 1
+	Log.Info(string.format("[FarmBie] 맵 도착: %s Spawn_%s (%s %s)", self.MapId, tostring(S.Spawn), self:DateText(), self:ClockText()))
+	return true
+end
+
+-- 잠에서 깸: 집 문 앞으로 (다른 맵이면 집으로 이동)
 function FarmGame:WakePlayer()
+	if self.MapId ~= "Farm" then
+		self.bWakeTravel = true
+		return
+	end
 	local P = self:Player()
 	if P then
 		local Pos = P.entity:GetWorldPosition()

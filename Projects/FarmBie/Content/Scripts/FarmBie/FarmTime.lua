@@ -150,8 +150,10 @@ function Time_:UpdateSleep(Dt)
 		end
 		local Notes = self.MorningNotes or {}
 		if Sub then table.insert(Notes, 1, Sub) end
-		self:Hud():Announce(self:DateText(), #Notes > 0 and table.concat(Notes, "   ·   ") or string.format("%d년차 아침", self.Year), 3.5)
+		local Text = #Notes > 0 and table.concat(Notes, "   ·   ") or string.format("%d년차 아침", self.Year)
 		self.MorningNotes = nil
+		if self.OnWake and self:OnWake(self:DateText(), Text) then return end
+		self:Hud():Announce(self:DateText(), Text, 3.5)
 	end
 end
 

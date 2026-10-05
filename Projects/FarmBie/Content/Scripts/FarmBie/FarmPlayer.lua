@@ -55,6 +55,11 @@ function FarmPlayer:OnStart()
 	if self.GM.Properties.AutoPlay ~= "" then
 		self.Pilot = AutoPilot.New(self.GM.Properties.AutoPlay, self, self.GM)
 	end
+	-- 카메라 범위: 맵마다 관리자 속성 (없으면 내 속성)
+	local A, B, C, D_ = string.match(self.GM.Properties.CameraBounds or "", "([-%d%.]+),([-%d%.]+),([-%d%.]+),([-%d%.]+)")
+	if A then
+		self.Properties.MinX, self.Properties.MinY, self.Properties.MaxX, self.Properties.MaxY = tonumber(A), tonumber(B), tonumber(C), tonumber(D_)
+	end
 	self.Camera = Scene.Find(self.Properties.Camera)
 	if self.Camera then
 		self.CamOffset = self.Camera:GetForward() * -self.Properties.CameraDistance
@@ -111,7 +116,7 @@ function FarmPlayer:OnUpdate(Dt)
 	self.LastPos = Pos
 
 	local In = self:GatherInput()
-	if not self.GM.bReady or self.GM.Phase == "Sleep" then
+	if not self.GM.bReady or self.GM.Phase == "Sleep" or self.GM.TravelTarget then
 		self:UpdateAnimation(Vector3(0, 0, 0))
 		return
 	end
@@ -138,7 +143,11 @@ function FarmPlayer:OnUpdate(Dt)
 		self.ToolTimer = self.ToolTimer - Dt
 		local F = GM.Farming
 		if Before > F.ToolTime - F.ToolHitTime and self.ToolTimer <= F.ToolTime - F.ToolHitTime then
-			GM:ApplyUse(self.ToolKey, self.ToolTX, self.ToolTY)
+			if self.ToolAnim == "Axe" or self.ToolAnim == "Pick" then
+				GM:HitNodeAt(self.ToolKey, self.entity:GetWorldPosition(), self:GetFacingVector())
+			else
+				GM:ApplyUse(self.ToolKey, self.ToolTX, self.ToolTY)
+			end
 		end
 		self:UpdateAnimation(Vector3(0, 0, 0))
 		return
@@ -175,7 +184,10 @@ function FarmPlayer:StartUse()
 	local TX, TY = GM:TargetTile(self.entity:GetWorldPosition(), self:GetFacingVector())
 	local Action = GM:PlanUse(Key, TX, TY)
 	self.ToolKey, self.ToolTX, self.ToolTY = Key, TX, TY
-	if (Key == "Hoe" or Key == "Can") and Action ~= "Harvest" then
+	if Key == "Axe" or Key == "Pick" then
+		self.ToolAnim = Key
+		self.ToolTimer = GM.Farming.ToolTime
+	elseif (Key == "Hoe" or Key == "Can") and Action ~= "Harvest" then
 		self.ToolAnim = Key
 		self.ToolTimer = GM.Farming.ToolTime
 	else

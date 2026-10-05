@@ -4,6 +4,7 @@
 --   Basic: 이동(사방)·방향 플립북·구르기·카메라 추적·집/울타리 충돌
 --   Economy: 처음 돈·출하(작물 전부/고른 묶음)·아침 정산·보부상 요일·재고(계절·한정)·사기(돈 부족·품절)·떠남·소지품 창 옮기기·저장
 --   Sanity: 먹기(체력·정신력·희귀 버프)·버프는 아침에 끝·정신력 낮음 속도 감소·잠 회복·정신력 0 쓰러짐(소지금 20%·10시 기상)·저장
+--   Forest(씬 4번): 농장 도구 → 서쪽 입구로 숲 → 나무·바위 캐기·풀 줍기·먹기·시간 이어짐 → 새벽 잠 → 집 침대 → 3일 뒤 숲 자원 다시 자람
 --   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
@@ -14,6 +15,19 @@ local function Flat(V) return Vector3(V.X, V.Y, 0) end
 
 function AutoPilot.New(Scenario, Player, GM)
 	local A = setmetatable({ Scenario = Scenario, Player = Player, GM = GM, Time = 0, Frame = 0, Failures = {}, Checks = 0 }, AutoPilot)
+	-- 여러 씬에 걸친 시나리오: 단계(Phase)와 실패·확인 수를 Persistent로 잇는다 → Run<시나리오><단계>
+	local Phase = Game.GetPersistent("FarmBie_AutoPhase", "")
+	if Phase ~= "" then
+		A.Phase = Phase
+		for Item in string.gmatch(Game.GetPersistent("FarmBie_AutoFailures", ""), "[^|]+") do A.Failures[#A.Failures + 1] = Item end
+		A.Checks = Game.GetPersistent("FarmBie_AutoChecks", 0)
+		A.Time = Game.GetPersistent("FarmBie_AutoTime", 0)
+		local Runner = A["Run" .. Scenario .. Phase]
+		if Runner then
+			A.Co = coroutine.create(function() Runner(A) end)
+			return A
+		end
+	end
 	local ShotHour = string.match(Scenario, "^Shot([%d%.]+)$")
 	if ShotHour then A.ShotHour, Scenario = ShotHour, "Shot" end
 	local Runner = A["Run" .. Scenario]
@@ -61,9 +75,20 @@ function AutoPilot:Step(UDt)
 	return In
 end
 
+-- 다음 씬 단계로 넘김 (이어서 맵 이동이 씬을 연다)
+function AutoPilot:HandOff(NextPhase)
+	Game.SetPersistent("FarmBie_AutoPhase", NextPhase)
+	Game.SetPersistent("FarmBie_AutoFailures", table.concat(self.Failures, "|"))
+	Game.SetPersistent("FarmBie_AutoChecks", self.Checks)
+	Game.SetPersistent("FarmBie_AutoTime", self.Time)
+	self:Note("단계 넘김 → " .. NextPhase)
+end
+
 function AutoPilot:Finish()
 	if self.bFinished then return end
 	self.bFinished = true
+	Game.SetPersistent("FarmBie_AutoPhase", nil)
+	Game.SetPersistent("FarmBie_AutoPlay", nil)
 	local P = self.Player
 	self.GM:ReportAutoPlay(self.Failures, string.format("%.0f초, 확인 %d건, 이동 %.0fcm, 구르기 %d", self.Time, self.Checks, P.Stats.Distance, P.Stats.Dodges))
 end
@@ -511,6 +536,128 @@ function AutoPilot:RunSanity()
 	GM:SetSanity(90)
 	GM:LoadGame()
 	self:Expect(GM.Sanity == 30, "정신력 저장")
+	self:Finish()
+end
+
+-- 가장 가까운 자원 노드 (종류)
+function AutoPilot:NearestNode(Type)
+	local GM = self.GM
+	local Best, BestD = nil, math.huge
+	for _, Node in ipairs(GM.Nodes) do
+		if Node.Type == Type and GM:IsNodeReady(Node) then
+			local D_ = Flat(Node.Pos - self:Pos()):Length()
+			if D_ < BestD then Best, BestD = Node, D_ end
+		end
+	end
+	return Best
+end
+
+-- 노드 위쪽에 서서 아래를 보며 도구질 (캘 때까지)
+function AutoPilot:WorkNode(Node, Key)
+	local GM, P = self.GM, self.Player
+	local Stand = Node.Pos + Vector3(0, -(GM.Farming.ReachDistance + 25), 0)
+	if not self:GoTo(Stand, 25, 20) then
+		-- 막혔으면 옆에서 (오른쪽을 보며)
+		Stand = Node.Pos + Vector3(-(GM.Farming.ReachDistance + 25), 0, 0)
+		self:GoTo(Stand, 25, 20)
+		P.Facing = "Right"
+	else
+		P.Facing = "Down"
+	end
+	self:SelectKey(Key)
+	for _ = 1, Node.Row.Hits + 2 do
+		if not GM:IsNodeReady(Node) then break end
+		self:Press("UseTool")
+		self:Wait(GM.Farming.ToolTime + 0.05)
+	end
+	return not GM:IsNodeReady(Node)
+end
+
+function AutoPilot:RunForest()
+	local GM = self.GM
+	self:Wait(1.0)
+	self:Expect(GM.MapId == "Farm" and GM:CountItem("Axe") == 1 and GM:CountItem("Pick") == 1, "도끼·곡괭이")
+	GM:SetHour(9)
+	self:HandOff("Forest")
+	self:GoTo(Vector3(-2300, 200, 0), 40, 25)
+	self:Walk(Vector3(-1, 0, 0), 3.0)
+	self:Expect(false, "숲으로 이동하지 못함")
+	self:Finish()
+end
+
+function AutoPilot:RunForestForest()
+	local GM = self.GM
+	local R = GM.Report
+	self:Wait(1.0)
+	self:Expect(GM.MapId == "Forest" and GM.Day == 1 and GM.Hour > 9 and GM.Hour < 10, string.format("숲 도착 %s %s", GM:DateText(), GM:ClockText()))
+	self:Expect(Flat(self:Pos() - Scene.Find("Spawn_FromFarm"):GetWorldPosition()):Length() < 150, "도착 자리")
+	self:Expect(#GM.Nodes >= 50, "자원 노드 " .. #GM.Nodes)
+	-- 나무 베기
+	local Tree = self:NearestNode("Tree")
+	self:Expect(self:WorkNode(Tree, "Axe"), "나무 베기")
+	local Wood = GM:CountItem("Wood")
+	self:Expect(Wood >= 3 and Wood <= 5 and Tree.Stump:GetScale().X > 1 and not Tree.Collision:HasComponent("BoxColliderComponent"), "나무 → 그루터기 " .. Wood)
+	-- 바위 깨기
+	local Rock = self:NearestNode("Rock")
+	self:Expect(self:WorkNode(Rock, "Pick"), "바위 깨기")
+	self:Expect(GM:CountItem("Stone") >= 2, "돌 " .. GM:CountItem("Stone"))
+	-- 손으로 줍기: 섬유·약초·버섯
+	for _, Type in ipairs({ "Fiber", "Herb", "Mushroom" }) do
+		local Node = self:NearestNode(Type)
+		self:GoTo(Node.Pos + Vector3(0, -90, 0), 30, 25)
+		self:Wait(0.2)
+		self:Press("Interact")
+		self:Expect(not GM:IsNodeReady(Node) and Node.Sprite.Slice == Type .. "Picked", "줍기 " .. Type)
+	end
+	self:Expect(GM:CountItem("Fiber") >= 2 and GM:CountItem("Herb") >= 1 and GM:CountItem("Mushroom") >= 1, "줍은 것")
+	-- 약초 먹기
+	GM.Health = 40
+	-- 약초를 핫바 9번 칸으로 (소지품 창에서 옮기는 것과 같음)
+	for I = 1, GM.BagSize do
+		if GM.Bag[I] and GM.Bag[I].Key == "Herb" then GM.Bag[9], GM.Bag[I] = GM.Bag[I], GM.Bag[9] end
+	end
+	self.In.Slot = 9
+	self:Yield()
+	self:Press("Eat")
+	self:Expect(GM.Health == 60, "약초 먹기 체력 " .. GM.Health)
+	self.ForestTree = Tree.Name
+	Game.SetPersistent("FarmBie_AutoTree", Tree.Name)
+	-- 숲에서 새벽까지 → 집 침대에서 깸
+	self:HandOff("Home")
+	GM:SetHour(25.97)
+	self:Wait(12)
+	self:Expect(false, "집으로 돌아가지 못함")
+	self:Finish()
+end
+
+function AutoPilot:RunForestHome()
+	local GM = self.GM
+	self:Wait(1.0)
+	self:Expect(GM.MapId == "Farm" and GM.Day == 2 and math.abs(GM.Hour - 6) < 0.2, string.format("집에서 깸 %s %s", GM:DateText(), GM:ClockText()))
+	self:Expect(Flat(self:Pos() - Scene.Find("Spawn_Bed"):GetWorldPosition()):Length() < 150, "침대 자리")
+	self:Expect(GM:CountItem("Wood") >= 3 and GM:CountItem("Stone") >= 2, "재료 유지")
+	local Tree = Game.GetPersistent("FarmBie_AutoTree", "")
+	self:Expect(GM.NodeState[Tree] == 1, "숲 노드 상태 유지")
+	-- 3일 지나 다시 숲으로
+	self:NextMorning()
+	self:NextMorning()
+	self:Wait(0.5)
+	self:HandOff("Forest2")
+	self:GoTo(Vector3(-2300, 200, 0), 40, 25)
+	self:Walk(Vector3(-1, 0, 0), 3.0)
+	self:Expect(false, "숲으로 다시 가지 못함")
+	self:Finish()
+end
+
+function AutoPilot:RunForestForest2()
+	local GM = self.GM
+	self:Wait(1.0)
+	local Name = Game.GetPersistent("FarmBie_AutoTree", "")
+	local Tree
+	for _, Node in ipairs(GM.Nodes) do if Node.Name == Name then Tree = Node end end
+	self:Expect(GM.Day == 4 and Tree and GM:IsNodeReady(Tree) and Tree.Model:GetScale().X > 1 and Tree.Collision:HasComponent("BoxColliderComponent"),
+		"나무 다시 자람 " .. GM:DateText())
+	Game.SetPersistent("FarmBie_AutoTree", nil)
 	self:Finish()
 end
 

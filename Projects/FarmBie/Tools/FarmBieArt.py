@@ -13,6 +13,17 @@ from HD2DArt import FAtlas, FCanvas, WriteFlipbook  # noqa: E402
 
 CELL = 32
 
+
+def _SetUnits(Folder, Name, Units):
+	import json
+	Path = os.path.join(Folder, f"{Name}.esprite")
+	with open(Path, encoding="utf-8") as File:
+		Doc = json.load(File)
+	Doc["UnitsPerPixel"] = Units
+	with open(Path, "w", encoding="utf-8", newline="\n") as File:
+		json.dump(Doc, File, indent=2, ensure_ascii=False)
+		File.write("\n")
+
 # ---- 팔레트 (sRGB) ----------------------------------------------------------------------------------------------------
 OUTLINE  = (38, 26, 30)
 SKIN     = (246, 204, 160)
@@ -171,11 +182,22 @@ CAN, CAN_L, CAN_D = (86, 136, 186), (140, 186, 230), (60, 96, 140)
 WATER = (150, 210, 255)
 
 
-def _Hoe(C, X0, Y0, X1, Y1, BladeX, BladeY, BladeW, BladeH):
+def _Hoe(C, X0, Y0, X1, Y1, BladeX, BladeY, BladeW, BladeH, Kind="Hoe"):
 	C.Line(X0, Y0, X1, Y1, HANDLE)
 	C.Line(X0 + 1, Y0, X1 + 1, Y1, HANDLE_D)
-	C.Rect(BladeX, BladeY, BladeX + BladeW - 1, BladeY + BladeH - 1, METAL)
-	C.Rect(BladeX, BladeY + BladeH - 1, BladeX + BladeW - 1, BladeY + BladeH - 1, METAL_D)
+	if Kind == "Axe":
+		# 도끼: 두껍고 둥근 날 (한쪽으로 부푼 쐐기)
+		C.Rect(BladeX - 1, BladeY - 1, BladeX + BladeW, BladeY + BladeH, METAL)
+		C.Rect(BladeX - 1, BladeY + BladeH, BladeX + BladeW, BladeY + BladeH, METAL_D)
+		C.Px(BladeX - 1, BladeY - 1, (230, 236, 244))
+	elif Kind == "Pick":
+		# 곡괭이: 양쪽으로 뾰족한 머리
+		C.Rect(BladeX - 2, BladeY, BladeX + BladeW + 1, BladeY + 1, METAL)
+		C.Px(BladeX - 3, BladeY + 2, METAL_D)
+		C.Px(BladeX + BladeW + 2, BladeY + 2, METAL_D)
+	else:
+		C.Rect(BladeX, BladeY, BladeX + BladeW - 1, BladeY + BladeH - 1, METAL)
+		C.Rect(BladeX, BladeY + BladeH - 1, BladeX + BladeW - 1, BladeY + BladeH - 1, METAL_D)
 
 
 def _Can(C, X, Y, bTilt, Drops):
@@ -194,22 +216,23 @@ def DrawFarmerUse(Dir, Tool, Frame):
 	Body = DrawFarmer(Dir, "Walk" if Frame == 1 else "Idle", 1 if Frame == 1 else 0)
 	C = FCanvas(CELL, USE_H)
 	Tools = FCanvas(CELL, USE_H)
-	if Tool == "Hoe":
+	if Tool in ("Hoe", "Axe", "Pick"):
+		K = Tool
 		if Dir == "Down":
 			if Frame == 0:
-				_Hoe(Tools, 22, 22, 25, 9, 23, 6, 5, 3)
+				_Hoe(Tools, 22, 22, 25, 9, 23, 6, 5, 3, K)
 			else:
-				_Hoe(Tools, 18, 24, 17, 35, 14, 35, 7, 3)
+				_Hoe(Tools, 18, 24, 17, 35, 14, 35, 7, 3, K)
 		elif Dir == "Up":
 			if Frame == 0:
-				_Hoe(Tools, 10, 22, 7, 9, 5, 6, 5, 3)
+				_Hoe(Tools, 10, 22, 7, 9, 5, 6, 5, 3, K)
 			else:
-				_Hoe(Tools, 16, 16, 16, 4, 13, 1, 7, 3)
+				_Hoe(Tools, 16, 16, 16, 4, 13, 1, 7, 3, K)
 		else:
 			if Frame == 0:
-				_Hoe(Tools, 15, 21, 8, 9, 5, 6, 5, 3)
+				_Hoe(Tools, 15, 21, 8, 9, 5, 6, 5, 3, K)
 			else:
-				_Hoe(Tools, 18, 22, 27, 30, 26, 30, 4, 6)
+				_Hoe(Tools, 18, 22, 27, 30, 26, 30, 4, 6, K)
 	elif Tool == "Can":
 		if Dir == "Down":
 			_Can(Tools, 19, 23 if Frame == 0 else 29, Frame == 1, [] if Frame == 0 else [(29, 36), (27, 38), (30, 39)])
@@ -230,7 +253,7 @@ def DrawFarmerUse(Dir, Tool, Frame):
 	return C
 
 
-USE_POSES = {"Hoe": [0.2, 0.22], "Can": [0.16, 0.3]}  # 도구 → 프레임 길이
+USE_POSES = {"Hoe": [0.2, 0.22], "Can": [0.16, 0.3], "Axe": [0.2, 0.22], "Pick": [0.2, 0.22]}  # 도구 → 프레임 길이
 
 
 # ---- 보부상 (수상한 떠돌이 상인: 후드 망토 + 커다란 등짐 + 그림자 속 빛나는 눈) -----------------------------------------------------
@@ -273,6 +296,51 @@ def DrawPeddler(Frame):
 	return C
 
 
+# ---- 숲 채집물 (빌보드, 1 도트 = 6.25cm — Forage.esprite) -----------------------------------------------------------------
+def DrawFiberBush(bPicked):
+	C = FCanvas(20, 16)
+	Leaf, LeafL, LeafD = (96, 150, 70), (140, 190, 96), (60, 104, 52)
+	if bPicked:
+		C.Ellipse(10, 13, 6, 2.5, LeafD)
+		for X in (6, 9, 12, 14):
+			C.Line(X, 14, X + (1 if X % 2 else -1), 10, LeafD)
+	else:
+		C.Ellipse(10, 10, 8.5, 5.5, LeafD)
+		C.Ellipse(9, 8.5, 7, 4.5, Leaf)
+		C.Ellipse(8, 7, 4, 2.5, LeafL)
+		for X, Y in ((4, 4), (8, 2), (12, 3), (16, 5)):
+			C.Line(X, Y, X + 1, Y + 4, (200, 196, 140))  # 섬유 줄기
+	C.Outline((30, 44, 24))
+	return C
+
+
+def DrawHerb(bPicked):
+	C = FCanvas(14, 14)
+	if bPicked:
+		C.Rect(6, 11, 7, 13, (70, 110, 60))
+	else:
+		C.Line(7, 13, 7, 5, (70, 120, 60))
+		for X, Y, Col in ((4, 6, (110, 180, 90)), (10, 5, (110, 180, 90)), (5, 9, (90, 160, 80)), (9, 9, (90, 160, 80))):
+			C.Ellipse(X, Y, 2.4, 1.4, Col)
+		C.Ellipse(7, 3, 1.6, 1.6, (240, 236, 130))  # 작은 꽃
+	C.Outline((24, 40, 22))
+	return C
+
+
+def DrawMushroom(bPicked):
+	C = FCanvas(14, 14)
+	if bPicked:
+		C.Rect(6, 12, 8, 13, (200, 190, 170))
+	else:
+		C.Rect(6, 8, 8, 13, (226, 216, 196))
+		C.Ellipse(7, 7, 6, 3.5, (170, 70, 160))
+		C.Ellipse(7, 6, 4.5, 2.4, (210, 110, 200))
+		for X, Y in ((4, 6), (9, 5), (7, 7)):
+			C.Px(X, Y, (250, 230, 250))
+	C.Outline((40, 20, 40))
+	return C
+
+
 def DrawShadow():
 	C = FCanvas(24, 10)
 	C.Ellipse(12, 5, 11, 4.5, (20, 16, 28), 110)
@@ -301,6 +369,12 @@ def WriteSprites(Folder):
 		Peddler.Add(f"Idle{Frame}", DrawPeddler(Frame))
 	Peddler.Save(Folder, "Peddler")
 	WriteFlipbook(Folder, "Peddler_Idle", "Peddler.esprite", ["Idle0", "Idle1"], 2.0)
+	Forage = FAtlas(128)
+	for Name, Draw in (("Fiber", DrawFiberBush), ("Herb", DrawHerb), ("Mushroom", DrawMushroom)):
+		Forage.Add(Name, Draw(False))
+		Forage.Add(Name + "Picked", Draw(True))
+	Forage.Save(Folder, "Forage")
+	_SetUnits(Folder, "Forage", 100.0 / 16.0)
 	Fx = FAtlas(128)
 	Fx.Add("Shadow", DrawShadow(), (0.5, 0.5))
 	Fx.Save(Folder, "Fx")

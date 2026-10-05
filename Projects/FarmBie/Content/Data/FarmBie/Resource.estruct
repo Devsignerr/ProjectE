@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "Name": "Resource",
+  "Description": "숲 자원",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "",
+      "Description": "이름"
+    },
+    {
+      "Name": "Tool",
+      "Type": "Enum",
+      "Default": "Hand",
+      "Description": "필요한 도구",
+      "Values": [
+        "Hand",
+        "Axe",
+        "Pick"
+      ]
+    },
+    {
+      "Name": "Hits",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "칠 횟수"
+    },
+    {
+      "Name": "Drop",
+      "Type": "String",
+      "Default": "",
+      "Description": "나오는 물건 열쇠"
+    },
+    {
+      "Name": "Min",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "최소 수량"
+    },
+    {
+      "Name": "Max",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "최대 수량"
+    },
+    {
+      "Name": "Regrow",
+      "Type": "Int",
+      "Default": 3,
+      "Description": "다시 자라는 날 수"
+    }
+  ]
+}

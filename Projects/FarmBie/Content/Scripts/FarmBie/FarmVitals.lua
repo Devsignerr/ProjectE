@@ -95,13 +95,28 @@ end
 
 -- ---- 먹기
 function Vit:CanEat(Key)
-	return Key ~= nil and self:ItemInfo(Key).Kind == "Crop"
+	if Key == nil then return false end
+	local Kind = self:ItemInfo(Key).Kind
+	return Kind == "Crop" or Kind == "Food"
 end
 
 function Vit:Eat(Key)
 	if not self:CanEat(Key) then return false end
 	local V = self.Vitals
 	local Info = self:ItemInfo(Key)
+	if Info.Kind == "Food" then
+		-- 숲 음식 (Items.etable Health/Sanity)
+		self:Take(Key, 1)
+		self:Heal(Info.Row.Health)
+		local Parts = { string.format("체력 +%d", Info.Row.Health) }
+		if Info.Row.Sanity > 0 then
+			self:SetSanity(self.Sanity + Info.Row.Sanity)
+			Parts[#Parts + 1] = string.format("정신력 +%d", Info.Row.Sanity)
+		end
+		self.Report.Eaten = (self.Report.Eaten or 0) + 1
+		self:Hud():Toast(Info.Icon, Info.Name .. " 먹음: " .. table.concat(Parts, ", "), { 0.75, 1.0, 0.7, 1.0 })
+		return true
+	end
 	local Crop, R = Info.Crop, Info.RarityRow
 	self:Take(Key, 1)
 	local Hp = math.floor((V.FoodHealthBase + Crop.Price * V.FoodHealthPerPrice) * R.FoodMul + 0.5)

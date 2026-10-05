@@ -22,6 +22,7 @@ function Eco:InitEconomy()
 	self.StockDay = -1     -- 재고를 꾸린 날 (누적 일수)
 	self.ShipSpot = Parse2(self.Properties.ShipSpot)
 	self.MerchantSpot = Parse2(self.Properties.MerchantSpot)
+	if self.Properties.Map ~= "Farm" then return end
 	local M = Scene.Find("Merchant")
 	self.MerchantSprites = {}
 	if M then

@@ -11100,7 +11100,7 @@
         "ScriptComponent": {
           "ExecutionLocation": 0,
           "ScriptAsset": "Scripts/FarmBie/FarmGame.lua",
-          "PropertyOverrides": "{\"AutoPlay\": \"Basic\", \"Map\": \"Farm\", \"CameraBounds\": \"-1700.0,-1700.0,1700.0,1500.0\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"Test\", \"ShipSpot\": \"380.0,-950.0\", \"MerchantSpot\": \"520.0,1480.0\"}"
+          "PropertyOverrides": "{\"AutoPlay\": \"Forest\", \"Map\": \"Farm\", \"CameraBounds\": \"-1700.0,-1700.0,1700.0,1500.0\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"Test\", \"ShipSpot\": \"380.0,-950.0\", \"MerchantSpot\": \"520.0,1480.0\"}"
         },
         "TransformComponent": {
           "Position": [

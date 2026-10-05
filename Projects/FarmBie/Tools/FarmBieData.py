@@ -128,7 +128,7 @@ FARMING = {
 	"CanCapacity": 40,              # 물뿌리개 물 (칸 하나에 1)
 	"ToolTime": 0.42, "ToolHitTime": 0.2,  # 도구 동작 길이 / 효과가 나는 때 (초)
 	"ReachDistance": 75.0,          # 발 앞 대상 칸 거리 (cm)
-	"StartItems": ["Hoe*1", "Can*1", "Seed:EyeRadish:0*10", "Seed:TentacleLeek:0*5", "FertBasic*5"],
+	"StartItems": ["Hoe*1", "Can*1", "Seed:EyeRadish:0*10", "Seed:TentacleLeek:0*5", "FertBasic*5", "Axe*1", "Pick*1"],
 }
 
 FARMING_FIELDS = [
@@ -148,6 +148,23 @@ ITEM_ROWS = [
 	("Can",         {"DisplayName": "물뿌리개",   "Kind": "Tool", "Price": 0,   "Description": "작물에 물을 준다. 물이 떨어지면 우물에서 채운다."}),
 	("FertBasic",   {"DisplayName": "기본 비료",  "Kind": "Fertilizer", "Price": 20, "Description": "간 칸에 뿌리면 그 칸 작물의 희귀 씨앗 확률이 오른다."}),
 	("FertPremium", {"DisplayName": "고급 비료",  "Kind": "Fertilizer", "Price": 60, "Description": "희귀 씨앗 확률이 크게 오른다. 보부상이 가끔 들고 온다."}),
+	("Axe",         {"DisplayName": "도끼",       "Kind": "Tool", "Price": 0,   "Description": "숲의 나무를 벤다. 밤에는 무기로도 쓸 수 있다."}),
+	("Pick",        {"DisplayName": "곡괭이",     "Kind": "Tool", "Price": 0,   "Description": "바위를 깨 돌을 얻는다."}),
+	("Wood",        {"DisplayName": "나무",       "Kind": "Material", "Price": 0, "Description": "숲에서 벤 통나무. 울타리와 건물의 기본 재료."}),
+	("Stone",       {"DisplayName": "돌",         "Kind": "Material", "Price": 0, "Description": "단단한 돌. 돌벽과 덫에 쓴다."}),
+	("Fiber",       {"DisplayName": "섬유",       "Kind": "Material", "Price": 0, "Description": "질긴 풀 줄기. 덫·밧줄·붕대의 재료."}),
+	("Herb",        {"DisplayName": "약초",       "Kind": "Food", "Price": 0, "Health": 20, "Sanity": 0, "Description": "쓴맛이 나는 숲 약초. 먹으면 상처가 아문다."}),
+	("Mushroom",    {"DisplayName": "몽롱버섯",   "Kind": "Food", "Price": 0, "Health": 4, "Sanity": 8, "Description": "보랏빛 갓의 버섯. 먹으면 머릿속이 조금 고요해진다."}),
+]
+
+# 숲 자원: 도구(Axe | Pick | Hand), 칠 횟수, 나오는 물건·수량 범위, 다시 자라는 날
+RESOURCE_ROWS = [
+	("Tree",     {"DisplayName": "나무",     "Tool": "Axe",  "Hits": 4, "Drop": "Wood",     "Min": 3, "Max": 5, "Regrow": 3}),
+	("Rock",     {"DisplayName": "바위",     "Tool": "Pick", "Hits": 3, "Drop": "Stone",    "Min": 2, "Max": 4, "Regrow": 4}),
+	("BigRock",  {"DisplayName": "큰 바위",  "Tool": "Pick", "Hits": 6, "Drop": "Stone",    "Min": 5, "Max": 8, "Regrow": 6}),
+	("Fiber",    {"DisplayName": "섬유 풀",  "Tool": "Hand", "Hits": 1, "Drop": "Fiber",    "Min": 2, "Max": 3, "Regrow": 2}),
+	("Herb",     {"DisplayName": "약초",     "Tool": "Hand", "Hits": 1, "Drop": "Herb",     "Min": 1, "Max": 2, "Regrow": 2}),
+	("Mushroom", {"DisplayName": "몽롱버섯", "Tool": "Hand", "Hits": 1, "Drop": "Mushroom", "Min": 1, "Max": 1, "Regrow": 3}),
 ]
 
 
@@ -224,9 +241,21 @@ def WriteFarming(Content):
 		Field("DisplayName", "String", "", "이름"),
 		Field("Kind", "Enum", "Tool", "종류", Values=["Tool", "Fertilizer", "Material", "Food", "Weapon", "Trap"]),
 		Field("Price", "Int", 0, "보부상 값 (0 = 팔지 않음)"),
+		Field("Health", "Int", 0, "음식: 먹으면 체력 회복"),
+		Field("Sanity", "Int", 0, "음식: 먹으면 정신력 회복"),
 		Field("Description", "String", "", "설명"),
 	])
 	Table(Content, "Items", "Item", ITEM_ROWS)
+	Struct(Content, "Resource", "숲 자원", [
+		Field("DisplayName", "String", "", "이름"),
+		Field("Tool", "Enum", "Hand", "필요한 도구", Values=["Hand", "Axe", "Pick"]),
+		Field("Hits", "Int", 1, "칠 횟수"),
+		Field("Drop", "String", "", "나오는 물건 열쇠"),
+		Field("Min", "Int", 1, "최소 수량"),
+		Field("Max", "Int", 1, "최대 수량"),
+		Field("Regrow", "Int", 3, "다시 자라는 날 수"),
+	])
+	Table(Content, "Resources", "Resource", RESOURCE_ROWS)
 
 
 # ---- 경제 ---------------------------------------------------------------------------------------------------------------------

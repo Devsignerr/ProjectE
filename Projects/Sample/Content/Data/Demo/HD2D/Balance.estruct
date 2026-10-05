@@ -128,6 +128,80 @@
       "Type": "String",
       "Default": "",
       "Description": "퀘스트 완료 아이템"
+    },
+    {
+      "Name": "StartArmor",
+      "Type": "String",
+      "Default": "",
+      "Description": "시작 방어구"
+    },
+    {
+      "Name": "BoostMax",
+      "Type": "Int",
+      "Default": 5,
+      "Description": "BP 최대"
+    },
+    {
+      "Name": "BoostStart",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "시작 BP"
+    },
+    {
+      "Name": "BoostRegenTime",
+      "Type": "Float",
+      "Default": 7.0,
+      "Description": "BP 1 자연 충전 (초)"
+    },
+    {
+      "Name": "BoostHitsPerPoint",
+      "Type": "Int",
+      "Default": 5,
+      "Description": "명중 이만큼마다 BP +1"
+    },
+    {
+      "Name": "BoostMaxLevel",
+      "Type": "Int",
+      "Default": 3,
+      "Description": "한 번에 올릴 수 있는 부스트 단계"
+    },
+    {
+      "Name": "BoostDamagePerLevel",
+      "Type": "Float",
+      "Default": 0.35,
+      "Description": "부스트 단계마다 피해 배율 +"
+    },
+    {
+      "Name": "TitleName",
+      "Type": "String",
+      "Default": "",
+      "Description": "타이틀 로고"
+    },
+    {
+      "Name": "TitleSub",
+      "Type": "String",
+      "Default": "",
+      "Description": "타이틀 부제"
+    },
+    {
+      "Name": "IntroLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "새 게임 시작 연출 대사 (이름|초상화|대사 — 이름 비면 해설)",
+      "Element": "String"
+    },
+    {
+      "Name": "ShopLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "상점 주인 말: 들어옴 / 구입 / 골드 부족 / 이미 가짐 / 나감",
+      "Element": "String"
+    },
+    {
+      "Name": "SaveSlot",
+      "Type": "String",
+      "Default": "HD2D",
+      "Description": "저장 슬롯 (SaveGame)"
     }
   ]
 }

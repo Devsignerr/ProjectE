@@ -2372,8 +2372,8 @@
           "Offsets": [
             0,
             -24,
-            900,
-            160
+            940,
+            170
           ],
           "Alignment": [
             0.5,
@@ -2448,6 +2448,111 @@
           },
           {
             "Type": "Border",
+            "Name": "DialogPortraitFrame",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0,
+                0
+              ],
+              "AnchorMax": [
+                0,
+                0
+              ],
+              "Offsets": [
+                26,
+                22,
+                124,
+                124
+              ],
+              "Alignment": [
+                0,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/FrameLight.png",
+              "DrawAs": "NineSlice",
+              "Margin": [
+                0.3333333333333333,
+                0.3333333333333333,
+                0.3333333333333333,
+                0.3333333333333333
+              ],
+              "TextureSize": [
+                30,
+                30
+              ]
+            },
+            "ContentPadding": [
+              8,
+              8,
+              8,
+              8
+            ],
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "DialogPortrait",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Portraits/Hero.png"
+                },
+                "ImageSize": [
+                  108,
+                  108
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "Border",
             "Name": "DialogNamePlate",
             "Enabled": true,
             "Opacity": 1,
@@ -2462,7 +2567,7 @@
                 0
               ],
               "Offsets": [
-                30,
+                168,
                 -22,
                 0,
                 0
@@ -2573,10 +2678,10 @@
                 0
               ],
               "Offsets": [
+                176,
                 42,
-                40,
-                816,
-                96
+                720,
+                104
               ],
               "Alignment": [
                 0,
@@ -2672,6 +2777,487 @@
         ]
       },
       {
+        "Type": "HorizontalBox",
+        "Name": "BoostRow",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            26,
+            186,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "BoostLabel",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                8,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "BP",
+            "FontSize": 18,
+            "TextColor": [
+              1.0,
+              0.75,
+              0.4,
+              1
+            ],
+            "Justify": "Left",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "Orb0",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                4,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/OrbEmpty.png"
+            },
+            "ImageSize": [
+              26,
+              26
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "Orb1",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                4,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/OrbEmpty.png"
+            },
+            "ImageSize": [
+              26,
+              26
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "Orb2",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                4,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/OrbEmpty.png"
+            },
+            "ImageSize": [
+              26,
+              26
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "Orb3",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                4,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/OrbEmpty.png"
+            },
+            "ImageSize": [
+              26,
+              26
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "Orb4",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                4,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/OrbEmpty.png"
+            },
+            "ImageSize": [
+              26,
+              26
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "BoostLevel",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                10,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "",
+            "FontSize": 20,
+            "TextColor": [
+              0.6,
+              0.92,
+              1.0,
+              1
+            ],
+            "Justify": "Left",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "BoostBurst",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0.5
+          ],
+          "AnchorMax": [
+            0.5,
+            0.5
+          ],
+          "Offsets": [
+            0,
+            120,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0.5
+          ],
+          "AutoSize": true,
+          "ZOrder": 6
+        },
+        "Text": "",
+        "FontSize": 40,
+        "TextColor": [
+          0.65,
+          0.95,
+          1.0,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 3,
+        "OutlineColor": [
+          0.03,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.55
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "ScreenFlash",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 60
+        },
+        "Brush": {
+          "Color": [
+            1.0,
+            0.97,
+            0.88,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Fade",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 100
+        },
+        "Brush": {
+          "Color": [
+            0.0,
+            0.0,
+            0.02,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
         "Type": "Border",
         "Name": "MenuShade",
         "Enabled": true,
@@ -2739,9 +3325,9 @@
           ],
           "Offsets": [
             0,
-            -10,
+            -6,
             920,
-            520
+            576
           ],
           "Alignment": [
             0.5,
@@ -2842,7 +3428,7 @@
               "AutoSize": true,
               "ZOrder": 1
             },
-            "Text": "소지품",
+            "Text": "메뉴",
             "FontSize": 32,
             "TextColor": [
               1.0,
@@ -2886,7 +3472,7 @@
                 0
               ],
               "Offsets": [
-                230,
+                200,
                 31,
                 0,
                 0
@@ -3111,9 +3697,9 @@
               ],
               "Offsets": [
                 30,
-                84,
+                122,
                 440,
-                380
+                400
               ],
               "Alignment": [
                 0,
@@ -3134,7 +3720,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -3213,7 +3799,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -3284,9 +3870,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -3370,8 +3956,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -3393,7 +3979,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -3439,7 +4025,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -3483,7 +4069,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -3562,7 +4148,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -3633,9 +4219,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -3719,8 +4305,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -3742,7 +4328,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -3788,7 +4374,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -3832,7 +4418,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -3911,7 +4497,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -3982,9 +4568,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -4068,8 +4654,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -4091,7 +4677,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -4137,7 +4723,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -4181,7 +4767,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -4260,7 +4846,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -4331,9 +4917,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -4417,8 +5003,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -4440,7 +5026,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -4486,7 +5072,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -4530,7 +5116,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -4609,7 +5195,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -4680,9 +5266,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -4766,8 +5352,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -4789,7 +5375,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -4835,7 +5421,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -4879,7 +5465,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -4958,7 +5544,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -5029,9 +5615,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -5115,8 +5701,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -5138,7 +5724,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -5184,7 +5770,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -5228,7 +5814,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -5307,7 +5893,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -5378,9 +5964,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -5464,8 +6050,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -5487,7 +6073,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -5533,7 +6119,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -5577,7 +6163,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -5656,7 +6242,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -5727,9 +6313,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -5813,8 +6399,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -5836,7 +6422,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -5882,7 +6468,705 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.85,
+                              0.42,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.03,
+                              0.02,
+                              0.06,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.55
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "InvRow8",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    2
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.08
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.16
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "MinSize": [
+                  430,
+                  38
+                ],
+                "Children": [
+                  {
+                    "Type": "Overlay",
+                    "Name": "InvRowBox8",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "SelfHitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "InvSel8",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "InvRowItems8",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            6,
+                            1,
+                            10,
+                            1
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "InvCursor8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                6,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ],
+                              "Texture": "UI/Demo/HD2D/Cursor.png"
+                            },
+                            "ImageSize": [
+                              18,
+                              18
+                            ]
+                          },
+                          {
+                            "Type": "Image",
+                            "Name": "InvIcon8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ],
+                              "Texture": "UI/Demo/HD2D/Icons/Potion.png"
+                            },
+                            "ImageSize": [
+                              32,
+                              32
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "InvName8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 21,
+                            "TextColor": [
+                              0.96,
+                              0.93,
+                              0.86,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.03,
+                              0.02,
+                              0.06,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.55
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "InvCount8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                8,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.85,
+                              0.42,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.03,
+                              0.02,
+                              0.06,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.55
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "InvRow9",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    2
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.08
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.16
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "MinSize": [
+                  430,
+                  38
+                ],
+                "Children": [
+                  {
+                    "Type": "Overlay",
+                    "Name": "InvRowBox9",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "SelfHitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "InvSel9",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "InvRowItems9",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            6,
+                            1,
+                            10,
+                            1
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "InvCursor9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                6,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ],
+                              "Texture": "UI/Demo/HD2D/Cursor.png"
+                            },
+                            "ImageSize": [
+                              18,
+                              18
+                            ]
+                          },
+                          {
+                            "Type": "Image",
+                            "Name": "InvIcon9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ],
+                              "Texture": "UI/Demo/HD2D/Icons/Potion.png"
+                            },
+                            "ImageSize": [
+                              32,
+                              32
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "InvName9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 21,
+                            "TextColor": [
+                              0.96,
+                              0.93,
+                              0.86,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.03,
+                              0.02,
+                              0.06,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.55
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "InvCount9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                8,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -5934,9 +7218,9 @@
               ],
               "Offsets": [
                 492,
-                84,
+                122,
                 398,
-                370
+                394
               ],
               "Alignment": [
                 0,
@@ -5975,9 +7259,9 @@
             },
             "ContentPadding": [
               22,
-              20,
+              18,
               22,
-              18
+              16
             ],
             "Children": [
               {
@@ -6096,7 +7380,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 26,
+                            "FontSize": 25,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -6184,7 +7468,7 @@
                         0,
                         0,
                         0,
-                        14
+                        12
                       ],
                       "HAlign": "Fill",
                       "VAlign": "Fill",
@@ -6230,7 +7514,7 @@
                         0,
                         0,
                         0,
-                        0
+                        8
                       ],
                       "HAlign": "Fill",
                       "VAlign": "Fill",
@@ -6247,6 +7531,190 @@
                     ],
                     "Justify": "Left",
                     "Wrap": true,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.03,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.55
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "InvCmp0",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        2,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 18,
+                    "TextColor": [
+                      0.96,
+                      0.93,
+                      0.86,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.03,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.55
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "InvCmp1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        2,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 18,
+                    "TextColor": [
+                      0.96,
+                      0.93,
+                      0.86,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.03,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.55
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "InvCmp2",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        2,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 18,
+                    "TextColor": [
+                      0.96,
+                      0.93,
+                      0.86,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.03,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.55
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "InvCmp3",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        2,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 18,
+                    "TextColor": [
+                      0.96,
+                      0.93,
+                      0.86,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
                     "OutlineWidth": 2,
                     "OutlineColor": [
                       0.03,
@@ -6297,7 +7765,7 @@
               "AutoSize": true,
               "ZOrder": 1
             },
-            "Text": "W/S 선택     E · J 사용 / 장비     I 닫기",
+            "Text": "A/D 탭     W/S 선택     E · J 사용 / 장비     I 닫기",
             "FontSize": 17,
             "TextColor": [
               0.72,
@@ -6324,6 +7792,303 @@
               0,
               0.55
             ]
+          },
+          {
+            "Type": "Border",
+            "Name": "InvTab0",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0,
+                0
+              ],
+              "AnchorMax": [
+                0,
+                0
+              ],
+              "Offsets": [
+                30,
+                80,
+                124,
+                34
+              ],
+              "Alignment": [
+                0,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 1
+            },
+            "Brush": {
+              "Color": [
+                0.1,
+                0.09,
+                0.18,
+                0.7
+              ],
+              "CornerRadius": 3,
+              "BorderWidth": 1,
+              "BorderColor": [
+                0.96,
+                0.77,
+                0.3,
+                0.5
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "InvTabText0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "도구",
+                "FontSize": 20,
+                "TextColor": [
+                  0.72,
+                  0.7,
+                  0.78,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "Border",
+            "Name": "InvTab1",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0,
+                0
+              ],
+              "AnchorMax": [
+                0,
+                0
+              ],
+              "Offsets": [
+                162,
+                80,
+                124,
+                34
+              ],
+              "Alignment": [
+                0,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 1
+            },
+            "Brush": {
+              "Color": [
+                0.1,
+                0.09,
+                0.18,
+                0.7
+              ],
+              "CornerRadius": 3,
+              "BorderWidth": 1,
+              "BorderColor": [
+                0.96,
+                0.77,
+                0.3,
+                0.5
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "InvTabText1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "장비",
+                "FontSize": 20,
+                "TextColor": [
+                  0.72,
+                  0.7,
+                  0.78,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "Border",
+            "Name": "InvTab2",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0,
+                0
+              ],
+              "AnchorMax": [
+                0,
+                0
+              ],
+              "Offsets": [
+                294,
+                80,
+                124,
+                34
+              ],
+              "Alignment": [
+                0,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 1
+            },
+            "Brush": {
+              "Color": [
+                0.1,
+                0.09,
+                0.18,
+                0.7
+              ],
+              "CornerRadius": 3,
+              "BorderWidth": 1,
+              "BorderColor": [
+                0.96,
+                0.77,
+                0.3,
+                0.5
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "InvTabText2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "퀘스트",
+                "FontSize": 20,
+                "TextColor": [
+                  0.72,
+                  0.7,
+                  0.78,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              }
+            ]
           }
         ]
       },
@@ -6344,9 +8109,9 @@
           ],
           "Offsets": [
             0,
-            -10,
+            -6,
             920,
-            520
+            576
           ],
           "Alignment": [
             0.5,
@@ -6491,7 +8256,7 @@
                 0
               ],
               "Offsets": [
-                230,
+                200,
                 31,
                 0,
                 0
@@ -6716,9 +8481,9 @@
               ],
               "Offsets": [
                 30,
-                84,
+                122,
                 440,
-                380
+                400
               ],
               "Alignment": [
                 0,
@@ -6739,7 +8504,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -6818,7 +8583,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -6889,9 +8654,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -6975,8 +8740,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -6998,7 +8763,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -7044,7 +8809,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -7088,7 +8853,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -7167,7 +8932,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -7238,9 +9003,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -7324,8 +9089,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -7347,7 +9112,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -7393,7 +9158,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -7437,7 +9202,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -7516,7 +9281,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -7587,9 +9352,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -7673,8 +9438,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -7696,7 +9461,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -7742,7 +9507,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -7786,7 +9551,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -7865,7 +9630,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -7936,9 +9701,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -8022,8 +9787,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -8045,7 +9810,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -8091,7 +9856,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -8135,7 +9900,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -8214,7 +9979,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -8285,9 +10050,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -8371,8 +10136,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -8394,7 +10159,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -8440,7 +10205,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -8484,7 +10249,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -8563,7 +10328,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -8634,9 +10399,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -8720,8 +10485,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -8743,7 +10508,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -8789,7 +10554,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -8833,7 +10598,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -8912,7 +10677,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -8983,9 +10748,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -9069,8 +10834,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -9092,7 +10857,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -9138,7 +10903,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -9182,7 +10947,7 @@
                     0,
                     0,
                     0,
-                    4
+                    2
                   ],
                   "HAlign": "Fill",
                   "VAlign": "Fill",
@@ -9261,7 +11026,7 @@
                 ],
                 "MinSize": [
                   430,
-                  44
+                  38
                 ],
                 "Children": [
                   {
@@ -9332,9 +11097,9 @@
                         "Slot": {
                           "Padding": [
                             6,
-                            2,
+                            1,
                             10,
-                            2
+                            1
                           ],
                           "HAlign": "Fill",
                           "VAlign": "Fill",
@@ -9418,8 +11183,8 @@
                               "Texture": "UI/Demo/HD2D/Icons/Potion.png"
                             },
                             "ImageSize": [
-                              36,
-                              36
+                              32,
+                              32
                             ]
                           },
                           {
@@ -9441,7 +11206,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 22,
+                            "FontSize": 21,
                             "TextColor": [
                               0.96,
                               0.93,
@@ -9487,7 +11252,705 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 20,
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.85,
+                              0.42,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.03,
+                              0.02,
+                              0.06,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.55
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "ShopRow8",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    2
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.08
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.16
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "MinSize": [
+                  430,
+                  38
+                ],
+                "Children": [
+                  {
+                    "Type": "Overlay",
+                    "Name": "ShopRowBox8",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "SelfHitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "ShopSel8",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "ShopRowItems8",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            6,
+                            1,
+                            10,
+                            1
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "ShopCursor8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                6,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ],
+                              "Texture": "UI/Demo/HD2D/Cursor.png"
+                            },
+                            "ImageSize": [
+                              18,
+                              18
+                            ]
+                          },
+                          {
+                            "Type": "Image",
+                            "Name": "ShopIcon8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ],
+                              "Texture": "UI/Demo/HD2D/Icons/Potion.png"
+                            },
+                            "ImageSize": [
+                              32,
+                              32
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "ShopName8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 21,
+                            "TextColor": [
+                              0.96,
+                              0.93,
+                              0.86,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.03,
+                              0.02,
+                              0.06,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.55
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "ShopCount8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                8,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
+                            "TextColor": [
+                              1.0,
+                              0.85,
+                              0.42,
+                              1
+                            ],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.03,
+                              0.02,
+                              0.06,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.55
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "ShopRow9",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    2
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.08
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.16
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "MinSize": [
+                  430,
+                  38
+                ],
+                "Children": [
+                  {
+                    "Type": "Overlay",
+                    "Name": "ShopRowBox9",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "SelfHitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "ShopSel9",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Collapsed",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Select.png"
+                        },
+                        "ImageSize": [
+                          0,
+                          0
+                        ]
+                      },
+                      {
+                        "Type": "HorizontalBox",
+                        "Name": "ShopRowItems9",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            6,
+                            1,
+                            10,
+                            1
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "ShopCursor9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                6,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ],
+                              "Texture": "UI/Demo/HD2D/Cursor.png"
+                            },
+                            "ImageSize": [
+                              18,
+                              18
+                            ]
+                          },
+                          {
+                            "Type": "Image",
+                            "Name": "ShopIcon9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                10,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Brush": {
+                              "Color": [
+                                1,
+                                1,
+                                1,
+                                1
+                              ],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [
+                                0,
+                                0,
+                                0,
+                                1
+                              ],
+                              "Texture": "UI/Demo/HD2D/Icons/Potion.png"
+                            },
+                            "ImageSize": [
+                              32,
+                              32
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "ShopName9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Fill",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 21,
+                            "TextColor": [
+                              0.96,
+                              0.93,
+                              0.86,
+                              1
+                            ],
+                            "Justify": "Left",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [
+                              0.03,
+                              0.02,
+                              0.06,
+                              1
+                            ],
+                            "ShadowOffset": [
+                              0,
+                              2
+                            ],
+                            "ShadowColor": [
+                              0,
+                              0,
+                              0,
+                              0.55
+                            ]
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "ShopCount9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Slot": {
+                              "Padding": [
+                                8,
+                                0,
+                                0,
+                                0
+                              ],
+                              "HAlign": "Fill",
+                              "VAlign": "Center",
+                              "SizeRule": "Auto",
+                              "FillWeight": 1
+                            },
+                            "Text": "",
+                            "FontSize": 19,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -9539,9 +12002,9 @@
               ],
               "Offsets": [
                 492,
-                84,
+                122,
                 398,
-                370
+                394
               ],
               "Alignment": [
                 0,
@@ -9580,9 +12043,9 @@
             },
             "ContentPadding": [
               22,
-              20,
+              18,
               22,
-              18
+              16
             ],
             "Children": [
               {
@@ -9701,7 +12164,7 @@
                               "FillWeight": 1
                             },
                             "Text": "",
-                            "FontSize": 26,
+                            "FontSize": 25,
                             "TextColor": [
                               1.0,
                               0.85,
@@ -9789,7 +12252,7 @@
                         0,
                         0,
                         0,
-                        14
+                        12
                       ],
                       "HAlign": "Fill",
                       "VAlign": "Fill",
@@ -9835,7 +12298,7 @@
                         0,
                         0,
                         0,
-                        0
+                        8
                       ],
                       "HAlign": "Fill",
                       "VAlign": "Fill",
@@ -9852,6 +12315,190 @@
                     ],
                     "Justify": "Left",
                     "Wrap": true,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.03,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.55
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "ShopCmp0",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        2,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 18,
+                    "TextColor": [
+                      0.96,
+                      0.93,
+                      0.86,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.03,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.55
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "ShopCmp1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        2,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 18,
+                    "TextColor": [
+                      0.96,
+                      0.93,
+                      0.86,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.03,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.55
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "ShopCmp2",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        2,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 18,
+                    "TextColor": [
+                      0.96,
+                      0.93,
+                      0.86,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.03,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.55
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "ShopCmp3",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "Collapsed",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        2,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "",
+                    "FontSize": 18,
+                    "TextColor": [
+                      0.96,
+                      0.93,
+                      0.86,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
                     "OutlineWidth": 2,
                     "OutlineColor": [
                       0.03,
@@ -9908,6 +12555,1010 @@
               0.72,
               0.7,
               0.78,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "ShopSayPortrait",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0,
+                0
+              ],
+              "AnchorMax": [
+                0,
+                0
+              ],
+              "Offsets": [
+                30,
+                78,
+                40,
+                40
+              ],
+              "Alignment": [
+                0,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/Portraits/Merchant.png"
+            },
+            "ImageSize": [
+              40,
+              40
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "ShopSay",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0,
+                0
+              ],
+              "AnchorMax": [
+                0,
+                0
+              ],
+              "Offsets": [
+                80,
+                88,
+                0,
+                0
+              ],
+              "Alignment": [
+                0,
+                0
+              ],
+              "AutoSize": true,
+              "ZOrder": 1
+            },
+            "Text": "",
+            "FontSize": 19,
+            "TextColor": [
+              1.0,
+              0.92,
+              0.78,
+              1
+            ],
+            "Justify": "Left",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Canvas",
+        "Name": "TitleScreen",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 80
+        },
+        "Children": [
+          {
+            "Type": "Border",
+            "Name": "TitleShade",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Visible",
+            "Slot": {
+              "AnchorMin": [
+                0,
+                0
+              ],
+              "AnchorMax": [
+                1,
+                1
+              ],
+              "Offsets": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "Alignment": [
+                0,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 0
+            },
+            "Brush": {
+              "Color": [
+                0.02,
+                0.01,
+                0.05,
+                0.45
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "Type": "Border",
+            "Name": "TitleBand",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                112,
+                1280,
+                210
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 1
+            },
+            "Brush": {
+              "Color": [
+                0.01,
+                0.0,
+                0.04,
+                0.5
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "TitleLogo",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                128,
+                0,
+                0
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": true,
+              "ZOrder": 2
+            },
+            "Text": "황혼의 들판",
+            "FontSize": 76,
+            "TextColor": [
+              1.0,
+              0.85,
+              0.42,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 4,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "TitleOrnament",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                236,
+                384,
+                48
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": false,
+              "ZOrder": 2
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Demo/HD2D/TitleOrnament.png"
+            },
+            "ImageSize": [
+              384,
+              48
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "TitleSub",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                282,
+                0,
+                0
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": true,
+              "ZOrder": 2
+            },
+            "Text": "",
+            "FontSize": 24,
+            "TextColor": [
+              0.92,
+              0.86,
+              1.0,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          },
+          {
+            "Type": "VerticalBox",
+            "Name": "TitleMenu",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                420,
+                0,
+                0
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": true,
+              "ZOrder": 2
+            },
+            "Children": [
+              {
+                "Type": "Button",
+                "Name": "TitleRow0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    4,
+                    0,
+                    4
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.08
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.16
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  6,
+                  24,
+                  6
+                ],
+                "MinSize": [
+                  300,
+                  50
+                ],
+                "Children": [
+                  {
+                    "Type": "HorizontalBox",
+                    "Name": "TitleRowBox0",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "TitleCursor0",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Hidden",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            12,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Cursor.png"
+                        },
+                        "ImageSize": [
+                          22,
+                          22
+                        ]
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "TitleText0",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Text": "처음부터",
+                        "FontSize": 30,
+                        "TextColor": [
+                          0.96,
+                          0.93,
+                          0.86,
+                          1
+                        ],
+                        "Justify": "Center",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [
+                          0.03,
+                          0.02,
+                          0.06,
+                          1
+                        ],
+                        "ShadowOffset": [
+                          0,
+                          2
+                        ],
+                        "ShadowColor": [
+                          0,
+                          0,
+                          0,
+                          0.55
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "TitleRow1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    4,
+                    0,
+                    4
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.08
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    1.0,
+                    0.85,
+                    0.5,
+                    0.16
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  6,
+                  24,
+                  6
+                ],
+                "MinSize": [
+                  300,
+                  50
+                ],
+                "Children": [
+                  {
+                    "Type": "HorizontalBox",
+                    "Name": "TitleRowBox1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Image",
+                        "Name": "TitleCursor1",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "Hidden",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            12,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Brush": {
+                          "Color": [
+                            1,
+                            1,
+                            1,
+                            1
+                          ],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ],
+                          "Texture": "UI/Demo/HD2D/Cursor.png"
+                        },
+                        "ImageSize": [
+                          22,
+                          22
+                        ]
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "TitleText1",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Text": "이어하기",
+                        "FontSize": 30,
+                        "TextColor": [
+                          0.96,
+                          0.93,
+                          0.86,
+                          1
+                        ],
+                        "Justify": "Center",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [
+                          0.03,
+                          0.02,
+                          0.06,
+                          1
+                        ],
+                        "ShadowOffset": [
+                          0,
+                          2
+                        ],
+                        "ShadowColor": [
+                          0,
+                          0,
+                          0,
+                          0.55
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "TitleInfo",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                0
+              ],
+              "AnchorMax": [
+                0.5,
+                0
+              ],
+              "Offsets": [
+                0,
+                540,
+                0,
+                0
+              ],
+              "Alignment": [
+                0.5,
+                0
+              ],
+              "AutoSize": true,
+              "ZOrder": 2
+            },
+            "Text": "",
+            "FontSize": 18,
+            "TextColor": [
+              0.72,
+              0.7,
+              0.78,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "TitleHint",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                1
+              ],
+              "AnchorMax": [
+                0.5,
+                1
+              ],
+              "Offsets": [
+                0,
+                -40,
+                0,
+                0
+              ],
+              "Alignment": [
+                0.5,
+                1
+              ],
+              "AutoSize": true,
+              "ZOrder": 2
+            },
+            "Text": "W/S 선택    E · J 결정",
+            "FontSize": 17,
+            "TextColor": [
+              0.72,
+              0.7,
+              0.78,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "TitleCredit",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "AnchorMin": [
+                0.5,
+                1
+              ],
+              "AnchorMax": [
+                0.5,
+                1
+              ],
+              "Offsets": [
+                0,
+                -16,
+                0,
+                0
+              ],
+              "Alignment": [
+                0.5,
+                1
+              ],
+              "AutoSize": true,
+              "ZOrder": 2
+            },
+            "Text": "ProjectE HD-2D 데모 · 도트 아트 절차 생성 · 효과음 Kenney (CC0)",
+            "FontSize": 14,
+            "TextColor": [
+              0.6,
+              0.58,
+              0.66,
               1
             ],
             "Justify": "Center",

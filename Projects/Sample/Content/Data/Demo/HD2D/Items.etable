@@ -5,6 +5,10 @@
     {
       "Name": "Sword",
       "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
         "DisplayName": "여행자의 검",
         "Kind": "Weapon",
         "Amount": 0,
@@ -17,6 +21,10 @@
     {
       "Name": "Spear",
       "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
         "DisplayName": "기사의 창",
         "Kind": "Weapon",
         "Amount": 0,
@@ -29,6 +37,10 @@
     {
       "Name": "Bow",
       "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
         "DisplayName": "사냥꾼의 활",
         "Kind": "Weapon",
         "Amount": 0,
@@ -41,6 +53,10 @@
     {
       "Name": "Staff",
       "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
         "DisplayName": "현자의 지팡이",
         "Kind": "Weapon",
         "Amount": 0,
@@ -53,6 +69,10 @@
     {
       "Name": "Potion",
       "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
         "DisplayName": "회복약",
         "Kind": "Heal",
         "Amount": 50,
@@ -65,6 +85,10 @@
     {
       "Name": "HiPotion",
       "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
         "DisplayName": "고급 회복약",
         "Kind": "Heal",
         "Amount": 130,
@@ -77,6 +101,10 @@
     {
       "Name": "Ether",
       "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
         "DisplayName": "마나 물약",
         "Kind": "Mana",
         "Amount": 40,
@@ -89,6 +117,10 @@
     {
       "Name": "Elixir",
       "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
         "DisplayName": "엘릭서",
         "Kind": "Elixir",
         "Amount": 0,
@@ -96,6 +128,134 @@
         "Icon": "UI/Demo/HD2D/Icons/Elixir.png",
         "Description": "전설의 영약. 체력과 마나를 모두 회복한다.",
         "Price": 300
+      }
+    },
+    {
+      "Name": "LeatherVest",
+      "Values": {
+        "DisplayName": "가죽 조끼",
+        "Kind": "Armor",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Vest.png",
+        "Description": "길을 떠날 때 걸친 낡은 조끼. 없는 것보다는 낫다.",
+        "Price": 0,
+        "Defense": 3,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "ChainMail",
+      "Values": {
+        "DisplayName": "사슬 갑옷",
+        "Kind": "Armor",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Mail.png",
+        "Description": "촘촘히 엮은 쇠사슬 갑옷. 몸이 조금 무거워진다.",
+        "Price": 160,
+        "Defense": 8,
+        "HealthBonus": 15,
+        "SpeedBonus": -0.03,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "KnightPlate",
+      "Values": {
+        "DisplayName": "기사의 판금 갑옷",
+        "Kind": "Armor",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Plate.png",
+        "Description": "대장장이 브론이 슬라임 젤리로 담금질한 판금 갑옷.",
+        "Price": 0,
+        "Defense": 14,
+        "HealthBonus": 30,
+        "SpeedBonus": -0.05,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "LuckyRing",
+      "Values": {
+        "DisplayName": "행운의 반지",
+        "Kind": "Accessory",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Ring.png",
+        "Description": "붉은 보석이 박힌 반지. 급소를 노리는 눈이 밝아진다.",
+        "Price": 110,
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.12
+      }
+    },
+    {
+      "Name": "SwiftCharm",
+      "Values": {
+        "DisplayName": "질풍의 부적",
+        "Kind": "Accessory",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Charm.png",
+        "Description": "바람을 담은 푸른 부적. 발걸음이 가벼워진다.",
+        "Price": 0,
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.15,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "LifeAmulet",
+      "Values": {
+        "DisplayName": "생명의 목걸이",
+        "Kind": "Accessory",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Amulet.png",
+        "Description": "리나가 건넨 엄마의 목걸이. 따뜻한 힘이 깃들어 있다.",
+        "Price": 0,
+        "Defense": 2,
+        "HealthBonus": 40,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0
+      }
+    },
+    {
+      "Name": "Jelly",
+      "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
+        "DisplayName": "슬라임 젤리",
+        "Kind": "Material",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Jelly.png",
+        "Description": "슬라임에게서 얻은 탱탱한 젤리. 대장장이가 담금질에 쓴다고 한다.",
+        "Price": 0
+      }
+    },
+    {
+      "Name": "LostCat",
+      "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
+        "DisplayName": "길 잃은 고양이 미미",
+        "Kind": "Material",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/CatIcon.png",
+        "Description": "리나의 고양이. 품에 안겨 얌전히 가르랑거린다.",
+        "Price": 0
       }
     }
   ]

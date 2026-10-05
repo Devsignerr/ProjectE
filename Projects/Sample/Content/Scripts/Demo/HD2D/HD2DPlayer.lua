@@ -9,7 +9,10 @@
 --     Arrow  활: 가까운 적을 자동 조준해 화살 (관리자 투사체)
 --     Bolt   지팡이: 마나를 써 빛의 탄 — 맞으면 터져 주변도 (꼬리 잔상)
 --   대시: entity:AddKnockback(방향 × DashSpeed, DashTime) — 그동안 무적 + 잔상. 피격: 무적 깜빡임 + 넉백 + 붉은 숫자. 쓰러지면 마을 시작 자리에서 부활.
---   레벨: 경험치(Balance.ExpTable)가 차면 레벨 업 — 최대 HP/MP·공격 배율 증가, 완전 회복, 빛기둥 연출.
+--   레벨: 경험치(Balance.ExpTable)가 차면 레벨 업 — 최대 HP/MP·공격 배율 증가, 완전 회복, 빛기둥 연출 + 팡파르.
+--   부스트(옥토패스 BP): BP 최대 Balance.BoostMax, BoostRegenTime초마다·명중 BoostHitsPerPoint번마다 +1. Skill1(Q)로 단계를 올린 뒤(최대 BoostMaxLevel)
+--     공격하면 단계 L만큼 BP를 쓰고: 근접 = 1+L번 연타, 활 = 1+L발 부채꼴, 지팡이 = 1+L발 — 피해 ×(1 + BoostDamagePerLevel × L) + 번쩍임·글자·빛.
+--   장비: 관리자의 방어구·장신구 합(RecalcStats) — 방어력(받는 피해 × 60/(60+방어×3)), 최대 HP, 이동 속도(이동기 MaxWalkSpeed), 치명타.
 --   카메라: OnLateUpdate(물리 뒤)에 지정 카메라를 발 위치 + 시작 오프셋으로 부드럽게 따라 놓는다 (회전은 씬 값 — 고정 시점 디오라마).
 --   이동기가 루트를 이동 방향으로 돌리므로 Visual 회전을 매 프레임 상쇄한다. 자동 검증이면 입력을 HD2DAutoPilot.lua가 채운다.
 local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
@@ -55,8 +58,13 @@ function HD2DPlayer:OnStart()
 	local B = D.Balance()
 	self.Name = B.PlayerName
 	self.Level, self.Exp = 1, 0
+	self.Defense, self.CritBonus = 0, 0
+	self.Mover = self.entity:GetComponent("CharacterMovementComponent")
+	self.BaseWalkSpeed = self.Mover.MaxWalkSpeed
 	self:ApplyLevel()
 	self.Health, self.Mana = self.MaxHealth, self.MaxMana
+	self.BP, self.BoostLevel, self.BoostRegen, self.HitsForBP = B.BoostStart, 0, 0.0, 0
+	self.HitQueue, self.AttackBoost = {}, 0
 	self.Facing = "Down"
 	self.AimDir = Dirs.Down.V
 	self.Anim = ""
@@ -69,7 +77,7 @@ function HD2DPlayer:OnStart()
 	self.Start = self.entity:GetWorldPosition()
 	self.LastPos = self.Start
 	self.Stats = { Distance = 0, Attacks = 0, Hits = 0, Dashes = 0, Damaged = 0, Deaths = 0, LevelUps = 0 }
-	self.MenuHeldDir, self.MenuRepeat = 0, 0.0
+	self.MenuHeldDir, self.MenuRepeat, self.MenuHeldX = 0, 0.0, 0
 	if self.GM.Properties.AutoPlay ~= "" then
 		self.Pilot = AutoPilot.New(self.GM.Properties.AutoPlay, self, self.GM)
 		self.DamageTakenScale = self.Pilot.DamageTakenScale
@@ -82,13 +90,52 @@ function HD2DPlayer:OnStart()
 	end
 	self:OnWeaponChanged()
 	self:UpdateAnimation(Vector3(0, 0, 0))
+	self.bStarted = true
+	if self.GM.PendingPlayer then self:ApplySave(self.GM.PendingPlayer) end
+end
+
+-- 저장 값 적용 (관리자 ApplySave가 부른다 — 장비는 관리자에 이미 들어 있다)
+function HD2DPlayer:ApplySave(Data)
+	self.Level = math.max(1, math.floor(Data.Level or 1))
+	self.Exp = math.floor(Data.Exp or 0)
+	self:ApplyLevel()
+	self.Health = math.max(1, math.min(self.MaxHealth, Data.Health or self.MaxHealth))
+	self.Mana = math.min(self.MaxMana, Data.Mana or self.MaxMana)
+	self.BP = math.floor(Data.BP or 1)
+	self.BoostLevel = 0
+	self:OnWeaponChanged()
+end
+
+-- 장비·레벨에서 능력치 다시 계산
+function HD2DPlayer:BaseMaxHealth()
+	local B = D.Balance()
+	return math.floor(B.MaxHealth + B.HealthPerLevel * (self.Level - 1))
+end
+
+function HD2DPlayer:RecalcStats()
+	local Gear = self.GM:GearStats()
+	local Old = self.MaxHealth or 0
+	self.MaxHealth = math.floor(self:BaseMaxHealth() + Gear.HealthBonus)
+	if self.Health then
+		self.Health = math.min(self.MaxHealth, self.Health + math.max(0, self.MaxHealth - Old))
+	end
+	self.Defense = Gear.Defense
+	self.CritBonus = Gear.CritBonus
+	self.Mover.MaxWalkSpeed = self.BaseWalkSpeed * (1.0 + Gear.SpeedBonus)
+end
+
+function HD2DPlayer:SnapCamera()
+	if self.Camera then
+		self.CamPos = self:CameraTarget()
+		self.Camera:SetPosition(self.CamPos)
+	end
 end
 
 -- ---- 레벨·회복
 function HD2DPlayer:ApplyLevel()
 	local B = D.Balance()
-	self.MaxHealth = math.floor(B.MaxHealth + B.HealthPerLevel * (self.Level - 1))
 	self.MaxMana = math.floor(B.MaxMana + B.ManaPerLevel * (self.Level - 1))
+	self:RecalcStats()
 end
 
 function HD2DPlayer:DamageScale()
@@ -113,7 +160,7 @@ function HD2DPlayer:AddExp(N)
 		self.Stats.LevelUps = self.Stats.LevelUps + 1
 		self.GM:SpawnLevelFx(self.entity:GetWorldPosition())
 		self.GM:Hud():Announce("LEVEL UP!", string.format("Lv %d   최대 HP +%d   최대 MP +%d", self.Level, self.MaxHealth - OldHp, self.MaxMana - OldMp), 2.5)
-		Audio.PlayOneShot(self.GM.Sounds.Confirm)
+		self.GM:Fanfare()
 		Log.Info(string.format("[HD2D] 레벨 업: Lv %d (HP %d, MP %d)", self.Level, self.MaxHealth, self.MaxMana))
 	end
 end
@@ -149,7 +196,12 @@ function HD2DPlayer:GatherInput()
 	local MX, MY = Input.GetAction("Move")
 	local In = { Move = Vector3(MX, -MY, 0), Attack = Input.WasActionPressed("Attack"), Dash = Input.WasActionPressed("Dodge"),
 	             Interact = Input.WasActionPressed("Interact"), Inventory = Input.WasActionPressed("Inventory"), Switch = Input.WasActionPressed("Skill2"),
-	             Use1 = Input.WasActionPressed("UsePotion1"), Use2 = Input.WasActionPressed("UsePotion2") }
+	             Use1 = Input.WasActionPressed("UsePotion1"), Use2 = Input.WasActionPressed("UsePotion2"), Boost = Input.WasActionPressed("Skill1") }
+	local DirX = MX > 0.5 and 1 or (MX < -0.5 and -1 or 0)
+	if DirX ~= 0 and DirX ~= self.MenuHeldX then
+		In.MenuRight, In.MenuLeft = DirX == 1, DirX == -1
+	end
+	self.MenuHeldX = DirX
 	In.Confirm = In.Interact or In.Attack
 	In.Cancel = In.Dash
 	-- 메뉴 위/아래: 누른 순간 + 누르고 있으면 반복
@@ -202,6 +254,8 @@ function HD2DPlayer:OnUpdate(Dt)
 		return
 	end
 	if In.Switch then self.GM:CycleWeapon() end
+	if In.Boost then self:RaiseBoost() end
+	self:UpdateBoostRegen(Dt)
 	if In.Use1 then self.GM:QuickUse({ "Potion", "HiPotion", "Elixir" }) end
 	if In.Use2 then self.GM:QuickUse({ "Ether", "Elixir" }) end
 
@@ -221,9 +275,10 @@ function HD2DPlayer:OnUpdate(Dt)
 		-- 공격 중: 이동 입력 무시, HitDelay에 판정. 공격 끝 무렵 누르면 다음 공격 예약 (검 연타)
 		self.AttackTimer = self.AttackTimer - Dt
 		if In.Attack then self.bQueued = true end
-		if not self.bHitDone and self.AttackElapsed + Dt >= self.Weapon.HitDelay then
-			self.bHitDone = true
-			self:DoAttackHit()
+		while self.HitQueue[1] and self.AttackElapsed + Dt >= self.HitQueue[1] do
+			table.remove(self.HitQueue, 1)
+			self.HitIndex = (self.HitIndex or 0) + 1
+			self:DoAttackHit(self.HitIndex)
 		end
 		self.AttackElapsed = self.AttackElapsed + Dt
 		if self.AttackTimer <= 0 then
@@ -255,6 +310,51 @@ function HD2DPlayer:UpdateHud()
 	if not H then return end
 	H:SetStatus(self.Name, self.Level, self.Health, self.MaxHealth, self.Mana, self.MaxMana, self:ExpFraction())
 	H:SetGold(self.GM.Gold)
+	H:SetBoost(self.BP, self.BoostLevel, D.Balance().BoostMax)
+end
+
+-- ---- 부스트 (BP)
+function HD2DPlayer:RaiseBoost()
+	local B = D.Balance()
+	if self.BoostLevel < math.min(B.BoostMaxLevel, self.BP) then
+		self.BoostLevel = self.BoostLevel + 1
+		self.GM:SpawnFx("Sparkle", self.entity:GetWorldPosition() + Vector3(0, 30, 40 + self.BoostLevel * 20),
+			{ Blend = 2, Scale = 0.8 + self.BoostLevel * 0.25, Color = { 0.6, 0.9, 1, 1 } })
+		Audio.PlayOneShot(self.GM.Sounds.Move)
+		self.GM:Hud():BoostBurst("BOOST " .. string.rep("▶", self.BoostLevel), 0.6)
+	else
+		Audio.PlayOneShot(self.GM.Sounds.Error)
+	end
+end
+
+function HD2DPlayer:UpdateBoostRegen(Dt)
+	local B = D.Balance()
+	if self.BP >= B.BoostMax then
+		self.BoostRegen = 0
+		return
+	end
+	self.BoostRegen = self.BoostRegen + Dt
+	if self.BoostRegen >= B.BoostRegenTime then
+		self.BoostRegen = 0
+		self:GainBP(1)
+	end
+end
+
+function HD2DPlayer:GainBP(N)
+	local Before = self.BP
+	self.BP = math.min(D.Balance().BoostMax, self.BP + N)
+	if self.BP > Before then
+		self.GM:Hud():PulseOrb(self.BP - 1)
+	end
+end
+
+-- 관리자 HitEnemy가 플레이어 공격 명중마다 부른다
+function HD2DPlayer:OnHitLanded()
+	self.HitsForBP = self.HitsForBP + 1
+	if self.HitsForBP >= D.Balance().BoostHitsPerPoint then
+		self.HitsForBP = 0
+		self:GainBP(1)
+	end
 end
 
 function HD2DPlayer:StartDash(Move)
@@ -302,12 +402,34 @@ function HD2DPlayer:StartAttack(Move)
 		return
 	end
 	self.Mana = self.Mana - W.ManaCost
+	-- 부스트: 올린 단계만큼 BP를 쓴다
+	local L = self.BoostLevel
+	self.AttackBoost = L
+	self.BoostLevel = 0
+	if L > 0 then
+		self.BP = self.BP - L
+		local R_ = self.GM.Report
+		R_.Boosts = R_.Boosts + 1
+		R_.BoostMax = math.max(R_.BoostMax, L)
+		local Pos = self.entity:GetWorldPosition()
+		self.GM:Hud():BoostBurst(string.format("BOOST ×%d!", L + 1), 1.0)
+		self.GM:Hud():ScreenFlash(0.35 + 0.1 * L, 0.3)
+		self.GM:SpawnSprite({ Sprite = "Sprites/HD2D/Fx.esprite", Slice = "Pillar", Position = Pos + Vector3(0, 20, -85), Blend = 2, Life = 0.5, Fade = true,
+		                      Color = { 0.55, 0.85, 1.0, 0.9 }, Scale = { 1.0 + L * 0.2, 1.2 } })
+		self.GM:SpawnFx("Ring", Pos + Vector3(0, 0, -82), { Flat = true, Blend = 2, Scale = 0.4, Grow = 3.5, Life = 0.35, Fade = true, Color = { 0.6, 0.9, 1, 1 } })
+		self.GM:AddShake(4 + L * 2, 0.2)
+		Audio.PlayOneShot("Audio/RPG/Spin.wav", 1.0, 1.0 + 0.18 * L) -- 단계가 높을수록 높은 소리
+		Log.Info(string.format("[HD2D] 부스트 공격: %d단계 (남은 BP %d)", L, self.BP))
+	end
 	self.AimDir = self:ChooseAim(Move, W)
 	self.Facing = FacingFromMove(self.AimDir, self.Facing)
-	self.AttackTimer = W.AttackTime
+	local bMelee = W.Kind == "Slash" or W.Kind == "Thrust"
+	local Extra = bMelee and L * 0.1 or 0
+	self.AttackTimer = W.AttackTime + Extra
 	self.AttackElapsed = 0.0
-	self.AttackCooldown = W.AttackTime + W.Cooldown * 0.25
-	self.bHitDone = false
+	self.AttackCooldown = W.AttackTime + Extra + W.Cooldown * 0.25
+	self.HitQueue, self.HitIndex = {}, 0
+	for I = 0, (bMelee and L or 0) do self.HitQueue[#self.HitQueue + 1] = W.HitDelay + I * 0.1 end
 	self.SwingSide = -self.SwingSide
 	self.Combo = (W.Kind == "Slash" and self.ComboWindow > 0) and (self.Combo % 3 + 1) or 1
 	self.Anim = "" -- 같은 방향 연타도 처음부터
@@ -322,17 +444,23 @@ end
 function HD2DPlayer:RollDamage(Base)
 	local B = D.Balance()
 	local Value = Base * self:DamageScale() * (0.9 + 0.2 * self.GM:Random())
-	local bCrit = self.GM:Random() < B.CritChance
+	local bCrit = self.GM:Random() < B.CritChance + (self.CritBonus or 0)
 	if bCrit then Value = Value * B.CritMultiplier end
 	return math.max(1, math.floor(Value + 0.5)), bCrit
 end
 
-function HD2DPlayer:DoAttackHit()
+function HD2DPlayer:DoAttackHit(HitIndex)
 	local W = self.Weapon
 	local Aim = self.AimDir
 	local Pos = self.entity:GetWorldPosition()
+	local L = self.AttackBoost or 0
+	local Boost = 1.0 + D.Balance().BoostDamagePerLevel * L
+	local bFinisher = W.Kind == "Slash" and (self.Combo == 3 or (L > 0 and HitIndex == L + 1))
+	if L > 0 and (HitIndex or 1) > 1 then
+		self.SwingSide = -self.SwingSide
+		Audio.PlayOneShot(HitIndex % 2 == 0 and "Audio/RPG/Swing2.wav" or "Audio/RPG/Swing1.wav")
+	end
 	local Angle = self.GM.ScreenAngle(Aim)
-	local bFinisher = W.Kind == "Slash" and self.Combo == 3
 	local Targets = {}
 	if W.Kind == "Slash" then
 		local Center = Pos + Aim * (W.Range * 0.45)
@@ -344,9 +472,16 @@ function HD2DPlayer:DoAttackHit()
 		Targets = self.GM:FindEnemiesInLine(Pos, Aim, W.Range, 40)
 	else
 		-- 투사체: 관리자가 움직이고 맞힌다
-		local Damage, bCrit = self:RollDamage(W.Damage)
-		self.GM:SpawnProjectile({ Kind = W.Kind, Pos = Pos + Aim * 50 + Vector3(0, 10, 8), Dir = Aim, Speed = W.ProjectileSpeed, Range = W.Range,
-		                          Damage = Damage, Knockback = W.Knockback, Splash = W.Splash, Team = "Player", Crit = bCrit, Weapon = self.GM.Equipped })
+		for K = 0, L do
+			-- 부스트: 부채꼴로 1+L발 (가운데부터 좌우 번갈아)
+			local Off = (K == 0) and 0 or ((K % 2 == 1) and 1 or -1) * math.ceil(K / 2) * (W.Kind == "Bolt" and 11 or 7)
+			local A = math.rad(Off)
+			local Dir = Vector3(Aim.X * math.cos(A) - Aim.Y * math.sin(A), Aim.X * math.sin(A) + Aim.Y * math.cos(A), 0)
+			local Damage, bCrit = self:RollDamage(W.Damage * Boost)
+			self.GM:SpawnProjectile({ Kind = W.Kind, Pos = Pos + Dir * 50 + Vector3(0, 10, 8), Dir = Dir, Speed = W.ProjectileSpeed, Range = W.Range,
+			                          Damage = Damage, Knockback = W.Knockback, Splash = W.Splash, Team = "Player", Crit = bCrit, Weapon = self.GM.Equipped,
+			                          Scale = L > 0 and 1.3 or nil })
+		end
 		if W.Kind == "Bolt" then
 			self.GM:SpawnFx("Sparkle", Pos + Aim * 50 + Vector3(0, 14, 20), { Blend = 2, Scale = 0.9, Color = { 0.6, 0.8, 1, 1 } })
 		end
@@ -356,7 +491,7 @@ function HD2DPlayer:DoAttackHit()
 	for _, S in ipairs(Targets) do
 		local Away = Flat(S.entity:GetWorldPosition() - Pos)
 		Away = Away:Length() > 1 and Away:Normalized() or Aim
-		local Damage, bCrit = self:RollDamage(W.Damage * (bFinisher and 1.6 or 1.0))
+		local Damage, bCrit = self:RollDamage(W.Damage * (bFinisher and 1.6 or 1.0) * Boost)
 		if self.GM:HitEnemy(S, Damage, Away, W.Knockback * (bFinisher and 1.4 or 1.0), bCrit, self.GM.Equipped) then
 			Hit = Hit + 1
 		end
@@ -375,7 +510,7 @@ function HD2DPlayer:TakeDamage(Amount, From, Opt)
 	if self.bDead or self.DashTimer > 0 or (self.Invuln > 0 and not Opt.bNoInvuln) then
 		return false
 	end
-	local Damage = math.max(1, math.floor(Amount * self.DamageTakenScale + 0.5))
+	local Damage = math.max(1, math.floor(Amount * self.DamageTakenScale * 60.0 / (60.0 + (self.Defense or 0) * 3.0) + 0.5))
 	self.Health = self.Health - Damage
 	self.Stats.Damaged = self.Stats.Damaged + 1
 	local Pos = self.entity:GetWorldPosition()

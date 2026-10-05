@@ -8,7 +8,9 @@
         "DisplayName": "촌장 바르톨로",
         "Flipbook": "Sprites/HD2D/Npc_Elder.eflipbook",
         "Role": "Elder",
-        "Lines": []
+        "Lines": [],
+        "Portrait": "UI/Demo/HD2D/Portraits/Elder.png",
+        "SubQuest": ""
       }
     },
     {
@@ -19,8 +21,10 @@
         "Role": "Shop",
         "Lines": [
           "어서 오세요, 여행자님! 들판으로 나가신다면 준비는 단단히 하셔야죠.",
-          "회복약부터 활과 지팡이까지, 필요한 건 다 있답니다."
-        ]
+          "회복약부터 활과 갑옷까지, 필요한 건 다 있답니다."
+        ],
+        "Portrait": "UI/Demo/HD2D/Portraits/Merchant.png",
+        "SubQuest": ""
       }
     },
     {
@@ -32,8 +36,10 @@
         "Lines": [
           "문 밖은 마물 천지야. 조심하라고.",
           "R 키로 무기를 바꿀 수 있지. 창은 멀리, 활과 지팡이는 더 멀리 닿는다네.",
-          "Space로 몸을 날리면 잠깐 동안은 아무것도 맞지 않아."
-        ]
+          "Q로 힘을 모아(BP) 공격하면 몇 번이고 연달아 몰아친다더군. 위험할 때를 위해 아껴 두게."
+        ],
+        "Portrait": "UI/Demo/HD2D/Portraits/Guard.png",
+        "SubQuest": ""
       }
     },
     {
@@ -41,11 +47,32 @@
       "Values": {
         "DisplayName": "꼬마 리나",
         "Flipbook": "Sprites/HD2D/Npc_Girl.eflipbook",
-        "Role": "Talk",
-        "Lines": [
-          "언니 오빠들이 그러는데, 연못 근처에서 보물상자를 봤대!",
-          "보라색 버섯은 만지면 안 돼. 독 웅덩이를 뿌린다니까!"
-        ]
+        "Role": "Quest",
+        "Lines": [],
+        "Portrait": "UI/Demo/HD2D/Portraits/Girl.png",
+        "SubQuest": "Cat"
+      }
+    },
+    {
+      "Name": "Smith",
+      "Values": {
+        "DisplayName": "대장장이 브론",
+        "Flipbook": "Sprites/HD2D/Npc_Smith.eflipbook",
+        "Role": "Quest",
+        "Lines": [],
+        "Portrait": "UI/Demo/HD2D/Portraits/Smith.png",
+        "SubQuest": "Smith"
+      }
+    },
+    {
+      "Name": "Farmer",
+      "Values": {
+        "DisplayName": "농부 한스",
+        "Flipbook": "Sprites/HD2D/Npc_Farmer.eflipbook",
+        "Role": "Quest",
+        "Lines": [],
+        "Portrait": "UI/Demo/HD2D/Portraits/Farmer.png",
+        "SubQuest": "Scarecrow"
       }
     }
   ]

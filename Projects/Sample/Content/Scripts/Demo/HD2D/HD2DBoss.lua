@@ -170,7 +170,9 @@ function HD2DBoss:OnUpdate(Dt)
 
 	if self.Flash > 0 then
 		self.Flash = self.Flash - Dt
-		self.Sprite.Color = self.Flash > 0 and Vector4(2.4, 2.4, 2.4, 1) or self:BaseColor()
+		-- 피격: 하얗게 덮었다가 빠르게 풀림 (SpriteComponent.FlashColor — 조명·안개 뒤에 덮는다)
+		self.Sprite.FlashColor = Vector4(1, 1, 1, self.Flash > 0 and math.min(0.85, self.Flash * 9) or 0)
+		if self.State ~= "ChargeWindup" then self.Sprite.Color = self:BaseColor() end
 	elseif self.State ~= "ChargeWindup" then
 		self.Sprite.Color = self:BaseColor()
 	end

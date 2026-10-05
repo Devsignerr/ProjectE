@@ -12814,7 +12814,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/HD2D/HD2DGame.lua",
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"Enemies\": \"\", \"Npcs\": \"\", \"Chests\": \"\", \"Boss\": \"\", \"Path\": \"-3150,-100;-900,-100;900,0;2600,150;3880,0\", \"AutoPlay\": \"\"}"
+          "PropertyOverrides": "{\"Map\": \"Village\", \"Enemies\": \"\", \"Npcs\": \"\", \"Chests\": \"\", \"Props\": \"SavePoint,-2650,420,39;Cat,3350,-850,46\", \"Boss\": \"\", \"Path\": \"-3150,-100;-900,-100;900,0;2600,150;3880,0\", \"AutoPlay\": \"\", \"Title\": true}"
         },
         "TransformComponent": {
           "Position": [
@@ -12872,6 +12872,39 @@
         }
       },
       "Name": "HUD",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "NavMeshComponent": {
+          "AgentRadius": 35.0,
+          "AgentHeight": 150.0,
+          "AgentMaxClimb": 40.0,
+          "AgentMaxSlopeDegrees": 40.0,
+          "CellSize": 20.0,
+          "CellHeight": 10.0,
+          "NavMeshAsset": "Scenes/Demo/HD2D.enav"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "NavMesh",
       "Parent": -1
     },
     {
@@ -12968,7 +13001,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 447
+          "Root": 448
         },
         "TransformComponent": {
           "Position": [

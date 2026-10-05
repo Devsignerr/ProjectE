@@ -95,6 +95,39 @@ struct FPostProcessMath
 		return 0.0f;
 	}
 
+	// 틸트시프트 CoC (DepthOfField.hlsl ComputeTiltShiftCoc와 같은 식): 화면 위치만으로 흐림 — 미니어처 사진(HD-2D).
+	//   초점 띠 = 화면 (0.5, Center)를 지나고 Angle(라디안, + = 시계 방향 — 화면 Y가 아래로 커지므로)만큼 기운 직선. 거리는 화면 높이 단위
+	//   (가로는 Aspect = 너비/높이를 곱해 등방). 띠 반폭 Band 안 = 0, 밖은 Transition 동안 선형으로 최대까지.
+	//   띠 아래(화면 아래, 법선 +) = 근경(음수 — 앞 땅이 선명한 띠를 덮으며 번짐), 위 = 원경(양수)
+	static float ComputeTiltShiftCoc(const FVector2& Uv, float Center, float Band, float Transition, float Angle, float Aspect, float NearBlur,
+	                                 float FarBlur)
+	{
+		const float NormalX = -FMath::Sin(Angle);
+		const float NormalY = FMath::Cos(Angle);
+		const float Signed  = (Uv.X - 0.5f) * Aspect * NormalX + (Uv.Y - Center) * NormalY;
+		const float Outside = FMath::Abs(Signed) - FMath::Max(Band, 0.0f);
+		if (Outside <= 0.0f)
+		{
+			return 0.0f;
+		}
+		const float T = Transition > 0.0f ? FMath::Min(Outside / Transition, 1.0f) : 1.0f;
+		return Signed > 0.0f ? -T * FMath::Max(NearBlur, 0.0f) : T * FMath::Max(FarBlur, 0.0f);
+	}
+
+	// 모드별 최종 CoC (EDepthOfFieldMode와 같은 번호): 0 깊이, 1 틸트시프트, 2 둘 중 절댓값이 큰 쪽 (같으면 깊이)
+	static float CombineCircleOfConfusion(int32 Mode, float DepthCoc, float TiltCoc)
+	{
+		if (Mode == 1)
+		{
+			return TiltCoc;
+		}
+		if (Mode == 2)
+		{
+			return FMath::Abs(TiltCoc) > FMath::Abs(DepthCoc) ? TiltCoc : DepthCoc;
+		}
+		return DepthCoc;
+	}
+
 	// 장치 깊이 [0, 1] → 뷰 깊이(cm). 원근은 표준 깊이(근평면 0, 원평면 1), 직교는 선형 (PixelArt.hlsl LinearizeDepth와 같음)
 	static float LinearizeDepth(float DeviceDepth, float NearZ, float FarZ, bool bOrthographic)
 	{

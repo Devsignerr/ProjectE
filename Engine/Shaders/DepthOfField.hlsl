@@ -3,6 +3,7 @@
 
 // 피사계 심도 (반해상도 원반 보케 — Unity Post Processing v2 DiskKernel 방식, HDR 톤매핑 전)
 //   착란원(CoC) = 화면 높이 비율, 음수 근경 / 양수 원경. 식은 Renderer/PostProcessMath.h ComputeCircleOfConfusion과 같아야 한다
+//   틸트시프트(Mode 1·2): 화면 위치로 CoC (ComputeTiltShiftCoc — 기운 초점 띠 아래 = 근경, 위 = 원경), Mode 2는 깊이 CoC와 절댓값 큰 쪽
 //   PSPrefilter : 전체 해상도 색(t0) + 깊이(t1) 4탭 → 반해상도 (Karis 가중 평균 색, 절댓값이 큰 CoC). 초점이 맞은 색은 어둡게(근경 번짐 차단)
 //   PSBokeh     : 반해상도 원반 43탭 모으기. 원경 = 가운데·표본 CoC 중 작은 쪽이 거리를 덮는 표본, 근경 = 표본 자신의 CoC가 덮는 표본 (근경이 앞을 덮음)
 //   PSPostfilter: 반해상도 4탭 텐트 (원반 표본 사이 틈 메움)
@@ -22,7 +23,13 @@ cbuffer DepthOfFieldConstants : register(b0)
 	float  NearZ;
 	float  FarZ;
 	uint   bOrthographic;
-	float3 Padding0;
+	uint   Mode;            // 0 깊이, 1 틸트시프트, 2 둘 다 (EDepthOfFieldMode)
+	float  TiltCenter;      // 초점 띠 가운데 (화면 위 0 ~ 아래 1)
+	float  TiltBand;        // 선명한 띠 반폭 (화면 높이 비율)
+	float  TiltTransition;  // 최대 흐림까지 (화면 높이 비율)
+	float2 TiltNormal;      // 띠 법선 (-sin, cos) — 아래쪽이 +
+	float  Aspect;          // 너비 / 높이
+	float4 Padding1;
 };
 
 Texture2D<float4> Source       : register(t0);
@@ -64,9 +71,32 @@ float ComputeCoc(float ViewDepth)
 	return 0.0f;
 }
 
+// FPostProcessMath::ComputeTiltShiftCoc와 같은 식
+float ComputeTiltShiftCoc(float2 UV)
+{
+	const float Signed  = (UV.x - 0.5f) * Aspect * TiltNormal.x + (UV.y - TiltCenter) * TiltNormal.y;
+	const float Outside = abs(Signed) - TiltBand;
+	if (Outside <= 0.0f)
+	{
+		return 0.0f;
+	}
+	const float T = TiltTransition > 0.0f ? min(Outside / TiltTransition, 1.0f) : 1.0f;
+	return Signed > 0.0f ? -T * NearBlur : T * FarBlur;
+}
+
 float CocAt(float2 UV)
 {
-	return ComputeCoc(LinearizeDepth(Source3.SampleLevel(PointSampler, UV, 0.0f)));
+	if (Mode == 1)
+	{
+		return ComputeTiltShiftCoc(UV);
+	}
+	const float DepthCoc = ComputeCoc(LinearizeDepth(Source3.SampleLevel(PointSampler, UV, 0.0f)));
+	if (Mode == 2)
+	{
+		const float TiltCoc = ComputeTiltShiftCoc(UV);
+		return abs(TiltCoc) > abs(DepthCoc) ? TiltCoc : DepthCoc; // FPostProcessMath::CombineCircleOfConfusion
+	}
+	return DepthCoc;
 }
 
 float MaxComponent(float3 C)

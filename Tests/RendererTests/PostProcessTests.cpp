@@ -139,3 +139,26 @@ E_TEST(PostProcess_DepthOfFieldLinearizeDepth)
 	E_EXPECT_EQ(FPostProcessMath::GetDepthOfFieldDimension(1081), 541u);
 	E_EXPECT_EQ(FPostProcessMath::GetDepthOfFieldDimension(1), 1u);
 }
+
+// 틸트시프트 CoC: 초점 띠 안 0, 아래 = 근경(음수)·위 = 원경(양수), 전환 폭에서 최대, 기울기·화면비, 모드 합성
+E_TEST(PostProcess_DepthOfFieldTiltShift)
+{
+	const auto Coc = [](float U, float V, float Angle = 0.0f) {
+		return FPostProcessMath::ComputeTiltShiftCoc(FVector2(U, V), 0.5f, 0.1f, 0.2f, Angle, 16.0f / 9.0f, 0.02f, 0.03f);
+	};
+	E_EXPECT_NEAR(Coc(0.5f, 0.5f), 0.0f, 1.0e-6f);
+	E_EXPECT_NEAR(Coc(0.1f, 0.59f), 0.0f, 1.0e-6f);       // 띠 안 (가로 위치 무관 — 기울기 0)
+	E_EXPECT_NEAR(Coc(0.5f, 0.7f), -0.01f, 1.0e-6f);      // 아래 0.2 = 띠 밖 0.1 → 전환 절반 → 근경 0.02의 절반
+	E_EXPECT_NEAR(Coc(0.5f, 0.3f), 0.015f, 1.0e-6f);      // 위 = 원경 0.03의 절반
+	E_EXPECT_NEAR(Coc(0.5f, 1.0f), -0.02f, 1.0e-6f);      // 전환 끝 넘으면 최대
+	E_EXPECT_NEAR(Coc(0.5f, 0.0f), 0.03f, 1.0e-6f);
+	// 45도: 오른쪽 위 → 띠 방향으로 이동하면 거리가 그대로 (가로는 화면비 보정)
+	const float Angle = FMath::DegreesToRadians(45.0f);
+	const float Along = Coc(0.5f + 0.2f / (16.0f / 9.0f), 0.5f + 0.2f, Angle); // 법선 (-sin, cos)에 수직인 방향(cos, sin)으로 이동
+	E_EXPECT_NEAR(Along, 0.0f, 1.0e-5f);
+	// 모드 합성: 깊이 / 틸트 / 큰 쪽
+	E_EXPECT_NEAR(FPostProcessMath::CombineCircleOfConfusion(0, 0.01f, -0.02f), 0.01f, 1.0e-6f);
+	E_EXPECT_NEAR(FPostProcessMath::CombineCircleOfConfusion(1, 0.01f, -0.02f), -0.02f, 1.0e-6f);
+	E_EXPECT_NEAR(FPostProcessMath::CombineCircleOfConfusion(2, 0.01f, -0.02f), -0.02f, 1.0e-6f);
+	E_EXPECT_NEAR(FPostProcessMath::CombineCircleOfConfusion(2, 0.03f, -0.02f), 0.03f, 1.0e-6f);
+}

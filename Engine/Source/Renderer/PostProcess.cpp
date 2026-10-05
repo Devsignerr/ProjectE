@@ -24,7 +24,7 @@ namespace
 		PostRoot_Source3   = 5, // t2
 	};
 
-	constexpr uint32 PostRootConstantCount = 16; // 패스별 상수 구조체는 이 크기 이하
+	constexpr uint32 PostRootConstantCount = 24; // 패스별 상수 구조체는 이 크기 이하 (피사계 심도가 가장 큼)
 
 	struct FTonemapConstants
 	{
@@ -77,7 +77,14 @@ namespace
 		float  NearZ              = 1.0f;
 		float  FarZ               = 2.0f;
 		uint32 bOrthographic      = 0;
-		float  Padding[3]         = {};
+		// 틸트시프트
+		uint32 Mode               = 0;
+		float  TiltCenter         = 0.5f;
+		float  TiltBand           = 0.0f;
+		float  TiltTransition     = 0.0f;
+		float  TiltNormal[2]      = { 0.0f, 1.0f };
+		float  Aspect             = 1.0f;
+		float  Padding[4]         = {};
 	};
 	static_assert(sizeof(FDepthOfFieldConstants) == PostRootConstantCount * 4);
 
@@ -98,7 +105,7 @@ namespace
 		float  FarZ              = 2.0f;
 		float  PixelViewScale    = 1.0f;
 	};
-	static_assert(sizeof(FPixelArtConstants) == PostRootConstantCount * 4);
+	static_assert(sizeof(FPixelArtConstants) <= PostRootConstantCount * 4 && sizeof(FPixelArtConstants) % 4 == 0);
 
 	template <typename T>
 	void SetGraphicsConstants(ID3D12GraphicsCommandList* CommandList, const T& Constants)
@@ -674,6 +681,13 @@ FPostProcessGraphInput FPostProcessor::AddDepthOfFieldPasses(FRenderGraph& Graph
 	Constants.NearZ          = Params.NearZ;
 	Constants.FarZ           = Params.FarZ;
 	Constants.bOrthographic  = Params.bOrthographic ? 1u : 0u;
+	Constants.Mode           = static_cast<uint32>(FMath::Clamp(Params.Mode, 0, 2));
+	Constants.TiltCenter     = Params.TiltShiftCenter;
+	Constants.TiltBand       = FMath::Max(Params.TiltShiftBand, 0.0f);
+	Constants.TiltTransition = FMath::Max(Params.TiltShiftTransition, 0.0f);
+	Constants.TiltNormal[0]  = -FMath::Sin(Params.TiltShiftAngle);
+	Constants.TiltNormal[1]  = FMath::Cos(Params.TiltShiftAngle);
+	Constants.Aspect         = static_cast<float>(Width) / static_cast<float>(FMath::Max(Height, 1u));
 	if (Constants.MaxCoc <= 0.0f || Width == 0 || Height == 0)
 	{
 		return SceneColor;

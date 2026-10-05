@@ -89,6 +89,12 @@ struct FDepthOfFieldParams
 	float NearZ          = 10.0f;
 	float FarZ           = 100000.0f;
 	bool  bOrthographic  = false;
+	// 틸트시프트 (FDepthOfFieldComponent와 같은 뜻, 각은 라디안)
+	int32 Mode                = 0;
+	float TiltShiftCenter     = 0.5f;
+	float TiltShiftBand       = 0.12f;
+	float TiltShiftTransition = 0.3f;
+	float TiltShiftAngle      = 0.0f;
 
 	static constexpr float MaxBlur = 0.04f; // 보케 반경 상한 (화면 높이 4% — 반해상도 43탭 원반의 표본 간격 한계)
 };

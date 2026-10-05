@@ -184,6 +184,19 @@ struct FDepthOfFieldComponent
 	float NearBlurSize     = 1.0f;    // 근경 최대 흐림 반경 (화면 높이 %)
 	float FarBlurSize      = 1.0f;    // 원경 최대 흐림 반경 (화면 높이 %)
 	bool  bPreviewInEditor = false;   // 에디터 편집 카메라로 볼 때도 적용
+	// ---- 틸트시프트 (2026-10-05, HD-2D 미니어처 — 식은 PostProcessMath.h ComputeTiltShiftCoc)
+	int32 Mode                = 0;     // EDepthOfFieldMode: 0 깊이, 1 틸트시프트(화면 위치), 2 둘 다(큰 흐림) — 끝에만 추가
+	float TiltShiftCenter     = 0.5f;  // 초점 띠 가운데 (화면 위 0 ~ 아래 1)
+	float TiltShiftBand       = 0.12f; // 선명한 띠 반폭 (화면 높이 비율)
+	float TiltShiftTransition = 0.3f;  // 띠 밖에서 최대 흐림까지 (화면 높이 비율)
+	float TiltShiftAngle      = 0.0f;  // 도 (+ = 시계 방향)
+};
+
+enum class EDepthOfFieldMode : int32
+{
+	Depth            = 0,
+	TiltShift        = 1,
+	DepthAndTiltShift = 2,
 };
 
 // Lua 스크립트 인스턴스. 실행 상태(Lua 테이블)는 FScriptSystem이 엔티티별로 보관하고 여기에는 데이터만 둔다.

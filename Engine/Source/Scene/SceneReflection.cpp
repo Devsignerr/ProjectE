@@ -132,6 +132,16 @@ void RegisterSceneTypes()
 		.Property(&FDepthOfFieldComponent::FarBlurSize, "FarBlurSize", "원경 흐림 (화면 높이 %)").Range(0.0f, 4.0f, 0.01f)
 		.Property(&FDepthOfFieldComponent::bPreviewInEditor, "PreviewInEditor", "에디터 카메라에도 적용")
 		.Tooltip("끄면 플레이 중 게임 카메라 시점(빙의)·런타임에서만 보인다")
+		.Property(&FDepthOfFieldComponent::Mode, "Mode", "방식")
+		.Enum({ { "Depth", "깊이" }, { "TiltShift", "틸트시프트 (화면 위치)" }, { "DepthAndTiltShift", "깊이 + 틸트시프트" } })
+		.Tooltip("틸트시프트 = 화면 위아래로 갈수록 흐린 미니어처 사진 (HD-2D). 둘 다 = 두 흐림 중 큰 쪽")
+		.Property(&FDepthOfFieldComponent::TiltShiftCenter, "TiltShiftCenter", "틸트시프트 초점 위치").Range(0.0f, 1.0f, 0.005f)
+		.Tooltip("선명한 띠 가운데의 화면 높이 (0 = 위, 1 = 아래)")
+		.Property(&FDepthOfFieldComponent::TiltShiftBand, "TiltShiftBand", "틸트시프트 선명 폭").Range(0.0f, 1.0f, 0.005f)
+		.Tooltip("선명한 띠 반폭 (화면 높이 비율)")
+		.Property(&FDepthOfFieldComponent::TiltShiftTransition, "TiltShiftTransition", "틸트시프트 전환 폭").Range(0.0f, 2.0f, 0.005f)
+		.Tooltip("띠 밖에서 최대 흐림(근경/원경 흐림)까지의 거리 (화면 높이 비율, 0 = 바로 최대). 띠 아래 = 근경, 위 = 원경")
+		.Property(&FDepthOfFieldComponent::TiltShiftAngle, "TiltShiftAngle", "틸트시프트 기울기 (도)").Range(-90.0f, 90.0f, 0.5f)
 		.AsComponent();
 
 	// 스크립트 Properties 오버라이드는 인스펙터가 스크립트 선언을 읽어 전용 UI로 편집한다

@@ -1187,6 +1187,11 @@ void FSceneRenderer::RenderFrame(FRenderGraph& Graph, FScene& Scene, const FCame
 			Params.NearZ          = Camera.GetNearZ();
 			Params.FarZ           = Camera.GetFarZ();
 			Params.bOrthographic  = Camera.IsOrthographic();
+			Params.Mode                = DepthOfField->Mode;
+			Params.TiltShiftCenter     = DepthOfField->TiltShiftCenter;
+			Params.TiltShiftBand       = DepthOfField->TiltShiftBand;
+			Params.TiltShiftTransition = DepthOfField->TiltShiftTransition;
+			Params.TiltShiftAngle      = FMath::DegreesToRadians(DepthOfField->TiltShiftAngle);
 			PostInput = PostProcessor.AddDepthOfFieldPasses(Graph, PostInput, { Refs.Depth, SceneColor->GetDepthSrv() }, Output.Width, Output.Height, Params,
 			                                                static_cast<int32>(ERenderTimer::DepthOfField));
 		}

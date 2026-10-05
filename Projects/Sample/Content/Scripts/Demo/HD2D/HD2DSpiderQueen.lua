@@ -4,6 +4,8 @@
 --     Shards  플레이어 자리와 둘레 바닥에 푸른 경고 원 → 잠시 뒤 수정 가시가 솟는다 (관리자 SpawnEruption — 1단계 3곳, 2단계 6곳)
 --     Pounce  웅크려 착지점(붉은 원)을 노린 뒤 높이 뛰어 덮친다 — 날아가는 동안 잔상(entity:GetSpriteSlice), 착지 충격파 원 안이면 피해
 --   체력 절반에서 격노(2단계): 보랏빛, 예비 동작·간격이 짧아지고 수정 슬라임 둘을 부른다(Summon). 맞으면 하얗게 덮는다(SpriteComponent.FlashColor).
+--   숨 고르기: 패턴마다 끝난 뒤 회복(Recover) 상태 + 다음 패턴까지 쿨다운(회복 중에도 흐름) → 패턴 사이 최소 약 2초(2단계 1.6초). 패턴 순서는
+--     Cycle1/Cycle2 그대로 — 덮치기 차례에 너무 가까우면(BackstepRange) 뒤로 크게 뛰어 거리를 벌린 뒤 덮친다 (붙어 싸워도 세 패턴이 다 나온다).
 --   효과음은 자리 있는 Audio.PlayOneShot(경로, 위치, 음량, 피치) — 멀면 작게 들린다.
 --   쓰러지면 관리자 OnEnemyKilled(전리품·경험치) + OnBossKilled(보상 상자·문 열기·퀘스트 단계) 후 큰 연출과 함께 사라진다.
 local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
@@ -16,7 +18,9 @@ local HD2DSpiderQueen = {
 
 local Book = "Sprites/HD2D/SpiderQueen_"
 local Cycle1 = { "Web", "Pounce", "Shards" }
-local Cycle2 = { "Shards", "Web", "Pounce", "Web", "Shards", "Pounce" }
+local Cycle2 = { "Shards", "Pounce", "Web", "Pounce", "Shards", "Web" }
+local BackstepRange = 380  -- 덮치기 차례인데 이보다 가까우면 먼저 뒤로 뛴다
+local RecoverTime = { Web = 0.9, Shards = 1.0, Pounce = 0.9 }  -- 패턴 뒤 숨 고르기 (초, 2단계 × 0.8)
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
 
@@ -117,11 +121,20 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 		return
 	end
 
+	if self.State ~= "Dormant" and self.State ~= "Wake" then self.Cooldown = self.Cooldown - Dt end -- 회복 중에도 흐른다
 	if self.State == "Wake" or self.State == "Recover" then
 		if self.Anim ~= "Rear" or self.State == "Recover" then self:Play("Idle") end
 		if self.Timer <= 0 then self:SetState("Chase", 0) end
+	elseif self.State == "Backstep" then
+		-- 덮치기 전에 뒤로 크게 뛰어 거리를 벌린다 (몸이 낮게 떴다 내려앉음)
+		local T = 1.0 - math.max(self.Timer, 0) / 0.45
+		self.Body:SetPosition(self.BodyBase + Vector3(0, 0, math.sin(T * math.pi) * 90))
+		if self.Timer <= 0 then
+			self.Body:SetPosition(self.BodyBase)
+			self.GM:SpawnFx("Dust", Ground + Vector3(0, 30, 2), { Scale = 1.6 })
+			self:BeginPounce(Player, Ground)
+		end
 	elseif self.State == "Chase" then
-		self.Cooldown = self.Cooldown - Dt
 		if self.Cooldown <= 0 and Dist < 1400 then
 			self:StartPattern(Dist, DirP, Ground, Player)
 		elseif Dist > 340 and not E:IsStunned() then
@@ -142,7 +155,7 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 				                          Range = 1400, Damage = R.AttackDamage * 0.7, Team = "Enemy", HitOpt = { Status = "Freeze", Chance = 1.0 } })
 			end
 			self:Sound("Audio/RPG/Swing2.wav", 1.0, 0.7)
-			self:SetState("Recover", 0.8)
+			self:EndPattern("Web")
 		end
 	elseif self.State == "ShardsWindup" then
 		if self.Timer <= 0 then
@@ -159,7 +172,7 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 				self.GM:SpawnEruption(Center + Offset, 0.85 + (I - 1) * 0.1, 115, R.AttackDamage, { Status = "Freeze", Chance = 0.5 })
 			end
 			self:Sound("Audio/RPG/Spin.wav", 0.9, 0.6)
-			self:SetState("Recover", 1.0)
+			self:EndPattern("Shards")
 		end
 	elseif self.State == "PounceWindup" then
 		local Blink = math.floor(self.Time * 14) % 2 == 0
@@ -202,7 +215,7 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 			if PP and Flat(PP - Ground):Length() < 240 then
 				Player:TakeDamage(R.AttackDamage * 1.2, Pos, self.HitOpt) -- 착지 = 기절 (표 Inflict)
 			end
-			self:SetState("Recover", 0.75)
+			self:EndPattern("Pounce")
 		end
 	end
 
@@ -218,12 +231,40 @@ function HD2DSpiderQueen:OnUpdate(Dt)
 	if self.State ~= "PounceWindup" then self.Sprite.Color = self:BaseColor() end
 end
 
+-- 패턴 끝: 숨 고르기(회복) + 다음 패턴까지 쿨다운 (회복 중에도 흐른다 — 둘 중 긴 쪽이 실제 간격)
+function HD2DSpiderQueen:EndPattern(Pattern)
+	local Scale = self.Phase == 2 and 0.8 or 1.0
+	self:SetState("Recover", RecoverTime[Pattern] * Scale)
+	self.Cooldown = self.Row.AttackCooldown * (self.Phase == 2 and 0.85 or 1.0) + RecoverTime[Pattern] * Scale
+end
+
+-- 덮치기 예고: 착지점 = 플레이어 자리 (보스 방 안으로 — 너무 멀면 줄인다)
+function HD2DSpiderQueen:BeginPounce(Player, Ground)
+	local PP = Player and Player.entity:GetWorldPosition() or Ground
+	local To = Flat(PP - Ground)
+	if To:Length() > 900 then To = To:Normalized() * 900 end
+	self.PounceTarget = Vector3(Ground.X + To.X, Ground.Y + To.Y, Ground.Z)
+	self:SetState("PounceWindup", self:Windup())
+	self:Play("Crouch")
+	self.Warn = self.GM:SpawnSprite({ Sprite = "Sprites/HD2D/Fx.esprite", Slice = "Warn", Position = self.PounceTarget + Vector3(0, 0, 3), Flat = true,
+	                                  Blend = 0, Life = self:Windup() + 0.7, Scale = 240 / 108.0, Color = { 1, 1, 1, 0.9 } })
+end
+
 function HD2DSpiderQueen:StartPattern(Dist, DirP, Ground, Player)
 	local R = self.Row
 	local Cycle = self.Phase == 2 and Cycle2 or Cycle1
 	self.PatternIndex = self.PatternIndex % #Cycle + 1
 	local Pattern = Cycle[self.PatternIndex]
-	if Pattern == "Pounce" and Dist < 260 then Pattern = "Shards" end -- 너무 가까우면 뛸 거리가 없다
+	self.Cooldown = 99 -- 패턴이 끝날 때 EndPattern이 다시 정한다
+	if Pattern == "Pounce" and Dist < BackstepRange then
+		-- 붙어 있으면 뒤로 크게 뛰어 거리를 벌린 뒤 덮친다
+		self:SetState("Backstep", 0.45)
+		self:Play("Leap")
+		self.entity:AddKnockback(DirP * -(560 / 0.45), 0.43)
+		self:Sound("Audio/RPG/Dash.wav", 0.8, 1.1)
+		self:Count("Pounce")
+		return
+	end
 	if Pattern == "Web" then
 		self:SetState("WebWindup", self:Windup() * 0.8)
 		self:Play("Rear")
@@ -233,18 +274,9 @@ function HD2DSpiderQueen:StartPattern(Dist, DirP, Ground, Player)
 		self:Play("Rear")
 		self.GM:SpawnFx("Sparkle", Ground + Vector3(0, 30, 300), { Blend = 2, Scale = 2.0, Color = { 0.6, 0.9, 1, 1 } })
 	else
-		-- 착지점 = 플레이어 자리 (보스 방 안으로 — 너무 멀면 줄인다)
-		local PP = Player and Player.entity:GetWorldPosition() or Ground
-		local To = Flat(PP - Ground)
-		if To:Length() > 900 then To = To:Normalized() * 900 end
-		self.PounceTarget = Vector3(Ground.X + To.X, Ground.Y + To.Y, Ground.Z)
-		self:SetState("PounceWindup", self:Windup())
-		self:Play("Crouch")
-		self.Warn = self.GM:SpawnSprite({ Sprite = "Sprites/HD2D/Fx.esprite", Slice = "Warn", Position = self.PounceTarget + Vector3(0, 0, 3), Flat = true,
-		                                  Blend = 0, Life = self:Windup() + 0.7, Scale = 240 / 108.0, Color = { 1, 1, 1, 0.9 } })
+		self:BeginPounce(Player, Ground)
 	end
 	self:Count(Pattern)
-	self.Cooldown = R.AttackCooldown * (self.Phase == 2 and 0.7 or 1.0)
 end
 
 function HD2DSpiderQueen:OnLateUpdate(Dt)

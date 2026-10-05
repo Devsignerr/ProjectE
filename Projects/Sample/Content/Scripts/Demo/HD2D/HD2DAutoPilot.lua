@@ -673,23 +673,11 @@ function AutoPilot:RunFullTravel()
 	local Until = self.Time + 240 -- 보스는 브레이크를 노려야 잡힌다 (HD2DCombatGen 보스 수치 근거)
 	local Dash0, Fight0 = P.Stats.Dashes, self.Time
 	local Swap = self.Time + 10
-	local HoldUntil = nil -- 분노(2단계) 뒤 세 번째 패턴(돌진)을 볼 때까지 거리를 두고 공격을 멈춘다 (최대 15초 — 화력이 세면 돌진 전에 쓰러져 검증이 흔들렸다)
+	-- 일반 전투 흐름만 (예비 동작을 보고 피하며 계속 공격 — 패턴 3종은 보스의 패턴 순환이 보장한다)
 	while not GM.bBossDead and self.Time < Until do
 		local Boss = GM:NearestEnemy(self:Pos(), 3000, function(S) return S.bBoss end)
 		if not GM:IsMenuOpen() then
-			local Seen = 0
-			for _, N in pairs(GM.Report.BossPatterns) do if N > 0 then Seen = Seen + 1 end end
-			if Boss and Boss.Phase == 2 and Seen < 3 and HoldUntil == nil then
-				HoldUntil = self.Time + 15
-				Log.Info(string.format("[HD2D] 자동: 보스 패턴 관찰 대기 시작 (본 패턴 %d, 보스 HP %.0f)", Seen, Boss.Health or -1))
-			end
-			if Boss and HoldUntil and Seen < 3 and self.Time < HoldUntil then
-				local L = Flat(self:Pos() - Boss.entity:GetWorldPosition()):Length()
-				if L < 900 then
-					self:MoveToward(GM.BossPos + Vector3(-1100, 350, 0))
-					if (Boss.State == "ChargeWindup" or Boss.State == "SlamWindup") and self.Player.DashCooldown <= 0 then self.In.Dash = true end
-				end
-			elseif Boss then
+			if Boss then
 				self:Engage(Boss, true)
 			else
 				self:MoveToward(GM.BossPos) -- 잠든 보스는 목록에 없다 → 다가가 깨운다
@@ -884,22 +872,11 @@ function AutoPilot:RunCaveRun()
 	self:EquipBySwitch("Spear")
 	local Until = self.Time + 260
 	local Dash0, Fight0 = P.Stats.Dashes, self.Time
-	local HoldUntil = nil
+	-- 일반 전투 흐름만 (관찰 대기 없이 — 여왕은 붙어 있어도 뒤로 뛰어 덮친다)
 	while not GM.bBossDead and self.Time < Until do
 		local Boss = GM:NearestEnemy(self:Pos(), 3000, function(S) return S.bBoss end)
 		if not GM:IsMenuOpen() then
-			local Seen = self:PatternsSeen()
-			if Boss and Boss.Phase == 2 and Seen < 3 and HoldUntil == nil then
-				HoldUntil = self.Time + 15
-				self:Note(string.format("보스 패턴 관찰 대기 (본 패턴 %d)", Seen))
-			end
-			if Boss and HoldUntil and Seen < 3 and self.Time < HoldUntil then
-				-- 공격을 멈추고 거리를 둔다 (패턴을 더 본다)
-				if not self:DodgeEruptions() then
-					local L = Flat(self:Pos() - Boss.entity:GetWorldPosition()):Length()
-					if L < 600 then self:MoveToward(GM.Arena.Pos + Vector3(-450, 350, 0)) end
-				end
-			elseif Boss then
+			if Boss then
 				if self.Frame % 120 == 0 then self:SwitchToWeakWeapon(Boss) end -- R로 약점 속성 무기로 (HD2DAutoCombat.lua)
 				self:Engage(Boss, true)
 			else

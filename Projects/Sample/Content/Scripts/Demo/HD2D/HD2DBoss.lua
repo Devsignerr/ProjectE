@@ -4,6 +4,8 @@
 --     Throw  멀면: 바위를 플레이어 자리(2단계는 5개 — 둘레에도)로 던진다 — 착지점 경고 원, 착지 폭발 (관리자 투사체 Rock)
 --     Charge 2단계(체력 절반 이하): 예고 뒤 몸통 돌진 — 닿으면 큰 피해
 --   체력 절반에서 분노(붉은 빛, 예비 동작 짧아짐) + 슬라임 둘 소환. 넉백은 거의 받지 않는다.
+--   숨 고르기: 패턴마다 끝난 뒤 회복(Recover) + 다음 패턴까지 쿨다운(회복 중에도 흐름). 붙어 싸워도 내리치기만 반복하지 않게
+--     내리치기 두 번 뒤에는 거리와 상관없이 바위 던지기(플레이어 둘레), 2단계는 돌진·내리치기·던지기를 번갈아 (돌진은 거리와 상관없이).
 --   쓰러지면 관리자 OnEnemyKilled(전리품·경험치) + OnBossKilled(보상 상자·퀘스트 단계) 후 큰 연출과 함께 사라진다.
 local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
 
@@ -100,11 +102,11 @@ function HD2DBoss:OnUpdate(Dt)
 		return
 	end
 
+	if self.State ~= "Dormant" and self.State ~= "Wake" then self.Cooldown = self.Cooldown - Dt end -- 회복 중에도 흐른다
 	if self.State == "Wake" or self.State == "Recover" then
 		self:Play("Idle")
 		if self.Timer <= 0 then self:SetState("Chase", 0) end
 	elseif self.State == "Chase" then
-		self.Cooldown = self.Cooldown - Dt
 		if self.Cooldown <= 0 then
 			self:StartPattern(Dist, DirP, Ground)
 		elseif Dist > 260 and not E:IsStunned() then
@@ -130,7 +132,7 @@ function HD2DBoss:OnUpdate(Dt)
 			end
 		end
 	elseif self.State == "Slam" then
-		if self.Timer <= 0 then self:SetState("Recover", 0.5) end
+		if self.Timer <= 0 then self:EndPattern(0.7) end
 	elseif self.State == "ThrowWindup" then
 		if self.Timer <= 0 then
 			self:Play("Idle")
@@ -148,7 +150,7 @@ function HD2DBoss:OnUpdate(Dt)
 				                          HitOpt = self.Phase == 2 and { Status = "Burn", Chance = 0.5 } or nil }) -- 분노한 골렘의 바위는 달아올라 화상
 			end
 			Audio.PlayOneShot("Audio/RPG/Swing3.wav")
-			self:SetState("Recover", 1.1)
+			self:EndPattern(1.1)
 		end
 	elseif self.State == "ChargeWindup" then
 		local Blink = math.floor(self.Time * 14) % 2 == 0
@@ -164,7 +166,7 @@ function HD2DBoss:OnUpdate(Dt)
 		if math.floor(self.Time * 20) % 2 == 0 then
 			self.GM:SpawnFx("Dust", Ground + Vector3(-self.ChargeDir.X * 100, 30, 2), { Scale = 1.6, FlipX = self.ChargeDir.X < 0 })
 		end
-		if self.Timer <= 0 then self:SetState("Recover", 0.9) end
+		if self.Timer <= 0 then self:EndPattern(0.9) end
 	end
 
 	-- 몸 접촉 (돌진 중이면 큰 피해)
@@ -187,27 +189,55 @@ function HD2DBoss:BaseColor()
 	return self.Phase == 2 and Vector4(1.12, 0.9, 0.86, 1) or Vector4(1, 1, 1, 1)
 end
 
+-- 패턴 끝: 숨 고르기 Recover초(2단계 × 0.8) + 다음 패턴까지 쿨다운
+function HD2DBoss:EndPattern(Recover)
+	local Scale = self.Phase == 2 and 0.8 or 1.0
+	self:SetState("Recover", Recover * Scale)
+	self.Cooldown = self.Row.AttackCooldown * (self.Phase == 2 and 0.8 or 1.0) + Recover * Scale
+end
+
 function HD2DBoss:StartPattern(Dist, DirP, Ground)
 	local R = self.Row
-	if Dist < R.AttackRange then
+	self.Cooldown = 99 -- 패턴이 끝날 때 EndPattern이 다시 정한다
+	local bClose = Dist < R.AttackRange
+	if self.Phase == 2 then
+		-- 2단계: 돌진 → (가까우면 내리치기, 멀면 던지기) → 던지기 차례 순환
+		self.Turn = (self.Turn or 0) % 3 + 1
+		if self.Turn == 1 then
+			self.NextPattern = "Charge"
+		elseif self.Turn == 2 then
+			self.NextPattern = bClose and "Slam" or "Throw"
+		else
+			self.NextPattern = "Throw"
+		end
+	else
+		-- 1단계: 가까우면 내리치기, 단 두 번 내리친 뒤에는 던지기
+		self.SlamRun = self.SlamRun or 0
+		if bClose and self.SlamRun < 2 then
+			self.NextPattern = "Slam"
+			self.SlamRun = self.SlamRun + 1
+		else
+			self.NextPattern = "Throw"
+			self.SlamRun = 0
+		end
+	end
+	local Pattern = self.NextPattern
+	if Pattern == "Slam" then
 		self:SetState("SlamWindup", self:Windup())
 		self:Play("Raise")
 		self.Warn = self.GM:SpawnSprite({ Sprite = "Sprites/HD2D/Fx.esprite", Slice = "Warn", Position = Ground + Vector3(0, 0, 3), Flat = true, Blend = 0,
 		                                  Life = self:Windup() + 0.05, Scale = (R.AttackRange + 40) / 120.0, Color = { 1, 1, 1, 0.9 } })
 		self:Count("Slam")
-	elseif self.Phase == 2 and self.NextPattern == "Charge" then
+	elseif Pattern == "Charge" then
 		self:SetState("ChargeWindup", self:Windup())
 		self:Play("Raise")
 		self.GM:SpawnFx("Alert", Ground + Vector3(0, 30, 470), { Blend = 2, Scale = 2.4 })
 		self:Count("Charge")
-		self.NextPattern = "Throw"
 	else
 		self:SetState("ThrowWindup", 0.55)
 		self:Play("Throw")
 		self:Count("Throw")
-		self.NextPattern = self.Phase == 2 and "Charge" or "Throw"
 	end
-	self.Cooldown = R.AttackCooldown * (self.Phase == 2 and 0.7 or 1.0)
 end
 
 function HD2DBoss:OnLateUpdate(Dt)

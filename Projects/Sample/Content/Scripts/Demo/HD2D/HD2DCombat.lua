@@ -258,6 +258,7 @@ function Combat:StartBreak(S)
 	self:KillFx(S.Warn)
 	if S.Body and S.BodyBase and not (S.Shape and S.Shape.Lift and S.Shape.Lift > 0) then S.Body:SetPosition(S.BodyBase) end
 	if S.SetState then S:SetState(S.bBoss and "Recover" or "Idle", 0.2) end
+	if S.bBoss then S.Cooldown = 1.2 end -- 끊긴 패턴 대신 (보스는 패턴이 끝날 때 쿨다운을 다시 정한다)
 	if S.Play then S:Play("Idle") end
 	if S.Status.Stun then self:ClearStatus(S, "Stun") end
 	local Pos = S.entity:GetWorldPosition()
@@ -341,6 +342,7 @@ function Combat:ApplyStatus(T, Kind, Time)
 	if Kind == "Stun" and not bPlayer then
 		self:KillFx(T.Warn)
 		if T.SetState then T:SetState(T.bBoss and "Recover" or "Idle", 0.2) end
+		if T.bBoss then T.Cooldown = 1.2 end
 		if T.Body and T.BodyBase and not (T.Shape and T.Shape.Lift and T.Shape.Lift > 0) then T.Body:SetPosition(T.BodyBase) end
 	end
 end

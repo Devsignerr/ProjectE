@@ -3,8 +3,8 @@
 #   + 물(지하 호수·구덩이) + 횃불 점광원(깜빡임)·수정 발광·볼류메트릭 안개·물방울·먼지 파티클 + 플레이어/게임 관리자(HD2DGameplay)
 #   실행: python Tools/DemoMap/BuildHD2DCave.py [--views]   (머티리얼·파티클 일부는 BuildHD2D.py가 먼저 써 둔 HD2D 공용 것을 쓴다)
 #   --views: 확인용 변형(커밋하지 않음) — Scenes/Demo/_HD2DCave_<방>.escene(시작 자리만 다름), _HD2DCave_Over<이름>.escene(흐림 끈 자유 시점),
-#            _HD2DCaveAutoPlay.escene(자동 검증 — 동굴 전 구간 + 메인 맵 귀환·엔딩), _HD2DCaveShot_<이름>.escene(스크린샷·측정), _HD2DCaveNavBake.escene(내비메시 굽기)
-#   --install-nav: 구운 _HD2DCaveNavBake.enav → Scenes/Demo/HD2DCave.enav (순서는 Docs/Rules/DataAndDemos.md HD2D 동굴 항목)
+#            _HD2DCaveAutoPlay.escene(자동 검증 — 동굴 전 구간 + 메인 맵 귀환·엔딩), _HD2DCaveShot_<이름>.escene(스크린샷·측정)
+#   내비메시: 씬 그대로 굽는다 — .\Scripts\Verify.ps1 -Target Editor -Config Release -Frames 30 -ExtraArgs "--scene Scenes/Demo/HD2DCave.escene --bake-navmesh" (.enav만 커밋)
 #   게임: 적·보물·보스·문·함정 자리는 HD2DCaveLayout.py → HD2DGameplay.FMapLayout("Cave") → AddGame (타이틀 없음 — 바로 플레이),
 #         던전 장치는 Scripts/Demo/HD2D/HD2DDungeon.lua, 보스는 HD2DSpiderQueen.lua. 데이터 표·UI·프리팹은 BuildHD2D.py와 같은 HD2DGameplay.WriteAll
 #   규약: 메인 맵과 같은 고정 원근 디오라마 카메라(+Y 위에서 -Y를 봄, 피치 -28·시야각 24). 동굴 벽은 안쪽(-Y)으로 높이 솟고
@@ -717,24 +717,7 @@ def WriteMinimap():
 	HD2DMapArt.WriteMinimap(CONTENT, MINIMAP, Classify)
 
 
-def NavBakeHeight(Height):
-	# 굽기용 바닥 판: 걷는 방 안(벽 경사 시작 전)만 — 바깥 벽 위·낭떠러지는 비운다 (WaterBelow 아래 = 빈칸)
-	def Sample(X, Y):
-		return Height(X, Y) if float(WalkDistance(np.array(X), np.array(Y))) < 30.0 else -1.0e4
-	return Sample
-
-
-def InstallNav():
-	import shutil
-	Root = os.path.join(CONTENT, "Scenes", "Demo")
-	shutil.copyfile(os.path.join(Root, "_HD2DCaveNavBake.enav"), os.path.join(Root, "HD2DCave.enav"))
-	print("Scenes/Demo/HD2DCave.enav 설치")
-
-
 def Main_():
-	if "--install-nav" in sys.argv:
-		InstallNav()
-		return
 	X, Y, H, D = BuildHeights()
 	Weights, Stack = BuildWeights(X, Y, H, D)
 	WriteTerrain(os.path.join(CONTENT, "Terrain", "Demo", "HD2DCave.eterrain"), H, Weights)
@@ -760,7 +743,6 @@ def Main_():
 		for Name, (Start, Scenario) in AUTO_SCENES.items():
 			Variant, _ = BuildScene(Sampler, Start, AutoPlay=Scenario)
 			Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", f"_HD2DCave{Name}.escene"))
-		HD2DGameplay.WriteNavBake(CONTENT, Scene, NavBakeHeight(Sampler), Layout.PLAY_MIN, Layout.PLAY_MAX, CAVE_PATH, "_HD2DCaveNavBake", 50.0)
 		print("확인용 변형: Scenes/Demo/_HD2DCave_*.escene, _HD2DCaveAutoPlay.escene, _HD2DCaveShot_*.escene (커밋하지 않음)")
 
 

@@ -1,18 +1,15 @@
 # HD-2D 데모 맵 게임플레이 콘텐츠 (BuildHD2D.py가 부른다 — 배경·조명·카메라는 BuildHD2D.py, 여기는 게임에 쓰이는 것만):
 #   데이터 표(Data/Demo/HD2D — 무기·아이템(장비 포함)·적·마을 사람·퀘스트·서브 퀘스트·밸런스), 게임 UI(UI/Demo/HD2D/HUD.eui + 창틀·아이콘·초상화),
 #   프리팹(Prefabs/Demo/HD2D — 플레이어·적 5종 + 동굴 변형 2종·보스 2종(골렘·수정 거미 여왕)·효과 조각·보물상자·마을 사람·소품), 씬 배치(게임 관리자 속성 + HUD + 내비메시 + 플레이어),
-#   자동 검증 시나리오 변형(--views), 내비메시 굽기용 씬(WriteNavBakeScene).
+#   자동 검증 시나리오 변형(--views).
 #   전투 깊이(약점·실드·브레이크·스킬·상태 이상·정예·동료 엘라)의 표 필드·HUD 위젯·도트 아트·프리팹은 HD2DCombatGen.py — 여기서는 그 함수를 부르기만 한다.
 #   규약: 좌표·카메라는 BuildHD2D.py 머리 주석과 같다 (화면 오른쪽 = +X, 화면 안쪽 = -Y, 스프라이트는 XZ 평면 + 앞면 +Y, 1 도트 = 6cm).
 #         적·보물상자·마을 사람·소품은 게임 관리자(HD2DGame.lua)가 시작할 때 프리팹으로 만든다 — 자리는 여기서 지면 높이까지 계산해 속성 문자열로 넘긴다.
 #         수치(무기 피해·적 체력·가격·대사)는 데이터 표에 있고 스크립트는 HD2DData.lua로만 읽는다.
 #   다른 맵(동굴 등)의 생성기도 쓴다: FMapLayout(맵 id + 적/마을 사람/상자/소품/보스 목록) → AddGame(S, Height, Path, AutoPlay, Layout=..., NavMesh=...),
 #         AddPlayer(S, Start, Height). 맵 이동 = HD2DTravel.lua 엔티티(트리거 + TargetScene/SpawnName) → 도착 씬의 "Spawn_<SpawnName>" 엔티티(위치 = 발 자리).
-#   내비메시(적 길찾기): 지형은 굽기 입력에 들어가지 않으므로 BuildHD2D.py가 굽기 전용 씬 Scenes/Demo/_HD2DNavBake.escene(지형 높이 바닥 판 + 모델 + 콜라이더 상자)을
-#         쓰고, 다음 순서로 다시 굽는다 (배경·게임 자리를 바꾸면):
-#           python Tools/DemoMap/BuildHD2D.py --views
-#           .\Scripts\Verify.ps1 -Target Editor -Config Release -Frames 30 -ExtraArgs "--scene Scenes/Demo/_HD2DNavBake.escene --bake-navmesh"
-#           python Tools/DemoMap/HD2DGameplay.py --install-nav     (_HD2DNavBake.enav → Scenes/Demo/HD2D.enav — 이것만 커밋)
+#   내비메시(적 길찾기): 엔진 굽기가 지형 + 정적 콜라이더를 넣으므로 씬 그대로 굽는다 (배경·게임 자리를 바꾸면 — .enav만 커밋, 씬 파일은 안 바뀜):
+#           .\Scripts\Verify.ps1 -Target Editor -Config Release -Frames 30 -ExtraArgs "--scene Scenes/Demo/HD2D.escene --bake-navmesh"
 import json
 import math
 import os
@@ -972,39 +969,6 @@ def AddPlayer(S, Start, Height):
 	return Z
 
 
-# ================================================================ 내비메시 굽기용 씬
-def WriteNavBakeScene(Scene, Height, PlayMin, PlayMax, Path, Cell=100.0, WaterBelow=-15.0):
-	# 굽기 입력은 보이는 정적 메시뿐(지형 제외)이므로: 원래 씬의 모델·정적 메시는 그대로, 막는 상자 콜라이더(트리거 아님)는 같은 크기 큐브로,
-	#   지형은 놀이 영역을 Cell 칸 판(위 = 지면 높이)으로 깐다 (물 — 지면이 WaterBelow 아래인 칸 — 은 비운다).
-	#   스크립트·스프라이트·조명·지형·폴리지 등은 뺀다 (엔티티 순서·부모는 그대로 — 스크립트 하위 메시는 굽기가 어차피 뺀다)
-	Keep = ("TransformComponent", "ModelComponent", "StaticMeshComponent")
-	Entities = []
-	for E in Scene.Entities:
-		Comps = {K: V for K, V in E["Components"].items() if K in Keep}
-		Box = E["Components"].get("BoxColliderComponent")
-		if Box and not Box.get("IsTrigger") and "ModelComponent" not in Comps and "StaticMeshComponent" not in Comps:
-			T = dict(Comps["TransformComponent"])
-			T["Scale"] = [V / 50.0 for V in Box["HalfExtents"]]  # 내장 큐브 = 100cm
-			Comps["TransformComponent"] = T
-			Comps["StaticMeshComponent"] = {"MeshAsset": "primitive:cube", "MaterialAsset": "Materials/Demo/HD2D/WoodPost.emat"}
-		Entities.append({"Components": Comps, "Name": E["Name"], "Parent": E["Parent"]})
-	Count = 0
-	X = PlayMin[0] + Cell * 0.5
-	while X < PlayMax[0]:
-		Y = PlayMin[1] + Cell * 0.5
-		while Y < PlayMax[1]:
-			H = Height(X, Y)
-			if H >= WaterBelow:
-				Entities.append({"Name": "NavGround", "Parent": -1, "Components": {
-					"TransformComponent": Transform((X, Y, H - 10.0), None, (Cell / 100.0 + 0.02, Cell / 100.0 + 0.02, 0.2)),
-					"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": "Materials/Demo/HD2D/WoodPost.emat"}}})
-				Count += 1
-			Y += Cell
-		X += Cell
-	Entities.append({"Name": "NavMesh", "Parent": -1, "Components": {"TransformComponent": Transform(), "NavMeshComponent": dict(NAV_SETTINGS, NavMeshAsset="")}})
-	return {"Entities": Entities, "Version": 1}, Count
-
-
 def WriteAll(Content, CameraDistance, PlayMin, PlayMax):
 	WriteData(Content)
 	WriteUi(Content)
@@ -1013,22 +977,7 @@ def WriteAll(Content, CameraDistance, PlayMin, PlayMax):
 	HD2DCombatGen.WriteAll(Content, sys.modules[__name__])  # 전투 효과·아이콘·동료 도트 아트 + 동료 프리팹
 
 
-def WriteNavBake(Content, Scene, Height, PlayMin, PlayMax, Path, Name="_HD2DNavBake", Cell=100.0):
-	Doc, Count = WriteNavBakeScene(Scene, Height, PlayMin, PlayMax, Path, Cell)
-	_WriteJson(os.path.join(Content, "Scenes", "Demo", f"{Name}.escene"), Doc)
-	print(f"내비메시 굽기용 씬: Scenes/Demo/{Name}.escene (바닥 판 {Count}개) - 머리 주석의 순서로 굽는다")
-
-
 # 메타 시스템 (일시정지 메뉴·저장 슬롯·대장간·도감·지도) — 위 도우미를 쓰므로 맨 끝에서 가져온다
 import HD2DMetaGen  # noqa: E402
 
 SHOT_SCENES.update(HD2DMetaGen.SHOT_SCENES)
-
-
-if __name__ == "__main__":
-	import shutil
-	import sys
-	if "--install-nav" in sys.argv:
-		Root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Projects", "Sample", "Content", "Scenes", "Demo"))
-		shutil.copyfile(os.path.join(Root, "_HD2DNavBake.enav"), os.path.join(Root, "HD2D.enav"))
-		print("Scenes/Demo/HD2D.enav 설치")

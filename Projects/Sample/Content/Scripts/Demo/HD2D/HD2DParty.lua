@@ -1,6 +1,7 @@
 -- HD-2D 데모 관리자 확장 ① 일행·진행 (HD2DGame.lua가 Script.Require로 받아 메서드로 붙인다 — 이 모듈은 상태를 갖지 않는다, 상태는 관리자 self에).
 --   일행: 골드·소지품(아이템 id → 개수)·장비(무기 Equipped / 방어구 Armor / 장신구 Accessory) — 능력치는 플레이어 RecalcStats가 장비에서 다시 계산.
---   진행: 메인 퀘스트 단계(Quests.etable), 서브 퀘스트(SubQuests.etable — 상태 nil → Active → Done, 진행 Count), 연 보물상자(맵:번호), 보스 처치.
+--   진행: 메인 퀘스트 단계(Quests.etable — 촌장 보고 AdvanceOnTalk / 처치 KillGoal / 맵 보스 BossGoal, 보상·새 목표·엔딩은 단계 행),
+--         서브 퀘스트(SubQuests.etable — 상태 nil → Active → Done, 진행 Count), 연 보물상자(맵:번호), 보스 처치(맵별 — 마을은 BossDead, 다른 맵은 Defeated[맵]).
 --   저장(SaveGame 슬롯 Balance.SaveSlot = "HD2D"): BuildSave/ApplySave — 골드·소지품·장비·레벨/경험치/HP/MP/BP·퀘스트·서브 퀘스트·상자·보스·현재 씬·위치.
 --   맵 이동(HD2DTravel.lua → TravelTo): 같은 저장 형식을 세션 슬롯 "HD2D_Session"에 쓰고 Game.SetPersistent("HD2D_Session", true) 후 Game.OpenScene.
 --     도착한 씬의 관리자는 플래그가 있으면 세션을 불러와 "Spawn_<SpawnName>" 엔티티(위치 = 발 자리) 위에 플레이어를 둔다 (플래그는 바로 지움 —
@@ -26,7 +27,20 @@ function Party:InitParty()
 	self.QuestStage, self.QuestKills = 0, 0
 	self.Sub = {}          -- 서브 퀘스트 id → { State = "Active"|"Done", Count = n }
 	self.Opened = {}       -- "맵:번호" → true (연 보물상자)
-	self.BossDead = false
+	self.BossDead = false  -- 마을(들판) 골렘
+	self.Defeated = {}     -- 맵 id → true (마을 밖 맵의 보스 — 동굴 수정 거미 여왕)
+end
+
+-- 이 맵(기본 = 지금 맵)의 보스를 쓰러뜨렸는가
+function Party:IsBossDefeated(Map)
+	Map = Map or self.Properties.Map
+	if Map == "Village" then return self.BossDead == true end
+	return self.Defeated[Map] == true
+end
+
+function Party:SetBossDefeated(Map)
+	Map = Map or self.Properties.Map
+	if Map == "Village" then self.BossDead = true else self.Defeated[Map] = true end
 end
 
 function Party:AddGold(N, bToast)
@@ -170,18 +184,35 @@ function Party:Fanfare()
 end
 
 -- ================================================================ 메인 퀘스트
-function Party:SetQuestStage(Stage)
+-- 촌장에게 말하면 다음 단계로 넘어가는가 (보고 단계 또는 처치 목표를 채움)
+function Party:CanAdvanceByTalk()
+	local Q = D.Quest(self.QuestStage)
+	if not Q or not D.Quest(self.QuestStage + 1) then return false end
+	return Q.AdvanceOnTalk == true or (Q.KillGoal > 0 and self.QuestKills >= Q.KillGoal)
+end
+
+-- 단계 Stage로 (그 행의 보상 → "퀘스트 완료!", NewGoal → "새 목표", Ending → 엔딩·크레딧). bQuietGoal: 새 목표 알림을 부른 쪽이 이미 띄웠다
+function Party:SetQuestStage(Stage, bQuietGoal)
+	local Prev = D.Quest(self.QuestStage)
 	self.QuestStage = Stage
 	local Q = D.Quest(Stage)
-	if Stage == 4 then
-		local B = D.Balance()
-		self:AddGold(B.QuestRewardGold, true)
-		if B.QuestRewardItem ~= "" then self:AddItem(B.QuestRewardItem, 1, true) end
-		self:Hud():Announce("퀘스트 완료!", Q.Title, 3.0)
+	local bReward = Q.RewardGold > 0 or Q.RewardItem ~= ""
+	if bReward then
+		if Q.RewardGold > 0 then self:AddGold(Q.RewardGold, true) end
+		if Q.RewardItem ~= "" then self:AddItem(Q.RewardItem, 1, true) end
+		self:Hud():Announce("퀘스트 완료!", Prev and Prev.Title or Q.Title, 3.0)
 		self:SpawnLevelFx(self:GetPlayer().entity:GetWorldPosition())
 		self:Fanfare()
-	elseif Stage == 2 then
-		self:Hud():Announce("새 목표", Q.Objective, 2.5)
+	end
+	if Q.NewGoal and not bQuietGoal then
+		if bReward then
+			Timer.After(3.2, function() self:Hud():Announce("새 목표", Q.Objective, 2.8) end, { Unscaled = true })
+		else
+			self:Hud():Announce("새 목표", Q.Objective, 2.5)
+		end
+	end
+	if Q.Ending then
+		Timer.After(2.6, function() self:OpenEnding() end, { Unscaled = true })
 	end
 	self:RefreshQuest()
 	Log.Info(string.format("[HD2D] 퀘스트 단계 %d: %s", Stage, Q.Objective))
@@ -302,8 +333,14 @@ function Party:BuildSave(Pos)
 		Gold = self.Gold, Items = Items, Equipped = self.Equipped, Armor = self.Armor or "", Accessory = self.Accessory or "",
 		Level = Player and Player.Level or 1, Exp = Player and Player.Exp or 0, Health = Player and Player.Health or 1, Mana = Player and Player.Mana or 0,
 		BP = Player and Player.BP or 1, QuestStage = self.QuestStage, QuestKills = self.QuestKills, Sub = Sub, Opened = Opened,
-		BossDead = self.BossDead, PlayTime = (self.PlayTime or 0),
+		BossDead = self.BossDead, Defeated = self:CopyDefeated(), PlayTime = (self.PlayTime or 0),
 	}
+end
+
+function Party:CopyDefeated()
+	local T = {}
+	for K, V in pairs(self.Defeated or {}) do T[K] = V end
+	return T
 end
 
 function Party:ApplySave(Data)
@@ -319,6 +356,8 @@ function Party:ApplySave(Data)
 	self.Opened = {}
 	for K, V in pairs(Data.Opened or {}) do self.Opened[K] = V end
 	self.BossDead = Data.BossDead == true
+	self.Defeated = {}
+	for K, V in pairs(Data.Defeated or {}) do self.Defeated[K] = V == true end
 	self.PlayTime = Data.PlayTime or 0
 	self.PendingPlayer = Data -- 플레이어 OnStart가 아직이면 거기서 적용
 	local Player = self:GetPlayer()
@@ -346,8 +385,9 @@ function Party:StateSignature()
 		for _, K in ipairs(Keys) do Parts[#Parts + 1] = Fmt(K, T[K]) end
 		return table.concat(Parts, ",")
 	end
-	return string.format("G=%d;L=%d;E=%d;W=%s;A=%s;C=%s;Q=%d/%d;Boss=%s;I=%s;S=%s;O=%s", self.Gold, Player and Player.Level or 0, Player and Player.Exp or 0,
+	return string.format("G=%d;L=%d;E=%d;W=%s;A=%s;C=%s;Q=%d/%d;Boss=%s;D=%s;I=%s;S=%s;O=%s", self.Gold, Player and Player.Level or 0, Player and Player.Exp or 0,
 		self.Equipped, self.Armor or "-", self.Accessory or "-", self.QuestStage, self.QuestKills, tostring(self.BossDead),
+		Sorted(self.Defeated or {}, function(K) return K end),
 		Sorted(self.Items, function(K, V) return K .. ":" .. V end), Sorted(self.Sub, function(K, V) return K .. ":" .. V.State .. ":" .. V.Count end),
 		Sorted(self.Opened, function(K) return K end))
 end

@@ -7,7 +7,11 @@
 --                  → 리나 보고(목걸이) → 촌장 보고(퀘스트 2) → 대장장이 보고(판금 갑옷 장비) → 게시판 저장 → 맵 이동 트리거(같은 씬)
 --     ② Travel   : 세션으로 도착(타이틀 없음, Spawn_Test 자리, 상태 일치) → 보스 → 보상 상자 → 촌장(퀘스트 완료) → 저장 → 같은 씬 다시 열기(세션 없음)
 --     ③ Load     : 타이틀(이어하기 가능) → 이어하기 → 저장 상태와 일치·자리 → 결과
---   TitleShot / Inventory / Equip / Shop / Dialog / Combat / Boost / Boss : 스크린샷용 (그 화면에서 머문다)
+--   Cave: 동굴 유적(_HD2DCaveAutoPlay.escene)에서 시작해 두 씬을 잇는다 — 단계 Persistent "HD2D_AutoPhase", 시나리오 "HD2D_AutoScenario"(마을 씬은 속성이 비어 있다)
+--     ① Run    : 타이틀 없이 시작 → (메인 퀘스트 4단계 상태로 꾸밈) → 입구 홀·갈림길·보물 단(수정 검)·복도·호수의 적 정리 → 구덩이 막힘 → 가시 함정 건너기
+--                → 보스 방(문 닫힘) → 수정 거미 여왕(패턴 3종 이상·2단계·잔상) → 문 열림·보상 상자·제단 상자(수정 부적) → 퀘스트 5단계 → 동굴 출구 트리거
+--     ② Return : 메인 맵 Spawn_CaveExit 도착(세션 상태 일치) → 촌장 보고(6단계) → 엔딩·크레딧 → 결과
+--   TitleShot / Inventory / Equip / Shop / Dialog / Combat / Boost / Boss / CaveCombat / CaveBoss / CaveTrap : 스크린샷·측정용 (그 화면에서 머문다)
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
 local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
 
@@ -20,9 +24,9 @@ function AutoPilot.New(Scenario, Player, GM)
 	local A = setmetatable({ Scenario = Scenario, Player = Player, GM = GM, Time = 0, Frame = 0, Failures = {}, Checks = 0, Teleports = 0,
 	                         DamageTakenScale = Scenario == "Full" and 0.35 or 0.25, PotionTimer = 0 }, AutoPilot)
 	local Name = Scenario
-	if Scenario == "Full" then
-		A.Phase = Game.GetPersistent("HD2D_AutoPhase", "Main")
-		Name = "Full" .. A.Phase
+	if Scenario == "Full" or Scenario == "Cave" then
+		A.Phase = Game.GetPersistent("HD2D_AutoPhase", Scenario == "Full" and "Main" or "Run")
+		Name = Scenario .. A.Phase
 		-- 앞 단계의 실패·확인 수를 잇는다
 		local Prev = Game.GetPersistent("HD2D_AutoFailures", "")
 		for Item in string.gmatch(Prev, "[^|]+") do A.Failures[#A.Failures + 1] = Item end
@@ -39,7 +43,7 @@ function AutoPilot.New(Scenario, Player, GM)
 end
 
 function AutoPilot:Note(Text)
-	Log.Info(string.format("[HD2D] 자동 %s %.1fs: %s", self.Phase and ("Full/" .. self.Phase) or self.Scenario, self.Time, Text))
+	Log.Info(string.format("[HD2D] 자동 %s %.1fs: %s", self.Phase and (self.Scenario .. "/" .. self.Phase) or self.Scenario, self.Time, Text))
 end
 
 function AutoPilot:Expect(bOk, What)
@@ -78,6 +82,7 @@ function AutoPilot:Finish()
 	if self.bFinished then return end
 	self.bFinished = true
 	Game.SetPersistent("HD2D_AutoPhase", nil)
+	Game.SetPersistent("HD2D_AutoScenario", nil)
 	local P = self.Player
 	self.GM:ReportAutoPlay(self.Failures, string.format("%.0f초, 확인 %d건, 순간이동 %d회, 이동 %.0fcm, 공격 %d(명중 %d), 대시 %d, 피격 %d, 쓰러짐 %d, Lv %d, 경로 %d",
 		self.Time, self.Checks, self.Teleports, P.Stats.Distance, P.Stats.Attacks, P.Stats.Hits, P.Stats.Dashes, P.Stats.Damaged, P.Stats.Deaths, P.Level,
@@ -137,7 +142,7 @@ function AutoPilot:Route(From, To)
 	end
 	local Path = {}
 	for _, P in ipairs(self.GM.Path) do
-		if P.X > -1400 then Path[#Path + 1] = P end -- 광장 가운데(우물)는 건너뛴다
+		if P.X > -1400 or self.GM.Properties.Map ~= "Village" then Path[#Path + 1] = P end -- 마을: 광장 가운데(우물)는 건너뛴다
 	end
 	if #Path == 0 or math.abs(From.X - To.X) < 900 then return { To } end
 	local function Nearest(V)
@@ -192,7 +197,11 @@ end
 function AutoPilot:GoTo(Target, Radius, Timeout, Label)
 	local Deaths = self.Player.Stats.Deaths
 	local Until = self.Time + (Timeout or 50)
+	local Nav0 = self.NavRoutes or 0
 	local Route = self:Route(self:Pos(), Target)
+	if self.Scenario == "Cave" and Label then
+		self:Note(string.format("길 %s: %d점 (%s)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path"))
+	end
 	local Index = 1
 	self.StuckTotal, self.StuckClock, self.StuckFrom = 0, 0, nil
 	while Index <= #Route do
@@ -305,6 +314,13 @@ function AutoPilot:Engage(Target, bBoost)
 		if Target.State == "ChargeWindup" or L < 330 then self.In.Dash = P.DashCooldown <= 0 and self.Frame % 2 == 0 end
 		return
 	end
+	-- 수정 거미 여왕: 덮치기 예고면 옆으로 비켜 대시, 수정 가시 경고 원 안이면 밖으로
+	if Target.bBoss and Target.State == "PounceWindup" and Target.Timer < 0.35 then
+		self.In.Move = Vector3(-Dir.Y, Dir.X, 0)
+		self.In.Dash = P.DashCooldown <= 0
+		return
+	end
+	if self:DodgeEruptions() then return end
 	if L > Want + 50 then
 		self:MoveToward(Target.entity:GetWorldPosition())
 	elseif (W.Kind == "Arrow" or W.Kind == "Bolt") and L < Want - 220 then
@@ -360,6 +376,19 @@ function AutoPilot:Fight(Kind, WeaponId, Count, Timeout, bBoost, Near, Done)
 		self:Yield()
 	end
 	return self:Expect(true, string.format("%s 처치 (%s)", Kind, WeaponId or "-"))
+end
+
+-- 곧 솟을 수정 가시 경고 원 안이면 바깥으로 (이번 프레임 이동을 정했으면 true)
+function AutoPilot:DodgeEruptions()
+	local Pos = self:Pos()
+	for _, R in ipairs(self.GM.Eruptions or {}) do
+		local Away = Flat(Pos - R.Pos)
+		if Away:Length() < R.Radius + 50 then
+			self.In.Move = Away:Length() > 1 and Away:Normalized() or Vector3(1, 0, 0)
+			return true
+		end
+	end
+	return false
 end
 
 function AutoPilot:NearestPickup(MaxDist)
@@ -655,7 +684,7 @@ function AutoPilot:RunFullTravel()
 	-- 촌장 보고 → 완료 → 저장 → 같은 씬 다시 열기 (세션 없음 = 타이틀)
 	self:TalkToNpc("Elder")
 	self:TalkThrough()
-	self:Expect(GM.QuestStage == 4, "퀘스트 완료")
+	self:Expect(GM.QuestStage == 4 and D.Quest(4).BossGoal == "Cave", "골렘 보고 → 퀘스트 4단계 (동굴 유적 탐사)")
 	self:SaveAtBoard()
 	local Board = self:FindProp("SavePoint")
 	Game.SetPersistent("HD2D_AutoExpect", GM:StateSignature())
@@ -685,6 +714,231 @@ function AutoPilot:RunFullLoad()
 	self:Expect(GM.BossDead and GM.QuestStage == 4, "보스·퀘스트 진행 유지")
 	-- 전체 기록 (마지막 씬의 보고는 이번 씬 것뿐이라 처치·명중 같은 누적은 앞 단계에서 확인했다)
 	self:Expect(self.Player.Level >= 3, "레벨 (Lv " .. self.Player.Level .. ")")
+	self:Finish()
+	self:Idle()
+end
+
+-- ================================================================ Cave ① Run (동굴 유적 — 입구에서 보스·출구까지)
+-- 메인 퀘스트에서 동굴로 온 상태로 꾸민다: 골렘 보고 뒤(4단계), 레벨·장비·회복약
+function AutoPilot:CaveLoadout()
+	local GM, P = self.GM, self.Player
+	for _, Id in ipairs({ "Spear", "Bow", "Staff", "KnightPlate", "SwiftCharm" }) do GM:AddItem(Id, 1, false) end
+	GM:AddItem("Potion", 4, false)
+	GM:AddItem("HiPotion", 3, false)
+	GM:AddItem("Ether", 3, false)
+	GM.Armor, GM.Accessory = "KnightPlate", "SwiftCharm"
+	GM.QuestStage, GM.BossDead = 4, true
+	GM:RefreshQuest()
+	P:AddExp(D.Balance().ExpTable[5] or 0)
+	P:RecalcStats()
+	P.Health, P.Mana, P.BP = P.MaxHealth, P.MaxMana, 3
+	self:Note(string.format("동굴 시작 상태: 퀘스트 4단계, Lv %d, HP %d", P.Level, P.MaxHealth))
+end
+
+function AutoPilot:TotalKills()
+	local N = 0
+	for _, K in pairs(self.GM.Report.Kills) do N = N + K end
+	return N
+end
+
+-- Center 둘레 Radius 안 적(보스 제외)을 모두 쓰러뜨린다 (먼저 Center로 간다)
+function AutoPilot:ClearArea(Center, Radius, Timeout, WeaponId, Label)
+	local GM = self.GM
+	if WeaponId then self:EquipBySwitch(WeaponId) end
+	local Kills0 = self:TotalKills()
+	local Until = self.Time + Timeout
+	self:GoTo(Center, 220, Timeout * 0.5, Label)
+	self.StuckTotal, self.StuckClock, self.StuckFrom = 0, 0, nil
+	while true do
+		local Target = GM:NearestEnemy(Center, Radius, function(S) return not S.bBoss end)
+		if not Target then break end
+		if self.Time > Until then
+			return self:Expect(false, string.format("%s 적 정리 (%.0f초 안, 남은 %s)", Label, Timeout, Target.Kind))
+		end
+		if not GM:IsMenuOpen() then
+			local Pick = self:NearestPickup(700)
+			local TargetDist = Flat(Target.entity:GetWorldPosition() - self:Pos()):Length()
+			if Pick and TargetDist > 300 then self:MoveToward(Pick.Pos) else self:Engage(Target, true) end
+			self:Survive()
+		end
+		self:Yield()
+	end
+	-- 떨어진 전리품 줍기 (잠깐)
+	local PickUntil = self.Time + 4.0
+	while self.Time < PickUntil do
+		local Pick = self:NearestPickup(600)
+		if not Pick then break end
+		if not GM:IsMenuOpen() then self:MoveToward(Pick.Pos) end
+		self:Yield()
+	end
+	return self:Expect(true, string.format("%s 적 정리 (처치 %d)", Label, self:TotalKills() - Kills0))
+end
+
+-- 구덩이: 다리 밖으로 걸어 들어가려 하면 막힌다 (떨어지지 않음)
+function AutoPilot:CheckPitBlocked()
+	self:GoTo(Vector3(470, 240, 0), 60, 40, "구덩이 앞 (다리 밖)")
+	local Until = self.Time + 1.6
+	while self.Time < Until do
+		self.In.Move = Vector3(1, 0, 0)
+		self:Yield()
+	end
+	local Pos = self:Pos()
+	self:Expect(Pos.X < 680 and Pos.Z > -60, string.format("구덩이 낙하 막힘 (x %.0f, z %.0f)", Pos.X, Pos.Z))
+end
+
+-- 가시 함정 줄 건너기: 앞에서 솟는 것을 한 번 본 뒤, 마지막 판까지 막 내려간 때 달려 건넌다 (Dir = 1 동쪽, -1 서쪽)
+function AutoPilot:CrossTraps(Dir)
+	local GM = self.GM
+	local First, Last = GM.Traps[1], GM.Traps[#GM.Traps]
+	local Near, Far = Dir > 0 and First or Last, Dir > 0 and Last or First
+	local StandX = Near.Pos.X - Dir * (Near.HX + 110)
+	local GoalX = Far.Pos.X + Dir * (Far.HX + 160)
+	self:GoTo(Vector3(StandX, 0, 0), 50, 40, "함정 앞")
+	local Rises0, Hits0 = GM.Report.TrapRises, GM.Report.TrapHits
+	self:WaitUntil(function() return GM.Report.TrapRises > Rises0 end, 8)
+	self:WaitUntil(function()
+		local State, Age = GM:TrapState(Last)
+		return State == "Down" and Age < 0.25
+	end, 8)
+	self:GoTo(Vector3(GoalX, 0, 0), 60, 10, "함정 건너편")
+	self:Expect(GM.Report.TrapRises > Rises0 and GM.Report.TrapHits == Hits0,
+		string.format("가시 함정 회피 (%s쪽, 솟음 %d번 관찰, 건너는 동안 찔림 %d)", Dir > 0 and "동" or "서", GM.Report.TrapRises - Rises0, GM.Report.TrapHits - Hits0))
+end
+
+function AutoPilot:PatternsSeen()
+	local Seen = 0
+	for Name, N in pairs(self.GM.Report.BossPatterns) do
+		if N > 0 and Name ~= "Summon" then Seen = Seen + 1 end
+	end
+	return Seen
+end
+
+function AutoPilot:RunCaveRun()
+	local GM, P = self.GM, self.Player
+	self:Wait(0.6)
+	self:Expect(GM.Properties.Map == "Cave" and GM.Menu == nil and GM.Mode == "Play" and Game.GetTimeScale() == 1, "동굴 직접 시작: 타이틀 없이 바로 플레이")
+	self:Expect(#GM.Slots == 12 and #GM.Chests == 3 and #GM.Traps == 4 and GM.Gate ~= nil and GM.BossPos ~= nil,
+		string.format("동굴 배치 (적 %d, 상자 %d, 함정 %d, 문 %s)", #GM.Slots, #GM.Chests, #GM.Traps, tostring(GM.Gate ~= nil)))
+	self:Expect(GM.QuestStage == 0 and not GM:IsBossDefeated(), "세션 없이 열면 기본 상태")
+	self:CaveLoadout()
+
+	-- 1 입구 홀 (약한 적) → 2 갈림길 (궁수·독버섯) → 보물 단 (궁수 + 숨은 상자: 수정 검)
+	self:ClearArea(Vector3(-2400, -150, 0), 900, 70, "Sword", "입구 홀")
+	self:ClearArea(Vector3(-850, -80, 0), 850, 60, "Spear", "갈림길")
+	self:ClearArea(Vector3(-850, -1180, 0), 650, 60, "Bow", "보물 단")
+	self:OpenChestAt(1)
+	self:Expect(GM:Count("CrystalSword") == 1, "수정 검 획득 (보물 단 상자)")
+	self:EquipFromMenu("CrystalSword")
+
+	-- 3 함정 복도: 다리 밖 구덩이 막힘 → 박쥐(활) → 다리 → 가시 함정
+	self:CheckPitBlocked()
+	self:ClearArea(Vector3(200, 0, 0), 900, 60, "Bow", "복도 서쪽")
+	self:GoTo(Vector3(1250, 0, 0), 80, 40, "다리 건너편")
+	self:ClearArea(Vector3(1250, 0, 0), 1100, 60, "Bow", "함정 앞 박쥐")
+	self:CrossTraps(1)
+
+	-- 4 수정 호수 (강한 혼합) + 물가 상자
+	self:ClearArea(Vector3(2450, 0, 0), 900, 80, "CrystalSword", "수정 호수")
+	self:OpenChestAt(2)
+
+	-- 5 보스 방: 들어서면 문이 닫힌다 → 수정 거미 여왕
+	self:GoTo(Vector3(Scene.Find("Spawn_BossDoor"):GetWorldPosition().X, -150, 0), 120, 40, "보스 방 앞")
+	self:GoTo(Vector3(3520, -320, 0), 80, 30, "보스 방 안")
+	self:WaitUntil(function() return GM:IsGateClosed() end, 3)
+	self:Expect(GM:IsGateClosed(), "보스 방 입장 → 문 닫힘")
+	self:EquipBySwitch("Spear")
+	local Until = self.Time + 150
+	local HoldUntil = nil
+	while not GM.bBossDead and self.Time < Until do
+		local Boss = GM:NearestEnemy(self:Pos(), 3000, function(S) return S.bBoss end)
+		if not GM:IsMenuOpen() then
+			local Seen = self:PatternsSeen()
+			if Boss and Boss.Phase == 2 and Seen < 3 and HoldUntil == nil then
+				HoldUntil = self.Time + 15
+				self:Note(string.format("보스 패턴 관찰 대기 (본 패턴 %d)", Seen))
+			end
+			if Boss and HoldUntil and Seen < 3 and self.Time < HoldUntil then
+				-- 공격을 멈추고 거리를 둔다 (패턴을 더 본다)
+				if not self:DodgeEruptions() then
+					local L = Flat(self:Pos() - Boss.entity:GetWorldPosition()):Length()
+					if L < 600 then self:MoveToward(GM.Arena.Pos + Vector3(-450, 350, 0)) end
+				end
+			elseif Boss then
+				self:Engage(Boss, true)
+			else
+				self:MoveToward(GM.BossPos) -- 잠든 보스는 목록에 없다 → 다가가 깨운다
+			end
+			self:Survive()
+		end
+		self:Yield()
+	end
+	self:Expect(GM.bBossDead and GM:IsBossDefeated("Cave"), "수정 거미 여왕 처치")
+	self:Expect(self:PatternsSeen() >= 3, "보스 패턴 3종 이상 (" .. self:PatternsSeen() .. ")")
+	self:Expect((GM.Report.BossPatterns.Summon or 0) >= 1, "보스 2단계 (격노·소환)")
+	self:Expect(GM.Report.Afterimages > 0 and GM.Report.Eruptions > 0, string.format("덮치기 잔상 %d, 수정 가시 %d", GM.Report.Afterimages, GM.Report.Eruptions))
+	self:Expect(GM.QuestStage == 5, "퀘스트 5단계 (마을로 보고)")
+	self:WaitUntil(function() return GM.Gate.State == "Open" end, 4)
+	self:Expect(GM.Gate.State == "Open" and GM.Report.GateOpens >= 1, "보스 처치 → 문 열림")
+	self:Wait(1.2)
+	-- 남은 소환 슬라임 정리 → 보상 상자 → 제단 옆 상자 (수정 부적)
+	self:ClearArea(GM.BossPos, 900, 40, "CrystalSword", "보스 방")
+	self:OpenChestAt(#GM.Chests)
+	self:Expect(GM.Opened["Cave:Boss"] == true, "보스 보상 상자")
+	self:OpenChestAt(3)
+	self:Expect(GM:Count("CrystalCharm") == 1, "수정 부적 획득 (제단 옆 상자)")
+	self:EquipFromMenu("CrystalCharm")
+	self:Expect(GM.Report.Chests == 4, "동굴 상자 4개 (보물 3 + 보상)")
+
+	-- 6 출구로: 함정을 다시 건너 입구 홀 서쪽 이동 트리거 → 메인 맵
+	self:CrossTraps(-1)
+	self:HandOff("Return")
+	Game.SetPersistent("HD2D_AutoScenario", "Cave")
+	local Trigger = Scene.Find("CaveExit_Travel")
+	local Target = Trigger:GetWorldPosition() + Vector3(-60, 0, 0)
+	local Route = self:Route(self:Pos(), Target)
+	local Index, Until = 1, self.Time + 80
+	while GM.Mode ~= "Travel" and self.Time < Until do
+		-- 트리거 상자에 들어서는 순간 맵 이동이 시작된다 (도착 반경을 기다리지 않는다)
+		local WP = Route[math.min(Index, #Route)]
+		if Index < #Route and Flat(WP - self:Pos()):Length() < 90 then Index = Index + 1 end
+		if not GM:IsMenuOpen() then self:MoveToward(WP) end
+		self:Survive()
+		self:Yield()
+	end
+	self:Expect(GM.Mode == "Travel", "동굴 출구 → 맵 이동 시작")
+	Game.SetPersistent("HD2D_AutoExpect", GM:StateSignature())
+	Game.SetPersistent("HD2D_AutoFailures", table.concat(self.Failures, "|"))
+	Game.SetPersistent("HD2D_AutoChecks", self.Checks)
+	Game.SetPersistent("HD2D_AutoTime", self.Time)
+	self:Idle()
+end
+
+-- ================================================================ Cave ② Return (메인 맵 도착 → 촌장 보고 → 엔딩)
+function AutoPilot:RunCaveReturn()
+	local GM = self.GM
+	self:Wait(0.6)
+	self:Expect(GM.Properties.Map == "Village" and GM.Menu == nil and GM.Mode == "Play", "메인 맵 도착: 타이틀 없음")
+	local Spawn = Scene.Find("Spawn_CaveExit")
+	self:Expect(Spawn ~= nil and Flat(self:Pos() - Spawn:GetWorldPosition()):Length() < 150, "도착 자리 = Spawn_CaveExit (폭포 옆 동굴 입구 앞)")
+	local Expect = Game.GetPersistent("HD2D_AutoExpect", "")
+	local Now = GM:StateSignature()
+	if not self:Expect(Now == Expect, "세션 상태 유지 (동굴 → 마을)") then
+		self:Note("기대 " .. Expect)
+		self:Note("실제 " .. Now)
+	end
+	self:Expect(GM.QuestStage == 5 and GM:IsBossDefeated("Cave") and GM:IsEquipped("CrystalSword"), "동굴 진행 유지 (퀘스트 5단계, 여왕 처치, 수정 검)")
+	self:TalkToNpc("Elder")
+	self:TalkThrough()
+	self:Expect(GM.QuestStage == D.FinalQuestStage(), "촌장 보고 → 마지막 단계")
+	self:WaitUntil(function() return GM.Menu == "Ending" end, 8)
+	self:Expect(GM.Menu == "Ending" and GM:Hud():W("EndingScreen").Visible, "엔딩·크레딧 화면")
+	local Until = self.Time + 40
+	while GM.Menu == "Ending" and self.Time < Until do
+		self:Wait(1.3)
+		if GM.Menu == "Ending" then self:Press("Confirm") end
+	end
+	self:Wait(0.5)
+	self:Expect(GM.Menu == nil and GM.Mode == "Play" and Game.GetTimeScale() == 1 and GM.Report.Endings == 1, "엔딩 끝 → 자유 탐험")
 	self:Finish()
 	self:Idle()
 end
@@ -792,6 +1046,67 @@ function AutoPilot:RunBoost()
 		end
 		self:Yield()
 	end
+end
+
+-- 수정 호수 전투가 이어지게 (측정용): 둘레 적이 셋보다 적으면 동굴 적을 돌아가며 더 부른다
+function AutoPilot:RunCaveCombat()
+	self:Wait(0.3)
+	self:CaveLoadout()
+	self:EquipBySwitch("Spear")
+	local Kinds, Next, SpawnTimer = { "CrystalSlime", "CaveBat", "Goblin", "Archer" }, 1, 0
+	local Home = self:Pos()
+	while true do
+		local GM = self.GM
+		SpawnTimer = SpawnTimer - (self.GameDt or 0)
+		local Near = 0
+		for _, S in ipairs(GM:AliveEnemies()) do
+			if not S.bBoss and Flat(S.entity:GetWorldPosition() - Home):Length() < 1300 then Near = Near + 1 end
+		end
+		if Near < 3 and SpawnTimer <= 0 then
+			local A = Next * 2.1
+			GM:SpawnEnemy(Kinds[(Next - 1) % #Kinds + 1], Vector3(Home.X + math.cos(A) * 450, Home.Y - 250 + math.sin(A) * 200, Home.Z + 10))
+			Next, SpawnTimer = Next + 1, 0.6
+		end
+		local Target = GM:NearestEnemy(self:Pos(), 1500, function(S) return not S.bBoss end)
+		if Target and not GM:IsMenuOpen() then self:Engage(Target, true) end
+		if self.Player.Health < self.Player.MaxHealth * 0.5 then self.Player.Health = self.Player.MaxHealth end
+		self:Yield()
+	end
+end
+
+function AutoPilot:RunCaveBoss()
+	self:Wait(0.3)
+	self:CaveLoadout()
+	self:EquipBySwitch("Spear")
+	while true do
+		local Boss = self.GM:NearestEnemy(self:Pos(), 3000, function(S) return S.bBoss end)
+		if not self.GM:IsMenuOpen() then
+			if Boss then
+				if Boss.Health < Boss.Row.MaxHealth * 0.3 then Boss.Health = Boss.Row.MaxHealth * 0.45 end -- 오래 싸우는 장면 유지
+				self:Engage(Boss, true)
+			else
+				self:MoveToward(self.GM.BossPos)
+			end
+			if self.Player.Health < self.Player.MaxHealth * 0.5 then self.Player.Health = self.Player.MaxHealth end
+		end
+		self:Yield()
+	end
+end
+
+function AutoPilot:RunCaveEnding()
+	self:Wait(0.3)
+	self:CaveLoadout()
+	self.GM.QuestStage = 5
+	self.GM:SetQuestStage(6)
+	self:Note("엔딩·크레딧 화면에서 대기")
+	self:Idle()
+end
+
+function AutoPilot:RunCaveTrap()
+	self:Wait(0.3)
+	self:CaveLoadout()
+	self:Note("함정 앞에서 대기")
+	self:Idle()
 end
 
 function AutoPilot:RunBoss()

@@ -43,8 +43,6 @@
     "DashCooldown": 0.5,
     "CritChance": 0.1,
     "CritMultiplier": 1.6,
-    "QuestRewardGold": 300,
-    "QuestRewardItem": "Elixir",
     "StartArmor": "LeatherVest",
     "BoostMax": 5,
     "BoostStart": 1,
@@ -67,6 +65,13 @@
       "그건 이미 가지고 계시잖아요?",
       "또 오세요! 들판에선 몸조심하시고요."
     ],
-    "SaveSlot": "HD2D"
+    "SaveSlot": "HD2D",
+    "EndingPages": [
+      "황혼의 들판|하르트 마을에 다시 아침이 찾아왔다.\n들판의 골렘도, 유적의 여왕도 이제 깊은 잠에 들었다.",
+      "그 뒤의 이야기|아르펜은 낡은 지도를 다시 펼쳤다.\n빛의 들판 너머, 아직 아무도 가 보지 않은 길이 이어져 있었다.",
+      "만든 것들|ProjectE — 자체 C++ / DirectX 12 엔진\nHD-2D 디오라마 · 도트 스프라이트 · 틸트시프트 흐림 · 볼류메트릭 안개",
+      "도트 아트 · 지도|절차 생성 (Tools/DemoMap — HD2DArt · BuildHD2D · BuildHD2DCave)\n3D 키트 KayKit · 질감 Poly Haven (CC0)",
+      "소리|효과음 Kenney (CC0)\n\n플레이해 주셔서 고맙습니다!"
+    ]
   }
 }

@@ -118,18 +118,6 @@
       "Description": "치명타 배율"
     },
     {
-      "Name": "QuestRewardGold",
-      "Type": "Int",
-      "Default": 100,
-      "Description": "퀘스트 완료 골드"
-    },
-    {
-      "Name": "QuestRewardItem",
-      "Type": "String",
-      "Default": "",
-      "Description": "퀘스트 완료 아이템"
-    },
-    {
       "Name": "StartArmor",
       "Type": "String",
       "Default": "",
@@ -202,6 +190,13 @@
       "Type": "String",
       "Default": "HD2D",
       "Description": "저장 슬롯 (SaveGame)"
+    },
+    {
+      "Name": "EndingPages",
+      "Type": "Array",
+      "Default": [],
+      "Description": "엔딩·크레딧 쪽 (제목|본문, 본문 줄바꿈 \\n)",
+      "Element": "String"
     }
   ]
 }

@@ -269,6 +269,23 @@ function Hud:SetTitleSelection(Index, bCanContinue, Info)
 	self:Set("TitleInfo", "Text", Info or "")
 end
 
+-- ---- 엔딩·크레딧 (검은 화면 + 제목 + 본문 — 쪽 페이드는 관리자가 SetEndingAlpha로)
+function Hud:ShowEnding(bShow)
+	self:Show("EndingScreen", bShow, "SelfHitTestInvisible")
+end
+
+function Hud:SetEndingPage(Title, Body, Alpha)
+	self:Set("EndingTitle", "Text", Title)
+	self:Set("EndingBody", "Text", Body)
+	self:SetEndingAlpha(Alpha or 1.0)
+end
+
+function Hud:SetEndingAlpha(Alpha)
+	local A = math.floor(Alpha * 20 + 0.5) / 20
+	self:Set("EndingTitle", "Opacity", A)
+	self:Set("EndingBody", "Opacity", A)
+end
+
 -- 게임 HUD 패널 (타이틀 동안 숨김)
 function Hud:SetHudVisible(bShow)
 	for _, Name in ipairs({ "StatusPanel", "GoldRow", "BoostRow", "WeaponPanel", "QuestPanel", "ToastBox" }) do

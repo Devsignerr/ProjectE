@@ -227,6 +227,38 @@
       }
     },
     {
+      "Name": "CrystalSword",
+      "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
+        "DisplayName": "수정 검",
+        "Kind": "Weapon",
+        "Amount": 0,
+        "Weapon": "CrystalSword",
+        "Icon": "UI/Demo/HD2D/Icons/CrystalSword.png",
+        "Description": "",
+        "Price": 0
+      }
+    },
+    {
+      "Name": "CrystalCharm",
+      "Values": {
+        "DisplayName": "수정 부적",
+        "Kind": "Accessory",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/CrystalCharm.png",
+        "Description": "수정 거미 여왕의 둥지 곁에서 찾은 부적. 차가운 빛이 몸을 감싸 공격을 막아 준다.",
+        "Price": 0,
+        "Defense": 6,
+        "HealthBonus": 20,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.06
+      }
+    },
+    {
       "Name": "Jelly",
       "Values": {
         "Defense": 0,

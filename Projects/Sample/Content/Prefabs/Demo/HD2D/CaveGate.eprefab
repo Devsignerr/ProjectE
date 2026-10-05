@@ -1,0 +1,1093 @@
+{
+  "Entities": [
+    {
+      "Name": "CaveGate",
+      "Parent": -1,
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            600.0,
+            230.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bars",
+      "Parent": 0,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -510.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar0",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -570.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip0",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalBlue.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "4",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -570.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar1",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "5",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -490.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip1",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalViolet.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "6",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -490.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar2",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "7",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -410.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip2",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalBlue.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "8",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -410.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar3",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "9",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -330.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip3",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalViolet.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "10",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -330.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar4",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "11",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -250.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip4",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalBlue.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "12",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -250.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar5",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "13",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -170.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip5",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalViolet.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "14",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -170.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar6",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "15",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -90.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip6",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalBlue.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "16",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -90.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar7",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "17",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -10.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip7",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalViolet.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "18",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -10.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar8",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "19",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            70.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip8",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalBlue.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "20",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            70.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar9",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "21",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            150.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip9",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalViolet.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "22",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            150.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar10",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "23",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            230.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip10",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalBlue.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "24",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            230.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar11",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "25",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            310.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip11",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalViolet.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "26",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            310.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar12",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "27",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            390.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip12",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalBlue.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "28",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            390.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar13",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "29",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            470.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip13",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalViolet.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "30",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            470.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Bar14",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "31",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            550.0,
+            135.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            2.7
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tip14",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/CrystalBlue.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "32",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            550.0,
+            288.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Cross0",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStone.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "33",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            70.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.22
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Cross1",
+      "Parent": 1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStone.emat"
+        },
+        "PrefabLinkComponent": {
+          "Id": "34",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.22
+          ]
+        }
+      }
+    }
+  ],
+  "NextId": 35,
+  "Version": 1
+}

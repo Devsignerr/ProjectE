@@ -1,9 +1,10 @@
 -- HD-2D 데모 관리자 확장 ② 메뉴 (HD2DGame.lua가 Script.Require로 받아 메서드로 붙인다 — 상태는 관리자 self에).
---   Menu: nil | "Title" | "Dialog" | "Inventory" | "Shop" | "Travel". 열려 있는 동안 Game.SetTimeScale(0) — 글자·커서·페이드는 실제 시간.
+--   Menu: nil | "Title" | "Dialog" | "Inventory" | "Shop" | "Travel" | "Ending". 열려 있는 동안 Game.SetTimeScale(0) — 글자·커서·페이드는 실제 시간.
 --   입력은 플레이어 스크립트가 넘긴다 (MenuInput — In: MenuUp/MenuDown/MenuLeft/MenuRight/Confirm/Cancel/Inventory).
 --   대화 줄: "대사" 또는 "이름|초상화 id|대사" (이름이 비면 해설 — 이름표 숨김, 초상화 id = UI/Demo/HD2D/Portraits/<id>.png).
 --   인벤토리 탭: 1 도구(소모품·재료) / 2 장비(무기·방어구·장신구 — 바꿨을 때 능력치 비교 ↑초록 ↓빨강) / 3 퀘스트(메인 + 받은 서브 퀘스트).
 --   상점: Balance.ShopStock, 주인 말 Balance.ShopLines(들어옴/구입/부족/이미 가짐/나감).
+--   엔딩·크레딧: 메인 퀘스트 마지막 단계(Ending)에서 Balance.EndingPages 쪽을 차례로 (쪽마다 페이드, E·J로 넘김) → 끝나면 다시 플레이.
 local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
 
 local Menu = {}
@@ -225,7 +226,8 @@ function Menu:RefreshMenu()
 		if string.sub(Id, 1, 1) == "#" then
 			local QId = string.sub(Id, 2)
 			if QId == "Main" then
-				Lines[I] = { Icon = "UI/Demo/HD2D/Icons/Sword.png", Name = "★ " .. D.Quest(self.QuestStage).Title, Right = self.QuestStage >= 4 and "완료" or "진행 중" }
+				Lines[I] = { Icon = "UI/Demo/HD2D/Icons/Sword.png", Name = "★ " .. D.Quest(self.QuestStage).Title,
+				             Right = self.QuestStage >= D.FinalQuestStage() and "완료" or "진행 중" }
 			else
 				local Q = D.SubQuest(QId)
 				local Giver = D.Npc(Q.Giver)
@@ -257,7 +259,7 @@ function Menu:RefreshMenu()
 		if QId == "Main" then
 			local Q = D.Quest(self.QuestStage)
 			H:SetMenuDetail(Prefix, "UI/Demo/HD2D/Icons/Sword.png", Q.Title, "메인 퀘스트 · 촌장 바르톨로", "목표: " .. self:MainObjective(),
-				self.QuestStage >= 4 and "완료했다" or string.format("단계 %d / 4", self.QuestStage))
+				self.QuestStage >= D.FinalQuestStage() and "완료했다" or string.format("단계 %d / %d", self.QuestStage, D.FinalQuestStage()))
 		else
 			local Q = D.SubQuest(QId)
 			local Giver = D.Npc(Q.Giver)
@@ -331,10 +333,75 @@ function Menu:MenuConfirm()
 	self:RefreshMenu()
 end
 
+-- ================================================================ 엔딩 · 크레딧
+local EndingPageTime = 4.5 -- 쪽마다 (실제 시간 — 확인 버튼으로 넘김)
+
+function Menu:OpenEnding()
+	if self.Menu ~= nil then
+		-- 다른 창(대화 등)이 열려 있으면 닫힐 때까지 미룬다
+		Timer.After(0.5, function() self:OpenEnding() end, { Unscaled = true })
+		return
+	end
+	self.Menu = "Ending"
+	self.Mode = "Ending"
+	self.Ending = { Page = 1, Time = 0.0 }
+	self:SetPaused(true)
+	local H = self:Hud()
+	H:ShowPrompt(nil)
+	H:SetHudVisible(false)
+	H:ShowEnding(true)
+	H:FadeFrom(1.0, 1.0)
+	self:ShowEndingPage()
+	self.Report.Endings = self.Report.Endings + 1
+	Log.Info("[HD2D] 엔딩·크레딧 시작")
+end
+
+function Menu:ShowEndingPage()
+	local Pages = D.Balance().EndingPages or {}
+	local Text = Pages[self.Ending.Page] or ""
+	local Title, Body = string.match(Text, "^([^|]*)|(.*)$")
+	self:Hud():SetEndingPage(Title or "", Body or Text, 0.0)
+end
+
+function Menu:UpdateEnding(UDt, In)
+	local E = self.Ending
+	local Pages = D.Balance().EndingPages or {}
+	E.Time = E.Time + UDt
+	-- 쪽 페이드: 0.6초 들어오고 마지막 0.6초 나간다
+	local Alpha = math.max(0.0, math.min(1.0, E.Time / 0.6, (EndingPageTime - E.Time) / 0.6))
+	self:Hud():SetEndingAlpha(Alpha)
+	if (In.Confirm and E.Time > 0.4) or E.Time >= EndingPageTime then
+		if E.Page >= #Pages then
+			self:CloseEnding()
+			return
+		end
+		E.Page, E.Time = E.Page + 1, 0.0
+		Audio.PlayOneShot(self.Sounds.Move)
+		self:ShowEndingPage()
+	end
+end
+
+function Menu:CloseEnding()
+	self.Menu = nil
+	self.Mode = "Play"
+	self.Ending = nil
+	self:SetPaused(false)
+	local H = self:Hud()
+	H:ShowEnding(false)
+	H:SetHudVisible(true)
+	H:FadeFrom(1.0, 1.0)
+	H:Announce("THE END", "고맙습니다! 들판과 유적을 자유롭게 돌아다닐 수 있다", 3.5)
+	Log.Info("[HD2D] 엔딩·크레딧 끝 → 자유 탐험")
+end
+
 function Menu:MenuInput(In)
 	local UDt = Time.GetUnscaledDelta()
 	if self.Menu == "Travel" then
 		self:UpdateTravel(UDt)
+		return
+	end
+	if self.Menu == "Ending" then
+		self:UpdateEnding(UDt, In)
 		return
 	end
 	if self.Menu == "Dialog" then

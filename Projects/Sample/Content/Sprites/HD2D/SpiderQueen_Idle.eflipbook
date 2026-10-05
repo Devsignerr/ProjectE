@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "SpiderQueen.esprite",
+  "Fps": 2.5,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Idle0"
+    },
+    {
+      "Slice": "Idle1"
+    }
+  ]
+}

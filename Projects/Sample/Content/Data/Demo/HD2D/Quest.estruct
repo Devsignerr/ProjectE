@@ -34,6 +34,42 @@
       "Default": [],
       "Description": "이 단계에서 아직 넘어갈 수 없을 때 촌장 대사",
       "Element": "String"
+    },
+    {
+      "Name": "AdvanceOnTalk",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "촌장에게 말하면 다음 단계로 (보고 단계)"
+    },
+    {
+      "Name": "BossGoal",
+      "Type": "String",
+      "Default": "",
+      "Description": "이 맵 id의 보스를 쓰러뜨리면 다음 단계로 (Village / Cave)"
+    },
+    {
+      "Name": "NewGoal",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "이 단계로 넘어갈 때 \"새 목표\" 알림"
+    },
+    {
+      "Name": "RewardGold",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "이 단계로 넘어갈 때 보상 골드 (앞 단계 완료 보상 — \"퀘스트 완료!\" 알림)"
+    },
+    {
+      "Name": "RewardItem",
+      "Type": "String",
+      "Default": "",
+      "Description": "보상 아이템"
+    },
+    {
+      "Name": "Ending",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "이 단계로 넘어가면 엔딩·크레딧 (Balance.EndingPages)"
     }
   ]
 }

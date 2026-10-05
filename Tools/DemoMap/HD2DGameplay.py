@@ -1,6 +1,6 @@
 # HD-2D 데모 맵 게임플레이 콘텐츠 (BuildHD2D.py가 부른다 — 배경·조명·카메라는 BuildHD2D.py, 여기는 게임에 쓰이는 것만):
 #   데이터 표(Data/Demo/HD2D — 무기·아이템(장비 포함)·적·마을 사람·퀘스트·서브 퀘스트·밸런스), 게임 UI(UI/Demo/HD2D/HUD.eui + 창틀·아이콘·초상화),
-#   프리팹(Prefabs/Demo/HD2D — 플레이어·적 5종·보스·효과 조각·보물상자·마을 사람·소품), 씬 배치(게임 관리자 속성 + HUD + 내비메시 + 플레이어),
+#   프리팹(Prefabs/Demo/HD2D — 플레이어·적 5종 + 동굴 변형 2종·보스 2종(골렘·수정 거미 여왕)·효과 조각·보물상자·마을 사람·소품), 씬 배치(게임 관리자 속성 + HUD + 내비메시 + 플레이어),
 #   자동 검증 시나리오 변형(--views), 내비메시 굽기용 씬(WriteNavBakeScene).
 #   규약: 좌표·카메라는 BuildHD2D.py 머리 주석과 같다 (화면 오른쪽 = +X, 화면 안쪽 = -Y, 스프라이트는 XZ 평면 + 앞면 +Y, 1 도트 = 6cm).
 #         적·보물상자·마을 사람·소품은 게임 관리자(HD2DGame.lua)가 시작할 때 프리팹으로 만든다 — 자리는 여기서 지면 높이까지 계산해 속성 문자열로 넘긴다.
@@ -69,9 +69,13 @@ SHOT_SCENES = {
 
 class FMapLayout:
 	# 맵 하나의 게임 배치 (다른 맵 생성기도 만들어 AddGame에 넘긴다). 목록 형식은 위 상수와 같다
-	def __init__(self, MapId, Npcs=(), Chests=(), Props=(), Enemies=(), Boss=None, Scarecrow=None, Title=False):
+	#   BossKind = 보스 프리팹/적 표 행, BossReward = 보스 보상 상자 내용, Respawn = 쓰러진 적이 다시 나타나는가(던전은 끔),
+	#   Extra = 관리자 속성 추가 (동굴: Traps / Gate / Arena — HD2DDungeon.lua)
+	def __init__(self, MapId, Npcs=(), Chests=(), Props=(), Enemies=(), Boss=None, Scarecrow=None, Title=False, BossKind="Golem",
+				 BossReward="HiPotion*2+Gold*100", Respawn=True, Extra=None):
 		self.MapId, self.Npcs, self.Chests, self.Props, self.Enemies, self.Boss, self.Scarecrow, self.Title = \
 			MapId, list(Npcs), list(Chests), list(Props), list(Enemies), Boss, Scarecrow, Title
+		self.BossKind, self.BossReward, self.Respawn, self.Extra = BossKind, BossReward, Respawn, dict(Extra or {})
 
 
 VILLAGE = FMapLayout("Village", NPCS, CHESTS, PROPS, ENEMY_SLOTS, BOSS, SCARECROW, Title=True)
@@ -84,7 +88,12 @@ ENEMY_CAPSULE = {  # 종류: (반지름, 반높이, 몸 스프라이트 높이(�
 	"Archer":   (32.0, 40.0, 0.0, 205.0, 40.0),
 	"Mushroom": (40.0, 12.0, 0.0, 165.0, 40.0),
 	"Golem":    (95.0, 80.0, 0.0, 450.0, 600.0),
+	# 동굴 (HD2DCave): 변형은 바탕 종류(표의 Look)와 같은 캡슐, 보스 "수정 거미 여왕"
+	"CaveBat":      (30.0, 10.0, 105.0, 185.0, 15.0),
+	"CrystalSlime": (38.0, 4.0, 0.0, 95.0, 30.0),
+	"SpiderQueen":  (90.0, 45.0, 0.0, 380.0, 500.0),
 }
+BOSS_SCRIPTS = {"Golem": "Scripts/Demo/HD2D/HD2DBoss.lua", "SpiderQueen": "Scripts/Demo/HD2D/HD2DSpiderQueen.lua"}
 
 
 def _WriteJson(Path, Doc):
@@ -127,6 +136,11 @@ WEAPONS = [
 	("Staff", {"DisplayName": "현자의 지팡이", "Kind": "Bolt", "Icon": Icon("Staff"), "Description": "마나를 담아 빛의 탄을 쏘는 지팡이. 탄은 부딪히면 터져 주변을 휩쓴다.",
 			   "Damage": 28, "Cooldown": 0.6, "Range": 1100, "Arc": 60, "Knockback": 600, "ProjectileSpeed": 1300, "ManaCost": 8, "Splash": 170,
 			   "HitStop": 0.06, "AttackTime": 0.42, "HitDelay": 0.13, "Flipbook": "Hero_AttackStaff", "Sound": "Audio/RPG/Spin.wav"}),
+	# 동굴 유적 숨은 보물 (갈림길 뒤 보물 단 상자) — 검과 같은 베기 동작
+	("CrystalSword", {"DisplayName": "수정 검", "Kind": "Slash", "Icon": Icon("CrystalSword"),
+					  "Description": "동굴 유적 깊은 곳에 잠들어 있던 푸른 수정 검. 가볍고 날카로워 여행자의 검보다 훨씬 깊게 벤다.",
+					  "Damage": 21, "Cooldown": 0.2, "Range": 165, "Arc": 175, "Knockback": 760, "ProjectileSpeed": 0, "ManaCost": 0, "Splash": 0,
+					  "HitStop": 0.05, "AttackTime": 0.28, "HitDelay": 0.09, "Flipbook": "Hero_Attack", "Sound": "Audio/RPG/Swing1.wav"}),
 ]
 
 def _Gear(Id, Name, Kind, Icon_, Desc, Price, Defense=0, Health=0, Speed=0.0, Crit=0.0):
@@ -160,6 +174,11 @@ ITEMS = [
 	_Gear("LuckyRing", "행운의 반지", "Accessory", "Ring", "붉은 보석이 박힌 반지. 급소를 노리는 눈이 밝아진다.", 110, Crit=0.12),
 	_Gear("SwiftCharm", "질풍의 부적", "Accessory", "Charm", "바람을 담은 푸른 부적. 발걸음이 가벼워진다.", 0, Speed=0.15),
 	_Gear("LifeAmulet", "생명의 목걸이", "Accessory", "Amulet", "리나가 건넨 엄마의 목걸이. 따뜻한 힘이 깃들어 있다.", 0, Defense=2, Health=40),
+	# 동굴 유적 (HD2DCave 보물상자)
+	_Item("CrystalSword", {"DisplayName": "수정 검", "Kind": "Weapon", "Amount": 0, "Weapon": "CrystalSword", "Icon": Icon("CrystalSword"),
+						   "Description": "", "Price": 0}),
+	_Gear("CrystalCharm", "수정 부적", "Accessory", "CrystalCharm", "수정 거미 여왕의 둥지 곁에서 찾은 부적. 차가운 빛이 몸을 감싸 공격을 막아 준다.", 0,
+		  Defense=6, Health=20, Crit=0.06),
 	# 재료·귀중품 (쓰지 않는다 — 서브 퀘스트)
 	_Item("Jelly", {"DisplayName": "슬라임 젤리", "Kind": "Material", "Amount": 0, "Weapon": "", "Icon": Icon("Jelly"),
 					"Description": "슬라임에게서 얻은 탱탱한 젤리. 대장장이가 담금질에 쓴다고 한다.", "Price": 0}),
@@ -186,7 +205,20 @@ ENEMIES = [
 	("Golem", {"DisplayName": "고대의 바위 골렘", "Behavior": "Boss", "MaxHealth": 900, "ContactDamage": 14, "AttackDamage": 24, "MoveSpeed": 170, "AggroRange": 850,
 			   "AttackRange": 340, "AttackCooldown": 1.5, "WindupTime": 0.8, "ProjectileSpeed": 900, "GoldMin": 150, "GoldMax": 150, "Exp": 150,
 			   "DropItem": "Elixir", "DropChance": 1.0, "Radius": 115, "RespawnTime": 0}),
+	# 동굴 유적 (HD2DCave): 변형은 바탕 종류의 그림(Look)에 색(Tint)만 다르다
+	("CaveBat", {"DisplayName": "동굴 흡혈 박쥐", "Behavior": "Flyer", "MaxHealth": 30, "ContactDamage": 8, "AttackDamage": 14, "MoveSpeed": 430, "AggroRange": 1000,
+				 "AttackRange": 460, "AttackCooldown": 1.9, "WindupTime": 0.4, "ProjectileSpeed": 1250, "GoldMin": 3, "GoldMax": 6, "Exp": 11,
+				 "DropItem": "Ether", "DropChance": 0.2, "Radius": 50, "RespawnTime": 14, "Look": "Bat", "Tint": [0.62, 0.92, 1.45, 1.0]}),
+	("CrystalSlime", {"DisplayName": "수정 슬라임", "Behavior": "Hopper", "MaxHealth": 58, "ContactDamage": 13, "AttackDamage": 13, "MoveSpeed": 280, "AggroRange": 750,
+					  "AttackRange": 0, "AttackCooldown": 1.0, "WindupTime": 0.0, "ProjectileSpeed": 0, "GoldMin": 4, "GoldMax": 7, "Exp": 14,
+					  "DropItem": "HiPotion", "DropChance": 0.15, "Radius": 50, "RespawnTime": 14, "Look": "Slime", "Tint": [0.55, 1.05, 1.7, 1.0]}),
+	("SpiderQueen", {"DisplayName": "수정 거미 여왕", "Behavior": "Boss", "MaxHealth": 1500, "ContactDamage": 14, "AttackDamage": 22, "MoveSpeed": 240,
+					 "AggroRange": 780, "AttackRange": 520, "AttackCooldown": 1.35, "WindupTime": 0.7, "ProjectileSpeed": 950, "GoldMin": 220, "GoldMax": 220,
+					 "Exp": 220, "DropItem": "Elixir", "DropChance": 1.0, "Radius": 125, "RespawnTime": 0}),
 ]
+for _, _Row in ENEMIES:
+	_Row.setdefault("Look", "")
+	_Row.setdefault("Tint", [1, 1, 1, 1])
 
 def Portrait(Name):
 	return f"{UI_DIR}/Portraits/{Name}.png"
@@ -234,28 +266,43 @@ SUB_QUESTS = [
 				   "AfterLines": ["올해 밀은 풍년이겠어. 다 자네 덕일세."]}),
 ]
 
+def _Quest(Title, Objective, Lines=(), WaitLines=(), KillGoal=0, AdvanceOnTalk=False, BossGoal="", NewGoal=False, RewardGold=0, RewardItem="",
+		   Ending=False):
+	return {"Title": Title, "Objective": Objective, "KillGoal": KillGoal, "Lines": list(Lines), "WaitLines": list(WaitLines), "AdvanceOnTalk": AdvanceOnTalk,
+			"BossGoal": BossGoal, "NewGoal": NewGoal, "RewardGold": RewardGold, "RewardItem": RewardItem, "Ending": Ending}
+
+
+# 메인 퀘스트: 마을(촌장) → 들판 마물 → 골렘(들판 보스) → 보고 → 동굴 유적 탐사(동굴 보스 — HD2DCave) → 귀환 보고 → 엔딩·크레딧
 QUESTS = [
-	("Stage0", {"Title": "촌장의 부탁", "Objective": "광장의 촌장 바르톨로에게 말을 걸자", "KillGoal": 0, "Lines": [], "WaitLines": []}),
-	("Stage1", {"Title": "촌장의 부탁", "Objective": "들판의 마물을 쓰러뜨리자", "KillGoal": 6,
-				"Lines": ["오오, 여행자여. 마침 잘 왔네.", "요즘 동쪽 들판에 마물이 들끓어 마을 사람들이 밭에 나가질 못하고 있다네.",
-						  "부디 들판의 마물을 몰아내 주게. 대장간 옆 상자에 오래된 창이 있으니 가져가도 좋네."],
-				"WaitLines": ["들판의 마물을 부탁하네. 대장간 옆 상자도 잊지 말게나.", "야영지 쪽에도 누가 두고 간 상자가 있다더군."]}),
-	("Stage2", {"Title": "고대의 수호자", "Objective": "들판 동쪽 끝의 바위 골렘을 쓰러뜨리자", "KillGoal": 0,
-				"Lines": ["대단하군! 하지만 마물들이 날뛰는 까닭은 따로 있다네.", "들판 동쪽 끝에서 고대의 바위 골렘이 깨어났다는 소문이야.",
-						  "그 골렘을 쓰러뜨리면 들판도 다시 평화로워질 걸세."],
-				"WaitLines": ["골렘은 들판 동쪽 끝에 있다네. 바위를 던지니 바닥의 붉은 원을 조심하게."]}),
-	("Stage3", {"Title": "고대의 수호자", "Objective": "촌장 바르톨로에게 돌아가 보고하자", "KillGoal": 0,
-				"Lines": ["골렘은 쓰러뜨렸는가? 어서 돌아와 이야기를 들려주게."], "WaitLines": []}),
-	("Stage4", {"Title": "마을의 영웅", "Objective": "모든 의뢰 완료! 들판을 자유롭게 탐험하자", "KillGoal": 0,
-				"Lines": ["정말로 해냈구먼! 자네는 이 마을의 영웅일세.", "약소하지만 사례를 받아 주게. 마을 사람 모두의 마음이라네."],
-				"WaitLines": ["덕분에 마을이 평화롭구먼. 고맙네, 젊은이."]}),
+	("Stage0", _Quest("촌장의 부탁", "광장의 촌장 바르톨로에게 말을 걸자", AdvanceOnTalk=True)),
+	("Stage1", _Quest("촌장의 부탁", "들판의 마물을 쓰러뜨리자", KillGoal=6,
+					  Lines=["오오, 여행자여. 마침 잘 왔네.", "요즘 동쪽 들판에 마물이 들끓어 마을 사람들이 밭에 나가질 못하고 있다네.",
+							 "부디 들판의 마물을 몰아내 주게. 대장간 옆 상자에 오래된 창이 있으니 가져가도 좋네."],
+					  WaitLines=["들판의 마물을 부탁하네. 대장간 옆 상자도 잊지 말게나.", "야영지 쪽에도 누가 두고 간 상자가 있다더군."])),
+	("Stage2", _Quest("고대의 수호자", "들판 동쪽 끝의 바위 골렘을 쓰러뜨리자", BossGoal="Village", NewGoal=True,
+					  Lines=["대단하군! 하지만 마물들이 날뛰는 까닭은 따로 있다네.", "들판 동쪽 끝에서 고대의 바위 골렘이 깨어났다는 소문이야.",
+							 "그 골렘을 쓰러뜨리면 들판도 다시 평화로워질 걸세."],
+					  WaitLines=["골렘은 들판 동쪽 끝에 있다네. 바위를 던지니 바닥의 붉은 원을 조심하게."])),
+	("Stage3", _Quest("고대의 수호자", "촌장 바르톨로에게 돌아가 보고하자", AdvanceOnTalk=True,
+					  Lines=["골렘은 쓰러뜨렸는가? 어서 돌아와 이야기를 들려주게."])),
+	("Stage4", _Quest("동굴 유적의 그림자", "폭포 옆 벼랑의 동굴 유적 깊은 곳을 살펴보자", BossGoal="Cave", NewGoal=True, RewardGold=300, RewardItem="Elixir",
+					  Lines=["정말로 해냈구먼! 골렘을 쓰러뜨리다니, 자네는 이 마을의 은인일세.", "약소하지만 사례를 받아 주게. 마을 사람 모두의 마음이라네.",
+							 "헌데… 골렘이 깨어난 그날 밤부터 폭포 옆 벼랑의 오래된 동굴 유적에서 푸른 빛이 새어 나온다네.",
+							 "유적 깊은 곳에 무언가가 둥지를 틀었다는 소문일세. 부디 살펴봐 주게."],
+					  WaitLines=["동굴 유적은 폭포 옆 벼랑에 입구가 있다네.", "안쪽 복도엔 가시 함정이 있다더군. 바닥이 붉게 깜빡이면 물러서게."])),
+	("Stage5", _Quest("동굴 유적의 그림자", "마을로 돌아가 촌장 바르톨로에게 보고하자", AdvanceOnTalk=True,
+					  Lines=["돌아왔구먼! 유적 깊은 곳에서 무엇을 보았나?"])),
+	("Stage6", _Quest("마을의 영웅", "모든 의뢰 완료! 들판과 유적을 자유롭게 탐험하자", RewardGold=500, Ending=True,
+					  Lines=["수정 거미 여왕이라니…! 그런 것이 유적에 숨어 있었구먼.", "자네 덕에 하르트 마을에 다시 아침이 찾아왔네. 정말로 이 마을의 영웅일세.",
+							 "마을 사람 모두가 모은 사례일세. 부디 받아 주게."],
+					  WaitLines=["덕분에 마을이 평화롭구먼. 고맙네, 젊은이."])),
 ]
 
 BALANCE = {
 	"PlayerName": "아르펜", "MaxHealth": 120, "MaxMana": 50, "ManaRegen": 3.0, "HealthPerLevel": 18, "ManaPerLevel": 8, "DamagePerLevel": 0.12,
 	"ExpTable": [0, 30, 75, 140, 230, 350, 500, 700, 950, 1250], "StartWeapon": "Sword", "StartGold": 120, "StartItems": ["Potion", "Potion", "Potion"],
 	"ShopStock": ["Potion", "HiPotion", "Ether", "Bow", "ChainMail", "LuckyRing", "Elixir"], "InvulnTime": 0.8, "DashSpeed": 1700, "DashTime": 0.2,
-	"DashCooldown": 0.5, "CritChance": 0.1, "CritMultiplier": 1.6, "QuestRewardGold": 300, "QuestRewardItem": "Elixir",
+	"DashCooldown": 0.5, "CritChance": 0.1, "CritMultiplier": 1.6,
 	"StartArmor": "LeatherVest", "BoostMax": 5, "BoostStart": 1, "BoostRegenTime": 7.0, "BoostHitsPerPoint": 5, "BoostMaxLevel": 3,
 	"BoostDamagePerLevel": 0.35,
 	"TitleName": "황혼의 들판", "TitleSub": "― 여명을 찾는 아르펜의 여행 ―",
@@ -266,6 +313,12 @@ BALANCE = {
 	"ShopLines": ["무엇을 찾으세요? 천천히 둘러보세요!", "감사합니다! 좋은 물건이에요.", "어머, 골드가 조금 모자라네요…", "그건 이미 가지고 계시잖아요?",
 				  "또 오세요! 들판에선 몸조심하시고요."],
 	"SaveSlot": "HD2D",
+	# 엔딩·크레딧 쪽 (제목|본문 — 본문 줄바꿈은 \n): 메인 퀘스트 마지막 단계(Ending)에서 차례로 보인다
+	"EndingPages": ["황혼의 들판|하르트 마을에 다시 아침이 찾아왔다.\n들판의 골렘도, 유적의 여왕도 이제 깊은 잠에 들었다.",
+					"그 뒤의 이야기|아르펜은 낡은 지도를 다시 펼쳤다.\n빛의 들판 너머, 아직 아무도 가 보지 않은 길이 이어져 있었다.",
+					"만든 것들|ProjectE — 자체 C++ / DirectX 12 엔진\nHD-2D 디오라마 · 도트 스프라이트 · 틸트시프트 흐림 · 볼류메트릭 안개",
+					"도트 아트 · 지도|절차 생성 (Tools/DemoMap — HD2DArt · BuildHD2D · BuildHD2DCave)\n3D 키트 KayKit · 질감 Poly Haven (CC0)",
+					"소리|효과음 Kenney (CC0)\n\n플레이해 주셔서 고맙습니다!"],
 }
 
 
@@ -328,6 +381,8 @@ def WriteData(Content):
 		_Field("DropChance", "Float", 0, "확률 0~1"),
 		_Field("Radius", "Float", 45, "피격 판정 반지름 (cm)"),
 		_Field("RespawnTime", "Float", 15, "다시 나타나는 시간 (초, 0 = 안 나타남)"),
+		_Field("Look", "String", "", "그림·몸 모양을 빌려 올 종류 (비면 자기 행 이름 — 동굴 변형)"),
+		_Field("Tint", "Array", [1.0, 1.0, 1.0, 1.0], "몸 스프라이트 색 배율 RGBA (변형 색)", Element="Float"),
 	])
 	_Table(Content, "Enemies", "Enemy", ENEMIES)
 
@@ -348,6 +403,12 @@ def WriteData(Content):
 		_Field("KillGoal", "Int", 0, "> 0이면 마물 처치 수가 이만큼 되면 다음 단계"),
 		_Field("Lines", "Array", [], "이 단계로 넘어갈 때 촌장 대사", Element="String"),
 		_Field("WaitLines", "Array", [], "이 단계에서 아직 넘어갈 수 없을 때 촌장 대사", Element="String"),
+		_Field("AdvanceOnTalk", "Bool", False, "촌장에게 말하면 다음 단계로 (보고 단계)"),
+		_Field("BossGoal", "String", "", "이 맵 id의 보스를 쓰러뜨리면 다음 단계로 (Village / Cave)"),
+		_Field("NewGoal", "Bool", False, "이 단계로 넘어갈 때 \"새 목표\" 알림"),
+		_Field("RewardGold", "Int", 0, "이 단계로 넘어갈 때 보상 골드 (앞 단계 완료 보상 — \"퀘스트 완료!\" 알림)"),
+		_Field("RewardItem", "String", "", "보상 아이템"),
+		_Field("Ending", "Bool", False, "이 단계로 넘어가면 엔딩·크레딧 (Balance.EndingPages)"),
 	])
 	_Table(Content, "Quests", "Quest", QUESTS)
 	_Struct(Content, "SubQuest", "HD2D 서브 퀘스트 (SubQuests.etable, 행 이름 = 서브 퀘스트 id — 의뢰인 = Npcs.etable SubQuest)", [
@@ -391,8 +452,6 @@ def WriteData(Content):
 		_Field("DashCooldown", "Float", 0.5, "대시 간격 (초)"),
 		_Field("CritChance", "Float", 0.1, "치명타 확률"),
 		_Field("CritMultiplier", "Float", 1.5, "치명타 배율"),
-		_Field("QuestRewardGold", "Int", 100, "퀘스트 완료 골드"),
-		_Field("QuestRewardItem", "String", "", "퀘스트 완료 아이템"),
 		_Field("StartArmor", "String", "", "시작 방어구"),
 		_Field("BoostMax", "Int", 5, "BP 최대"),
 		_Field("BoostStart", "Int", 1, "시작 BP"),
@@ -405,6 +464,7 @@ def WriteData(Content):
 		_Field("IntroLines", "Array", [], "새 게임 시작 연출 대사 (이름|초상화|대사 — 이름 비면 해설)", Element="String"),
 		_Field("ShopLines", "Array", [], "상점 주인 말: 들어옴 / 구입 / 골드 부족 / 이미 가짐 / 나감", Element="String"),
 		_Field("SaveSlot", "String", "HD2D", "저장 슬롯 (SaveGame)"),
+		_Field("EndingPages", "Array", [], "엔딩·크레딧 쪽 (제목|본문, 본문 줄바꿈 \\n)", Element="String"),
 	])
 	_WriteJson(os.path.join(Content, *DATA.split("/"), "Balance.edata"), {"Version": 1, "Struct": f"{DATA}/Balance.estruct", "Values": BALANCE})
 
@@ -659,6 +719,16 @@ def WriteUi(Content):
 			 CanvasSlot((0.5, 1), 0, -16, 0, 0, (0.5, 1), True, 2), (0.6, 0.58, 0.66, 1), "Center"),
 	]))
 
+	# ---- 엔딩·크레딧 (메인 퀘스트 마지막 — 검은 화면 위 금빛 제목 + 본문 쪽이 차례로 페이드)
+	C.append(Widget("Canvas", "EndingScreen", StretchSlot(90), "Collapsed", [
+		Widget("Border", "EndingShade", StretchSlot(), "Visible", Brush=Brush((0.01, 0.0, 0.03, 0.94)), ContentPadding=[0, 0, 0, 0]),
+		Widget("Image", "EndingOrnamentTop", CanvasSlot((0.5, 0.5), 0, -150, 384, 48, (0.5, 0.5), Z=1), "HitTestInvisible",
+			   Brush=Brush(Texture=f"{UI_DIR}/TitleOrnament.png"), ImageSize=[384, 48]),
+		Text("EndingTitle", "", 50, CanvasSlot((0.5, 0.5), 0, -84, 0, 0, (0.5, 0.5), True, 2), TEXT_GOLD, "Center", Outline=3),
+		Text("EndingBody", "", 25, CanvasSlot((0.5, 0.5), 0, 10, 980, 220, (0.5, 0), False, 2), TEXT_LIGHT, "Center", Wrap=True),
+		Text("EndingHint", "E · J 넘기기", 17, CanvasSlot((0.5, 1), 0, -30, 0, 0, (0.5, 1), True, 2), TEXT_DIM, "Center"),
+	]))
+
 	Root = Widget("Canvas", "Root", None, "SelfHitTestInvisible", C)
 	_WriteJson(os.path.join(Content, *UI_DIR.split("/"), "HUD.eui"),
 			   {"Version": 2, "DesignSize": [1280, 720], "ScaleMode": "MatchHeight", "Root": Root, "Animations": []})
@@ -726,21 +796,30 @@ def WritePrefabs(Content, CameraDistance, PlayMin, PlayMax):
 
 	# 적: 캡슐 이동기 + Visual > Body(몸)·Shadow·HpBack·HpFill(머리 위 체력바 — 맞으면 잠깐 보임)
 	Sprites = {"Slime": ("Sprites/HD2D/Slime.esprite", "Idle0", "Sprites/HD2D/Slime_Idle.eflipbook"),
-			   "Golem": ("Sprites/HD2D/Golem.esprite", "Dormant0", "Sprites/HD2D/Golem_Dormant.eflipbook")}
+			   "Golem": ("Sprites/HD2D/Golem.esprite", "Dormant0", "Sprites/HD2D/Golem_Dormant.eflipbook"),
+			   "SpiderQueen": ("Sprites/HD2D/SpiderQueen.esprite", "Dormant0", "Sprites/HD2D/SpiderQueen_Dormant.eflipbook")}
+	Rows = dict(ENEMIES)
 	for Kind, (Radius, Half, Lift, BarZ, Mass) in ENEMY_CAPSULE.items():
-		SpriteAsset, Slice, Book = Sprites.get(Kind, ("Sprites/HD2D/Enemies.esprite", "", f"Sprites/HD2D/{Kind}_Idle.eflipbook"))
+		Look = Rows[Kind]["Look"] or Kind  # 동굴 변형은 바탕 종류의 그림을 색만 바꿔 쓴다
+		SpriteAsset, Slice, Book = Sprites.get(Look, ("Sprites/HD2D/Enemies.esprite", "", f"Sprites/HD2D/{Look}_Idle.eflipbook"))
 		EFoot = -(Radius + Half)
-		Speed = next(V["MoveSpeed"] for N, V in ENEMIES if N == Kind)
-		Script = "Scripts/Demo/HD2D/HD2DBoss.lua" if Kind == "Golem" else "Scripts/Demo/HD2D/HD2DEnemy.lua"
-		ShadowScale = {"Golem": 3.4, "Bat": 0.6}.get(Kind, 0.8)
+		Speed = Rows[Kind]["MoveSpeed"]
+		Script = BOSS_SCRIPTS.get(Kind, "Scripts/Demo/HD2D/HD2DEnemy.lua")
+		ShadowScale = {"Golem": 3.4, "SpiderQueen": 3.8, "Bat": 0.6}.get(Look, 0.8)
+		Extra = []
+		if Kind == "SpiderQueen":
+			# 등의 수정빛 (어두운 동굴에서 보스가 묻히지 않게 — 몸과 둘레 바닥을 푸르게 비춘다)
+			Extra.append({"Name": "Glow", "Parent": 1, "Components": {
+				"PointLightComponent": {"Color": [0.62, 0.8, 1.0], "Intensity": 4.5, "Radius": 750.0, "CastShadows": False},
+				"PrefabLinkComponent": Link(7), "TransformComponent": Transform((0, 120, EFoot + 260))}})
 		WritePrefab(Content, Kind, [
 			{"Name": Kind, "Parent": -1, "Components": {
-				"CharacterMovementComponent": Mover(Radius, Half, Speed, Mass, PushForce=4000.0 if Kind == "Golem" else 500.0),
+				"CharacterMovementComponent": Mover(Radius, Half, Speed, Mass, PushForce=4000.0 if Kind in BOSS_SCRIPTS else 500.0),
 				"ScriptComponent": {"ExecutionLocation": 0, "ScriptAsset": Script, "PropertyOverrides": json.dumps({"Kind": Kind}, ensure_ascii=False)},
 				"PrefabLinkComponent": Link(1), "TransformComponent": Transform()}},
 			{"Name": "Visual", "Parent": 0, "Components": {"PrefabLinkComponent": Link(2), "TransformComponent": Transform()}},
 			{"Name": "Body", "Parent": 1, "Components": {
-				"SpriteComponent": Sprite(SpriteAsset, Slice, Billboard=2), "FlipbookComponent": Flipbook(Book),
+				"SpriteComponent": Sprite(SpriteAsset, Slice, Billboard=2, Color=Rows[Kind]["Tint"]), "FlipbookComponent": Flipbook(Book),
 				"PrefabLinkComponent": Link(3), "TransformComponent": Transform((0, 0, EFoot + Lift))}},
 			{"Name": "Shadow", "Parent": 1, "Components": {
 				"SpriteComponent": Sprite("Sprites/HD2D/Fx.esprite", "Shadow", Lit=False, Shadows=False, Blend=0),
@@ -751,7 +830,7 @@ def WritePrefabs(Content, CameraDistance, PlayMin, PlayMax):
 			{"Name": "HpFill", "Parent": 1, "Components": {
 				"SpriteComponent": Sprite("Sprites/HD2D/Fx.esprite", "HpFill", Lit=False, Shadows=False, Blend=0, Visible=False, Color=(0.95, 0.3, 0.3, 1), Billboard=2),
 				"PrefabLinkComponent": Link(6), "TransformComponent": Transform((-60, 8, EFoot + BarZ))}},
-		])
+		] + Extra)
 
 	# 효과 조각: 스크립트 없음 — HD2DGame.lua가 만든 직후 콜백에서 모양을 정하고 수명이 끝나면 지운다
 	WritePrefab(Content, "FxSprite", [
@@ -833,15 +912,24 @@ def AddGame(S, Height, Path, AutoPlay=False, Layout=None, Title=None, NavMesh="S
 	Npcs = ";".join(f"{Id},{P3(X, Y, 85.0)}" for Id, X, Y in L.Npcs)
 	Chests = ";".join(f"{P3(X, Y, 45.0)},{Contents}" for X, Y, Contents in L.Chests)
 	Props = ";".join(f"{Id},{P3(X, Y, 45.0)}" for Id, X, Y in L.Props)
-	Golem = ENEMY_CAPSULE["Golem"]
+	BossCap = ENEMY_CAPSULE[L.BossKind]
+	BossLift = BossCap[0] + BossCap[1] + 4.0
 	Scenario = ("Full" if AutoPlay is True else (AutoPlay or ""))
 	if Title is None:
 		Title = L.Title and Scenario in ("", "Full", "TitleShot")
+	Overrides = {
+		"Map": L.MapId, "Enemies": Enemies, "Npcs": Npcs, "Chests": Chests, "Props": Props,
+		"Boss": P3(L.Boss[0], L.Boss[1], BossLift) if L.Boss else "",
+		"Path": ";".join(f"{X:.0f},{Y:.0f}" for X, Y in Path), "AutoPlay": Scenario, "Title": bool(Title)}
+	if L.BossKind != "Golem":  # 기본값과 다른 것만 (마을 씬 파일이 그대로이게)
+		Overrides.update({"BossKind": L.BossKind, "BossLift": BossLift})
+	if L.BossReward != "HiPotion*2+Gold*100":
+		Overrides["BossReward"] = L.BossReward
+	if not L.Respawn:
+		Overrides["Respawn"] = False
+	Overrides.update(L.Extra)
 	S.Add("HD2DGame", {"ScriptComponent": {"ScriptAsset": "Scripts/Demo/HD2D/HD2DGame.lua", "ExecutionLocation": 0,
-		"PropertyOverrides": json.dumps({
-			"Map": L.MapId, "Enemies": Enemies, "Npcs": Npcs, "Chests": Chests, "Props": Props,
-			"Boss": P3(L.Boss[0], L.Boss[1], Golem[0] + Golem[1] + 4.0) if L.Boss else "",
-			"Path": ";".join(f"{X:.0f},{Y:.0f}" for X, Y in Path), "AutoPlay": Scenario, "Title": bool(Title)}, ensure_ascii=False)}})
+		"PropertyOverrides": json.dumps(Overrides, ensure_ascii=False)}})
 	S.Add("HUD", {"UIComponent": {"Asset": f"{UI_DIR}/HUD.eui", "ZOrder": 0, "Visible": True, "ReceiveInput": True, "KeyboardFocus": False},
 				  "ScriptComponent": {"ScriptAsset": "Scripts/Demo/HD2D/HD2DHud.lua", "ExecutionLocation": 0, "PropertyOverrides": ""}})
 	if NavMesh:
@@ -910,10 +998,10 @@ def WriteAll(Content, CameraDistance, PlayMin, PlayMax):
 	WritePrefabs(Content, CameraDistance, PlayMin, PlayMax)
 
 
-def WriteNavBake(Content, Scene, Height, PlayMin, PlayMax, Path):
-	Doc, Count = WriteNavBakeScene(Scene, Height, PlayMin, PlayMax, Path)
-	_WriteJson(os.path.join(Content, "Scenes", "Demo", "_HD2DNavBake.escene"), Doc)
-	print(f"내비메시 굽기용 씬: Scenes/Demo/_HD2DNavBake.escene (바닥 판 {Count}개) - 머리 주석의 순서로 굽는다")
+def WriteNavBake(Content, Scene, Height, PlayMin, PlayMax, Path, Name="_HD2DNavBake", Cell=100.0):
+	Doc, Count = WriteNavBakeScene(Scene, Height, PlayMin, PlayMax, Path, Cell)
+	_WriteJson(os.path.join(Content, "Scenes", "Demo", f"{Name}.escene"), Doc)
+	print(f"내비메시 굽기용 씬: Scenes/Demo/{Name}.escene (바닥 판 {Count}개) - 머리 주석의 순서로 굽는다")
 
 
 if __name__ == "__main__":

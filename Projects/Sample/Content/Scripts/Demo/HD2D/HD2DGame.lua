@@ -2,7 +2,9 @@
 --   맡는 것: 적 자리(소환·부활)·보스, 보물상자·마을 사람·소품(프리팹으로 만들고 상호작용), 효과 조각·투사체·줍는 것·독 웅덩이
 --            (스크립트 없는 FxSprite 프리팹 조각 — 만든 직후 콜백에서 모양을 정하고 여기서 움직이고 지운다), 화면 흔들림, 자동 검증 결과 판정.
 --   확장 모듈(메서드를 이 클래스에 붙인다): HD2DParty.lua = 일행·장비·퀘스트·서브 퀘스트·저장/불러오기·맵 이동 세션,
---            HD2DMenu.lua = 타이틀·대화·인벤토리(탭)·상점 메뉴.
+--            HD2DMenu.lua = 타이틀·대화·인벤토리(탭)·상점 메뉴·엔딩, HD2DDungeon.lua = 던전 장치(가시 함정·보스 방 문·수정 가시 분출).
+--   보스: 맵마다 BossKind(골렘 = HD2DBoss.lua, 수정 거미 여왕 = HD2DSpiderQueen.lua). 처치 여부는 맵별(IsBossDefeated), 퀘스트 단계의 BossGoal이
+--            이 맵이면 다음 단계로. 자동 검증이 맵을 건너가면(동굴 → 마을) 시나리오를 Persistent "HD2D_AutoScenario"로 넘긴다.
 --   시작 순서: 맵 이동으로 왔으면 세션을 불러와 Spawn_<이름>에 플레이어를 둔다 → 아니면 Title 속성이 켜진 맵은 타이틀 화면 → 처음부터(시작 연출)/이어하기.
 --   다른 스크립트는 Scene.Find("HD2DGame"):GetScript()로 쓴다 (플레이어 = HD2DPlayer.lua, 적 = HD2DEnemy.lua, 보스 = HD2DBoss.lua, UI = HD2DHud.lua).
 --   좌표: 카메라가 +Y 쪽에서 -Y를 내려다본다 → 화면 오른쪽 = +X, 화면 위(안쪽) = -Y. 스프라이트는 XZ 평면(앞면 +Y)에 서 있다.
@@ -16,14 +18,21 @@ local HD2DGame = {
 		Npcs     = "",  -- "id,x,y,z;..."
 		Chests   = "",  -- "x,y,z,아이템*개수+...;..." (Gold*n = 골드)
 		Props    = "",  -- "id,x,y,z;..." (SavePoint / Cat)
-		Boss     = "",  -- "x,y,z"
+		Boss     = "",  -- "x,y,z" (z = 캡슐 중심)
+		BossKind = "Golem", -- 보스 프리팹 / Enemies.etable 행 (동굴 = SpiderQueen)
+		BossLift = 179.0,   -- 보스 캡슐 중심 - 발 (보상 상자 높이)
+		BossReward = "HiPotion*2+Gold*100", -- 보스 보상 상자 내용
+		Respawn  = true,    -- 쓰러진 적이 다시 나타나는가 (던전은 끔)
+		Traps    = "",  -- 가시 함정판 "x,y,z,반폭X,반폭Y;..." (HD2DDungeon.lua — 씬의 Trap_<번호> 가시 묶음)
+		Gate     = "",  -- 보스 방 문 "x,y,z,창살 이동" (CaveGate 프리팹)
+		Arena    = "",  -- 보스 방 "x,y,반지름" (들어서면 문이 닫힌다)
 		Path     = "",  -- "x,y;..." 마을 → 들판 길 (내비메시가 없을 때 자동 조종이 따라 걷는다)
 		AutoPlay = "",  -- "" | Full | TitleShot | Inventory | Equip | Shop | Dialog | Combat | Boost | Boss (HD2DAutoPilot.lua)
 		Title    = false, -- 시작할 때 타이틀 화면 (맵 이동으로 온 경우는 건너뜀)
 		RespawnMinDistance = 900.0,
 	},
 }
-for _, Module in ipairs({ "Scripts/Demo/HD2D/HD2DParty.lua", "Scripts/Demo/HD2D/HD2DMenu.lua" }) do
+for _, Module in ipairs({ "Scripts/Demo/HD2D/HD2DParty.lua", "Scripts/Demo/HD2D/HD2DMenu.lua", "Scripts/Demo/HD2D/HD2DDungeon.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do HD2DGame[Name] = Fn end
 end
 
@@ -65,7 +74,11 @@ function HD2DGame:OnStart()
 	self.Props_ = {}
 	self.Report = { Kills = {}, WeaponHits = {}, Chests = 0, Bought = {}, Used = {}, InventoryOpened = 0, Dialogs = 0, LevelUps = 0,
 	                Pickups = 0, Projectiles = 0, PoisonTicks = 0, Equips = 0, GearEquips = 0, BossPatterns = {}, Boosts = 0, BoostMax = 0,
-	                SubDone = 0, Saves = 0 }
+	                SubDone = 0, Saves = 0, TrapRises = 0, TrapHits = 0, Eruptions = 0, GateCloses = 0, GateOpens = 0, Afterimages = 0, Endings = 0 }
+	-- 맵 이동으로 이어지는 자동 검증 (동굴 → 마을): 씬 속성이 비었으면 앞 씬이 넘긴 시나리오
+	if self.Properties.AutoPlay == "" then
+		self.Properties.AutoPlay = Game.GetPersistent("HD2D_AutoScenario", "")
+	end
 	self.Menu = nil        -- nil | "Title" | "Dialog" | "Inventory" | "Shop" | "Travel"
 	self.Mode = "Play"     -- Title | Intro | Play | Travel
 	self:InitParty()
@@ -96,12 +109,13 @@ function HD2DGame:OnStart()
 	end
 	if self.Properties.Boss ~= "" then
 		self.BossPos = Parse3(self.Properties.Boss)
-		if not self.BossDead then
-			Scene.SpawnPrefab(Prefabs .. "Golem.eprefab", self.BossPos)
+		if not self:IsBossDefeated() then
+			Scene.SpawnPrefab(Prefabs .. self.Properties.BossKind .. ".eprefab", self.BossPos)
 		elseif not self.Opened[self.Properties.Map .. ":Boss"] then
-			self:SpawnChest(self.BossPos + Vector3(0, 170, -175 + 47), "HiPotion*2+Gold*100", false, self.Properties.Map .. ":Boss")
+			self:SpawnChest(self.BossPos + Vector3(0, 170, -self.Properties.BossLift + 47), self.Properties.BossReward, false, self.Properties.Map .. ":Boss")
 		end
 	end
+	self:InitDungeon()
 	self.Path = {}
 	for X, Y in string.gmatch(self.Properties.Path, "([-%d%.]+),([-%d%.]+)") do
 		self.Path[#self.Path + 1] = Vector3(tonumber(X), tonumber(Y), 0)
@@ -111,9 +125,9 @@ function HD2DGame:OnStart()
 	elseif self.Properties.Title then
 		self.bOpenTitle = true -- HUD·플레이어가 준비된 첫 갱신에서
 	end
-	Log.Info(string.format("[HD2D] 시작: 맵 %s, 적 자리 %d곳, 마을 사람 %d명, 보물상자 %d개, 소품 %d개, 보스 %s, 시나리오 '%s'%s",
-		self.Properties.Map, #self.Slots, #self.Npcs, #self.Chests, #self.Props_, self.BossPos and (self.BossDead and "처치함" or "있음") or "없음",
-		self.Properties.AutoPlay, bSession and ", 맵 이동 세션" or ""))
+	Log.Info(string.format("[HD2D] 시작: 맵 %s, 적 자리 %d곳, 마을 사람 %d명, 보물상자 %d개, 소품 %d개, 보스 %s(%s), 함정 %d, 시나리오 '%s'%s",
+		self.Properties.Map, #self.Slots, #self.Npcs, #self.Chests, #self.Props_, self.Properties.BossKind,
+		self.BossPos and (self:IsBossDefeated() and "처치함" or "있음") or "없음", #self.Traps, self.Properties.AutoPlay, bSession and ", 맵 이동 세션" or ""))
 end
 
 -- 결정적 난수 (0~1)
@@ -168,7 +182,7 @@ function HD2DGame:OnEnemyKilled(S)
 	local Player = self:GetPlayer()
 	if Player then Player:AddExp(Row.Exp) end
 	local SlotIndex = self.SlotOf[S.entity.Id]
-	if SlotIndex and Row.RespawnTime > 0 then
+	if SlotIndex and Row.RespawnTime > 0 and self.Properties.Respawn then
 		self.Slots[SlotIndex].Respawn = Row.RespawnTime
 	end
 	if not S.bBoss and self.QuestStage == 1 then
@@ -195,13 +209,17 @@ end
 function HD2DGame:OnBossKilled(S)
 	local Pos = S.entity:GetWorldPosition()
 	self.bBossDead = true
-	self.BossDead = true
+	self:SetBossDefeated()
 	self:Hud():ShowBoss(nil)
-	self:Hud():Announce("고대의 바위 골렘을 쓰러뜨렸다!", "촌장 바르톨로에게 돌아가 보고하자", 3.5)
+	-- 이 맵 보스가 지금 퀘스트 목표면 다음 단계 (마을 골렘 = 2 → 3, 동굴 여왕 = 4 → 5)
+	local Q = D.Quest(self.QuestStage)
+	local bGoal = Q and Q.BossGoal == self.Properties.Map
+	self:Hud():Announce(S.Row.DisplayName .. "을(를) 쓰러뜨렸다!", bGoal and D.Quest(self.QuestStage + 1).Objective or nil, 3.5)
 	self:Fanfare()
-	self:SpawnChest(Pos + Vector3(0, 170, S.Foot + 47), "HiPotion*2+Gold*100", true, self.Properties.Map .. ":Boss") -- 상자 루트 = 지면 + 45
-	if self.QuestStage == 2 then
-		self:SetQuestStage(3)
+	self:SpawnChest(Pos + Vector3(0, 170, S.Foot + 47), self.Properties.BossReward, true, self.Properties.Map .. ":Boss") -- 상자 루트 = 지면 + 45
+	self:OnDungeonBossKilled()
+	if bGoal then
+		self:SetQuestStage(self.QuestStage + 1, true)
 	end
 end
 
@@ -381,7 +399,7 @@ function HD2DGame:RefreshMarkers()
 			local bShow = false
 			local Role = Npc.Row.Role
 			if Role == "Elder" then
-				bShow = self.QuestStage == 0 or self.QuestStage == 3 or (self.QuestStage == 1 and self.QuestKills >= D.Quest(1).KillGoal)
+				bShow = self:CanAdvanceByTalk()
 			elseif Role == "Quest" then
 				local Id = Npc.Row.SubQuest
 				bShow = self:SubState(Id) == nil or self:SubReady(Id)
@@ -469,8 +487,7 @@ function HD2DGame:TalkTo(Npc)
 	local Row = Npc.Row
 	if Row.Role == "Elder" then
 		local Stage = self.QuestStage
-		local bAdvance = Stage == 0 or Stage == 3 or (Stage == 1 and self.QuestKills >= D.Quest(1).KillGoal)
-		if bAdvance then
+		if self:CanAdvanceByTalk() then
 			local Next = D.Quest(Stage + 1)
 			self:StartDialog(Row.DisplayName, Next.Lines, function() self:SetQuestStage(Stage + 1) end, Row.Portrait)
 		else
@@ -605,6 +622,10 @@ function HD2DGame:SpawnProjectile(Desc)
 		P.Fx = self:SpawnFx("Rock", Desc.Pos, { Lit = true, Blend = 3, Scale = 1.6, Life = P.Duration + 0.2 })
 	elseif P.Kind == "Bolt" then
 		P.Fx = self:SpawnFx("Bolt", Desc.Pos, { Blend = 2, Scale = 1.4 * (Desc.Scale or 1), Life = 3.0 })
+	elseif P.Kind == "Web" then
+		-- 거미줄 탄 (수정 거미 여왕): 도는 실 뭉치
+		P.Fx = self:SpawnSprite({ Sprite = "Sprites/HD2D/CaveFx.esprite", Flipbook = "Sprites/HD2D/CaveFx_Web.eflipbook", Position = Desc.Pos, Blend = 0,
+		                          Life = 3.0, Scale = 1.5 * (Desc.Scale or 1) })
 	else
 		P.Fx = self:SpawnSprite({ Sprite = FxSprite, Slice = "Arrow", Position = Desc.Pos, Rotation = HD2DGame.ScreenAngle(Desc.Dir), Blend = 0,
 		                          Life = 3.0, Scale = 1.3 * (Desc.Scale or 1), Color = P.Team == "Enemy" and { 1, 0.75, 0.75, 1 } or { 1, 1, 1, 1 } })
@@ -840,6 +861,7 @@ function HD2DGame:OnUpdate(Dt)
 	self:UpdatePickups(Dt)
 	self:UpdateHazards(Dt)
 	self:UpdateSlots(Dt)
+	self:UpdateDungeon(Dt)
 end
 
 -- ================================================================ 자동 검증 결과 (HD2DAutoPilot.lua가 끝에 부른다)
@@ -851,9 +873,13 @@ function HD2DGame:ReportAutoPlay(Failures, Summary)
 	local Hits = {}
 	for Id, N in pairs(R.WeaponHits) do Hits[#Hits + 1] = Id .. " " .. N end
 	table.sort(Hits)
-	Log.Info(string.format("[HD2D] 자동 플레이 요약: %s | 처치 {%s} | 무기 명중 {%s} | 상자 %d, 줍기 %d, 대화 %d, 인벤토리 %d, 장비 교체 %d(방어구·장신구 %d), 부스트 %d(최대 %d단계), 서브 퀘스트 %d, 저장 %d, 투사체 %d, 독 %d, 퀘스트 %d단계, 골드 %d",
-		Summary or "", table.concat(Kills, ", "), table.concat(Hits, ", "), R.Chests, R.Pickups, R.Dialogs, R.InventoryOpened, R.Equips, R.GearEquips,
-		R.Boosts, R.BoostMax, R.SubDone, R.Saves, R.Projectiles, R.PoisonTicks, self.QuestStage, self.Gold))
+	local Patterns = {}
+	for Name, N in pairs(R.BossPatterns) do Patterns[#Patterns + 1] = Name .. " " .. N end
+	table.sort(Patterns)
+	Log.Info(string.format("[HD2D] 자동 플레이 요약: %s | 처치 {%s} | 무기 명중 {%s} | 보스 패턴 {%s} | 상자 %d, 줍기 %d, 대화 %d, 인벤토리 %d, 장비 교체 %d(방어구·장신구 %d), 부스트 %d(최대 %d단계), 서브 퀘스트 %d, 저장 %d, 투사체 %d, 독 %d, 함정 솟음 %d(맞음 %d), 수정 가시 %d, 문 닫힘 %d/열림 %d, 잔상 %d, 엔딩 %d, 퀘스트 %d단계, 골드 %d",
+		Summary or "", table.concat(Kills, ", "), table.concat(Hits, ", "), table.concat(Patterns, ", "), R.Chests, R.Pickups, R.Dialogs, R.InventoryOpened, R.Equips,
+		R.GearEquips, R.Boosts, R.BoostMax, R.SubDone, R.Saves, R.Projectiles, R.PoisonTicks, R.TrapRises, R.TrapHits, R.Eruptions, R.GateCloses, R.GateOpens,
+		R.Afterimages, R.Endings, self.QuestStage, self.Gold))
 	if Failures == nil then
 		return -- 단계 요약만 (자동 검증이 씬을 다시 여는 중간)
 	elseif #Failures == 0 then

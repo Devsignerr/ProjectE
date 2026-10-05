@@ -118,6 +118,24 @@
       "Type": "Float",
       "Default": 15,
       "Description": "다시 나타나는 시간 (초, 0 = 안 나타남)"
+    },
+    {
+      "Name": "Look",
+      "Type": "String",
+      "Default": "",
+      "Description": "그림·몸 모양을 빌려 올 종류 (비면 자기 행 이름 — 동굴 변형)"
+    },
+    {
+      "Name": "Tint",
+      "Type": "Array",
+      "Default": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Description": "몸 스프라이트 색 배율 RGBA (변형 색)",
+      "Element": "Float"
     }
   ]
 }

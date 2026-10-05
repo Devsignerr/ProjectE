@@ -5859,457 +5859,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1450.0,
+            1460.0,
             0.0,
-            1.5
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            0.9,
-            1.8,
-            0.04
-          ]
-        }
-      },
-      "Name": "Trap_Plate_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1418.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_0_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1418.0,
-            0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_0_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1418.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_0_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1434.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_1_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1434.0,
-            0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_1_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1434.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_1_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1450.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_2_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1450.0,
-            0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_2_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1450.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_2_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1466.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_3_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1466.0,
-            0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_3_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1466.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_3_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1482.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_4_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1482.0,
-            0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_4_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1482.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_0_4_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1560.0,
-            0.0,
-            1.5
+            30.24675730677898
           ],
           "Rotation": [
             0.0,
@@ -6319,8 +5871,8 @@
           ],
           "Scale": [
             0.9,
-            1.8,
-            0.04
+            6.9,
+            0.12
           ]
         }
       },
@@ -6329,310 +5881,26 @@
     },
     {
       "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
         "TransformComponent": {
           "Position": [
-            1528.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_0_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1528.0,
+            1460.0,
             0.0,
-            8.0
+            34.24675730677898
           ],
           "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_0_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1528.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_0_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1544.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_1_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1544.0,
             0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_1_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1544.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_1_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1560.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_2_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1560.0,
             0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_2_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1560.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_2_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1576.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_1_3_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1576.0,
             0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
+            1.0
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            1.0,
+            1.0,
+            1.0
           ]
         }
       },
-      "Name": "Trap_Spike_1_3_1",
+      "Name": "Trap_1",
       "Parent": -1
     },
     {
@@ -6643,9 +5911,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1576.0,
-            55.0,
-            8.0
+            -32.0,
+            -314.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -6654,14 +5922,14 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_1_3_2",
-      "Parent": -1
+      "Name": "Trap_1_Spike0_0",
+      "Parent": 200
     },
     {
       "Components": {
@@ -6671,9 +5939,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1592.0,
-            -55.0,
-            8.0
+            -24.0,
+            -252.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -6682,14 +5950,14 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_1_4_0",
-      "Parent": -1
+      "Name": "Trap_1_Spike0_1",
+      "Parent": 200
     },
     {
       "Components": {
@@ -6699,9 +5967,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1592.0,
-            0.0,
-            8.0
+            -32.0,
+            -190.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -6710,14 +5978,14 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_1_4_1",
-      "Parent": -1
+      "Name": "Trap_1_Spike0_2",
+      "Parent": 200
     },
     {
       "Components": {
@@ -6727,9 +5995,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1592.0,
-            55.0,
-            8.0
+            -24.0,
+            -128.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -6738,14 +6006,826 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_1_4_2",
-      "Parent": -1
+      "Name": "Trap_1_Spike0_3",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike0_4",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike0_5",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike0_6",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike0_7",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike0_8",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike0_9",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike0_10",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -314.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_0",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -252.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_1",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_2",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_3",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_4",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_5",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_6",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_7",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_8",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_9",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike1_10",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -314.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_0",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -252.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_1",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_2",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_3",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_4",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_5",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_6",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_7",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_8",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_9",
+      "Parent": 200
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_1_Spike2_10",
+      "Parent": 200
     },
     {
       "Components": {
@@ -6755,9 +6835,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1670.0,
+            1570.0,
             0.0,
-            1.5
+            27.6599044580561
           ],
           "Rotation": [
             0.0,
@@ -6767,8 +6847,8 @@
           ],
           "Scale": [
             0.9,
-            1.8,
-            0.04
+            6.9,
+            0.12
           ]
         }
       },
@@ -6777,310 +6857,26 @@
     },
     {
       "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
         "TransformComponent": {
           "Position": [
-            1638.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_0_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1638.0,
+            1570.0,
             0.0,
-            8.0
+            31.6599044580561
           ],
           "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_0_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1638.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_0_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1654.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_1_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1654.0,
             0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_1_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1654.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_1_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1670.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_2_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1670.0,
             0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_2_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1670.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_2_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1686.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_2_3_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1686.0,
             0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
+            1.0
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            1.0,
+            1.0,
+            1.0
           ]
         }
       },
-      "Name": "Trap_Spike_2_3_1",
+      "Name": "Trap_2",
       "Parent": -1
     },
     {
@@ -7091,9 +6887,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1686.0,
-            55.0,
-            8.0
+            -32.0,
+            -314.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -7102,14 +6898,14 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_2_3_2",
-      "Parent": -1
+      "Name": "Trap_2_Spike0_0",
+      "Parent": 235
     },
     {
       "Components": {
@@ -7119,9 +6915,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1702.0,
-            -55.0,
-            8.0
+            -24.0,
+            -252.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -7130,14 +6926,14 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_2_4_0",
-      "Parent": -1
+      "Name": "Trap_2_Spike0_1",
+      "Parent": 235
     },
     {
       "Components": {
@@ -7147,9 +6943,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1702.0,
-            0.0,
-            8.0
+            -32.0,
+            -190.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -7158,14 +6954,14 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_2_4_1",
-      "Parent": -1
+      "Name": "Trap_2_Spike0_2",
+      "Parent": 235
     },
     {
       "Components": {
@@ -7175,9 +6971,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1702.0,
-            55.0,
-            8.0
+            -24.0,
+            -128.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -7186,14 +6982,826 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_2_4_2",
-      "Parent": -1
+      "Name": "Trap_2_Spike0_3",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike0_4",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike0_5",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike0_6",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike0_7",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike0_8",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike0_9",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike0_10",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -314.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_0",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -252.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_1",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_2",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_3",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_4",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_5",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_6",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_7",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_8",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_9",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike1_10",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -314.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_0",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -252.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_1",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_2",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_3",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_4",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_5",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_6",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_7",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_8",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_9",
+      "Parent": 235
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_2_Spike2_10",
+      "Parent": 235
     },
     {
       "Components": {
@@ -7203,9 +7811,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1780.0,
+            1680.0,
             0.0,
-            1.5
+            28.72297091882743
           ],
           "Rotation": [
             0.0,
@@ -7215,8 +7823,8 @@
           ],
           "Scale": [
             0.9,
-            1.8,
-            0.04
+            6.9,
+            0.12
           ]
         }
       },
@@ -7225,310 +7833,26 @@
     },
     {
       "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
         "TransformComponent": {
           "Position": [
-            1748.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_0_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1748.0,
+            1680.0,
             0.0,
-            8.0
+            32.72297091882743
           ],
           "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_0_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1748.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_0_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1764.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_1_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1764.0,
             0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_1_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1764.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_1_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1780.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_2_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1780.0,
             0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_2_1",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1780.0,
-            55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_2_2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1796.0,
-            -55.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
-          ],
-          "Scale": [
-            0.07,
-            0.07,
-            0.07
-          ]
-        }
-      },
-      "Name": "Trap_Spike_3_3_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "StaticMeshComponent": {
-          "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
-        },
-        "TransformComponent": {
-          "Position": [
-            1796.0,
             0.0,
-            8.0
-          ],
-          "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
+            1.0
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            1.0,
+            1.0,
+            1.0
           ]
         }
       },
-      "Name": "Trap_Spike_3_3_1",
+      "Name": "Trap_3",
       "Parent": -1
     },
     {
@@ -7539,9 +7863,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1796.0,
-            55.0,
-            8.0
+            -32.0,
+            -314.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -7550,14 +7874,14 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_3_3_2",
-      "Parent": -1
+      "Name": "Trap_3_Spike0_0",
+      "Parent": 270
     },
     {
       "Components": {
@@ -7567,9 +7891,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1812.0,
-            -55.0,
-            8.0
+            -24.0,
+            -252.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -7578,14 +7902,14 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_3_4_0",
-      "Parent": -1
+      "Name": "Trap_3_Spike0_1",
+      "Parent": 270
     },
     {
       "Components": {
@@ -7595,24 +7919,916 @@
         },
         "TransformComponent": {
           "Position": [
-            1812.0,
+            -32.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike0_2",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike0_3",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike0_4",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike0_5",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike0_6",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike0_7",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike0_8",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike0_9",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike0_10",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -314.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_0",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -252.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_1",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_2",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_3",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_4",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_5",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_6",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_7",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_8",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_9",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike1_10",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -314.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_0",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -252.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_1",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_2",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_3",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_4",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_5",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_6",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_7",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_8",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_9",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_3_Spike2_10",
+      "Parent": 270
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1790.0,
             0.0,
-            8.0
+            -2.0314781634298615
           ],
           "Rotation": [
-            -0.2801217444163605,
-            -0.3646691598444694,
-            -0.11603022565286633,
-            0.88038923147572
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.9,
+            6.9,
+            0.12
           ]
         }
       },
-      "Name": "Trap_Spike_3_4_1",
+      "Name": "Trap_Plate_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1790.0,
+            0.0,
+            1.9685218365701385
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Trap_4",
       "Parent": -1
     },
     {
@@ -7623,9 +8839,9 @@
         },
         "TransformComponent": {
           "Position": [
-            1812.0,
-            55.0,
-            8.0
+            -32.0,
+            -314.0,
+            12.0
           ],
           "Rotation": [
             -0.2801217444163605,
@@ -7634,14 +8850,910 @@
             0.88038923147572
           ],
           "Scale": [
-            0.07,
-            0.07,
-            0.07
+            0.1,
+            0.1,
+            0.1
           ]
         }
       },
-      "Name": "Trap_Spike_3_4_2",
-      "Parent": -1
+      "Name": "Trap_4_Spike0_0",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            -252.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_1",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_2",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_3",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_4",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_5",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_6",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_7",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_8",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -24.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_9",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike0_10",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -314.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_0",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -252.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_1",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_2",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_3",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_4",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_5",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_6",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_7",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_8",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_9",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike1_10",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -314.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_0",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -252.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_1",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -190.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_2",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -128.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_3",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            -66.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_4",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            -4.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_5",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            58.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_6",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            120.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_7",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            182.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_8",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            32.0,
+            244.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_9",
+      "Parent": 305
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/Cave/Spike.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            24.0,
+            306.0,
+            12.0
+          ],
+          "Rotation": [
+            -0.2801217444163605,
+            -0.3646691598444694,
+            -0.11603022565286633,
+            0.88038923147572
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      },
+      "Name": "Trap_4_Spike2_10",
+      "Parent": 305
     },
     {
       "Components": {
@@ -7651,7 +9763,7 @@
         },
         "TransformComponent": {
           "Position": [
-            1615.0,
+            1300.0,
             250.0,
             2.0
           ],
@@ -7675,9 +9787,9 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1750.0,
+            1950.0,
             230.0,
-            -4.521266096858011
+            -4.209867499611522
           ],
           "Rotation": [
             0.0,
@@ -7721,7 +9833,7 @@
         }
       },
       "Name": "Corridor_Bones_0_Skull",
-      "Parent": 264
+      "Parent": 340
     },
     {
       "Components": {
@@ -7749,7 +9861,7 @@
         }
       },
       "Name": "Corridor_Bones_0_Bone0",
-      "Parent": 264
+      "Parent": 340
     },
     {
       "Components": {
@@ -7777,7 +9889,7 @@
         }
       },
       "Name": "Corridor_Bones_0_Bone1",
-      "Parent": 264
+      "Parent": 340
     },
     {
       "Components": {
@@ -7805,7 +9917,7 @@
         }
       },
       "Name": "Corridor_Bones_0_Bone2",
-      "Parent": 264
+      "Parent": 340
     },
     {
       "Components": {
@@ -7833,7 +9945,7 @@
         }
       },
       "Name": "Corridor_Bones_0_Bone3",
-      "Parent": 264
+      "Parent": 340
     },
     {
       "Components": {
@@ -7885,7 +9997,7 @@
         }
       },
       "Name": "Corridor_Bones_1_Skull",
-      "Parent": 270
+      "Parent": 346
     },
     {
       "Components": {
@@ -7913,7 +10025,7 @@
         }
       },
       "Name": "Corridor_Bones_1_Bone0",
-      "Parent": 270
+      "Parent": 346
     },
     {
       "Components": {
@@ -7941,7 +10053,7 @@
         }
       },
       "Name": "Corridor_Bones_1_Bone1",
-      "Parent": 270
+      "Parent": 346
     },
     {
       "Components": {
@@ -7969,7 +10081,7 @@
         }
       },
       "Name": "Corridor_Bones_1_Bone2",
-      "Parent": 270
+      "Parent": 346
     },
     {
       "Components": {
@@ -7997,7 +10109,7 @@
         }
       },
       "Name": "Corridor_Bones_1_Bone3",
-      "Parent": 270
+      "Parent": 346
     },
     {
       "Components": {
@@ -8049,7 +10161,7 @@
         }
       },
       "Name": "Lake_Crystal_0_Shard0",
-      "Parent": 276
+      "Parent": 352
     },
     {
       "Components": {
@@ -8077,7 +10189,7 @@
         }
       },
       "Name": "Lake_Crystal_0_Shard1",
-      "Parent": 276
+      "Parent": 352
     },
     {
       "Components": {
@@ -8105,7 +10217,7 @@
         }
       },
       "Name": "Lake_Crystal_0_Shard2",
-      "Parent": 276
+      "Parent": 352
     },
     {
       "Components": {
@@ -8133,7 +10245,7 @@
         }
       },
       "Name": "Lake_Crystal_0_Shard3",
-      "Parent": 276
+      "Parent": 352
     },
     {
       "Components": {
@@ -8161,7 +10273,7 @@
         }
       },
       "Name": "Lake_Crystal_0_Shard4",
-      "Parent": 276
+      "Parent": 352
     },
     {
       "Components": {
@@ -8178,7 +10290,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 9.600000000000001, \"Seed\": 582, \"Amount\": 0.1, \"Speed\": 0.3}"
+          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 9.600000000000001, \"Seed\": 658, \"Amount\": 0.1, \"Speed\": 0.3}"
         },
         "TransformComponent": {
           "Position": [
@@ -8252,7 +10364,7 @@
         }
       },
       "Name": "Lake_Crystal_1_Shard0",
-      "Parent": 283
+      "Parent": 359
     },
     {
       "Components": {
@@ -8280,7 +10392,7 @@
         }
       },
       "Name": "Lake_Crystal_1_Shard1",
-      "Parent": 283
+      "Parent": 359
     },
     {
       "Components": {
@@ -8308,7 +10420,7 @@
         }
       },
       "Name": "Lake_Crystal_1_Shard2",
-      "Parent": 283
+      "Parent": 359
     },
     {
       "Components": {
@@ -8336,7 +10448,7 @@
         }
       },
       "Name": "Lake_Crystal_1_Shard3",
-      "Parent": 283
+      "Parent": 359
     },
     {
       "Components": {
@@ -8364,7 +10476,7 @@
         }
       },
       "Name": "Lake_Crystal_1_Shard4",
-      "Parent": 283
+      "Parent": 359
     },
     {
       "Components": {
@@ -8392,7 +10504,7 @@
         }
       },
       "Name": "Lake_Crystal_1_Shard5",
-      "Parent": 283
+      "Parent": 359
     },
     {
       "Components": {
@@ -8420,7 +10532,7 @@
         }
       },
       "Name": "Lake_Crystal_1_Shard6",
-      "Parent": 283
+      "Parent": 359
     },
     {
       "Components": {
@@ -8437,7 +10549,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 8.399999999999999, \"Seed\": 591, \"Amount\": 0.1, \"Speed\": 0.3}"
+          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 8.399999999999999, \"Seed\": 667, \"Amount\": 0.1, \"Speed\": 0.3}"
         },
         "TransformComponent": {
           "Position": [
@@ -8511,7 +10623,7 @@
         }
       },
       "Name": "Lake_Crystal_2_Shard0",
-      "Parent": 292
+      "Parent": 368
     },
     {
       "Components": {
@@ -8539,7 +10651,7 @@
         }
       },
       "Name": "Lake_Crystal_2_Shard1",
-      "Parent": 292
+      "Parent": 368
     },
     {
       "Components": {
@@ -8567,7 +10679,7 @@
         }
       },
       "Name": "Lake_Crystal_2_Shard2",
-      "Parent": 292
+      "Parent": 368
     },
     {
       "Components": {
@@ -8595,7 +10707,7 @@
         }
       },
       "Name": "Lake_Crystal_2_Shard3",
-      "Parent": 292
+      "Parent": 368
     },
     {
       "Components": {
@@ -8623,7 +10735,7 @@
         }
       },
       "Name": "Lake_Crystal_2_Shard4",
-      "Parent": 292
+      "Parent": 368
     },
     {
       "Components": {
@@ -8640,7 +10752,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 12.0, \"Seed\": 598, \"Amount\": 0.1, \"Speed\": 0.3}"
+          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 12.0, \"Seed\": 674, \"Amount\": 0.1, \"Speed\": 0.3}"
         },
         "TransformComponent": {
           "Position": [
@@ -8714,7 +10826,7 @@
         }
       },
       "Name": "Lake_Crystal_3_Shard0",
-      "Parent": 299
+      "Parent": 375
     },
     {
       "Components": {
@@ -8742,7 +10854,7 @@
         }
       },
       "Name": "Lake_Crystal_3_Shard1",
-      "Parent": 299
+      "Parent": 375
     },
     {
       "Components": {
@@ -8770,7 +10882,7 @@
         }
       },
       "Name": "Lake_Crystal_3_Shard2",
-      "Parent": 299
+      "Parent": 375
     },
     {
       "Components": {
@@ -8798,7 +10910,7 @@
         }
       },
       "Name": "Lake_Crystal_3_Shard3",
-      "Parent": 299
+      "Parent": 375
     },
     {
       "Components": {
@@ -8826,7 +10938,7 @@
         }
       },
       "Name": "Lake_Crystal_3_Shard4",
-      "Parent": 299
+      "Parent": 375
     },
     {
       "Components": {
@@ -8854,7 +10966,7 @@
         }
       },
       "Name": "Lake_Crystal_3_Shard5",
-      "Parent": 299
+      "Parent": 375
     },
     {
       "Components": {
@@ -8882,7 +10994,7 @@
         }
       },
       "Name": "Lake_Crystal_3_Shard6",
-      "Parent": 299
+      "Parent": 375
     },
     {
       "Components": {
@@ -8899,7 +11011,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 4.800000000000001, \"Seed\": 607, \"Amount\": 0.1, \"Speed\": 0.3}"
+          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 4.800000000000001, \"Seed\": 683, \"Amount\": 0.1, \"Speed\": 0.3}"
         },
         "TransformComponent": {
           "Position": [
@@ -8973,7 +11085,7 @@
         }
       },
       "Name": "Lake_Crystal_4_Shard0",
-      "Parent": 308
+      "Parent": 384
     },
     {
       "Components": {
@@ -9001,7 +11113,7 @@
         }
       },
       "Name": "Lake_Crystal_4_Shard1",
-      "Parent": 308
+      "Parent": 384
     },
     {
       "Components": {
@@ -9029,7 +11141,7 @@
         }
       },
       "Name": "Lake_Crystal_4_Shard2",
-      "Parent": 308
+      "Parent": 384
     },
     {
       "Components": {
@@ -9057,7 +11169,7 @@
         }
       },
       "Name": "Lake_Crystal_4_Shard3",
-      "Parent": 308
+      "Parent": 384
     },
     {
       "Components": {
@@ -9085,7 +11197,7 @@
         }
       },
       "Name": "Lake_Crystal_4_Shard4",
-      "Parent": 308
+      "Parent": 384
     },
     {
       "Components": {
@@ -9113,7 +11225,7 @@
         }
       },
       "Name": "Lake_Crystal_4_Shard5",
-      "Parent": 308
+      "Parent": 384
     },
     {
       "Components": {
@@ -9130,7 +11242,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 5.4, \"Seed\": 615, \"Amount\": 0.1, \"Speed\": 0.3}"
+          "PropertyOverrides": "{\"Style\": \"Pulse\", \"BaseIntensity\": 5.4, \"Seed\": 691, \"Amount\": 0.1, \"Speed\": 0.3}"
         },
         "TransformComponent": {
           "Position": [
@@ -10786,7 +12898,7 @@
         }
       },
       "Name": "Boss_Bones_0_Skull",
-      "Parent": 372
+      "Parent": 448
     },
     {
       "Components": {
@@ -10814,7 +12926,7 @@
         }
       },
       "Name": "Boss_Bones_0_Bone0",
-      "Parent": 372
+      "Parent": 448
     },
     {
       "Components": {
@@ -10842,7 +12954,7 @@
         }
       },
       "Name": "Boss_Bones_0_Bone1",
-      "Parent": 372
+      "Parent": 448
     },
     {
       "Components": {
@@ -10870,7 +12982,7 @@
         }
       },
       "Name": "Boss_Bones_0_Bone2",
-      "Parent": 372
+      "Parent": 448
     },
     {
       "Components": {
@@ -10898,7 +13010,7 @@
         }
       },
       "Name": "Boss_Bones_0_Bone3",
-      "Parent": 372
+      "Parent": 448
     },
     {
       "Components": {
@@ -10950,7 +13062,7 @@
         }
       },
       "Name": "Boss_Bones_1_Skull",
-      "Parent": 378
+      "Parent": 454
     },
     {
       "Components": {
@@ -10978,7 +13090,7 @@
         }
       },
       "Name": "Boss_Bones_1_Bone0",
-      "Parent": 378
+      "Parent": 454
     },
     {
       "Components": {
@@ -11006,7 +13118,7 @@
         }
       },
       "Name": "Boss_Bones_1_Bone1",
-      "Parent": 378
+      "Parent": 454
     },
     {
       "Components": {
@@ -11034,7 +13146,7 @@
         }
       },
       "Name": "Boss_Bones_1_Bone2",
-      "Parent": 378
+      "Parent": 454
     },
     {
       "Components": {
@@ -11062,7 +13174,7 @@
         }
       },
       "Name": "Boss_Bones_1_Bone3",
-      "Parent": 378
+      "Parent": 454
     },
     {
       "Components": {
@@ -12503,7 +14615,7 @@
           "Position": [
             -1015.9315596818847,
             -941.0183648133724,
-            11.088871487783244
+            -14.693518712107792
           ],
           "Rotation": [
             0.0,
@@ -12814,7 +14926,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/HD2D/HD2DGame.lua",
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"Map\": \"Village\", \"Enemies\": \"\", \"Npcs\": \"\", \"Chests\": \"\", \"Props\": \"SavePoint,-2650,420,39;Cat,3350,-850,46\", \"Boss\": \"\", \"Path\": \"-3150,-100;-900,-100;900,0;2600,150;3880,0\", \"AutoPlay\": \"\", \"Title\": true}"
+          "PropertyOverrides": "{\"Map\": \"Cave\", \"Enemies\": \"Slime,-2500,-500,45;Slime,-2150,250,49;Bat,-2850,300,40;Archer,-900,200,82;Mushroom,-650,-350,57;Archer,-650,-1250,238;CaveBat,150,0,40;CaveBat,1550,-100,40;CaveBat,1750,150,40;Goblin,2250,150,65;CrystalSlime,2950,100,45;Archer,2050,-350,69\", \"Npcs\": \"\", \"Chests\": \"-1250,-1300,207,CrystalSword*1+HiPotion*1;3150,-500,45,Ether*2+Gold*80;4300,-900,50,CrystalCharm*1+Gold*120\", \"Props\": \"\", \"Boss\": \"3900,-350,139\", \"Path\": \"-3150,-100;-900,-100;900,0;2600,150;3880,0\", \"AutoPlay\": \"\", \"Title\": false, \"BossKind\": \"SpiderQueen\", \"BossLift\": 139.0, \"BossReward\": \"Elixir*1+HiPotion*2+Gold*250\", \"Respawn\": false, \"Traps\": \"1460,0,34.2,48,345;1570,0,31.7,48,345;1680,0,32.7,48,345;1790,0,2.0,48,345\", \"Gate\": \"3265,-330,201,310\", \"Arena\": \"3900,-350,720\"}"
         },
         "TransformComponent": {
           "Position": [
@@ -12883,7 +14995,7 @@
           "AgentMaxSlopeDegrees": 40.0,
           "CellSize": 20.0,
           "CellHeight": 10.0,
-          "NavMeshAsset": "Scenes/Demo/HD2D.enav"
+          "NavMeshAsset": "Scenes/Demo/HD2DCave.enav"
         },
         "TransformComponent": {
           "Position": [
@@ -13001,7 +15113,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 448
+          "Root": 524
         },
         "TransformComponent": {
           "Position": [

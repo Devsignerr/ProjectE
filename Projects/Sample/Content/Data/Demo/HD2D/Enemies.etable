@@ -1,0 +1,144 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/Enemy.estruct",
+  "Rows": [
+    {
+      "Name": "Slime",
+      "Values": {
+        "DisplayName": "슬라임",
+        "Behavior": "Hopper",
+        "MaxHealth": 30,
+        "ContactDamage": 8,
+        "AttackDamage": 8,
+        "MoveSpeed": 300,
+        "AggroRange": 700,
+        "AttackRange": 0,
+        "AttackCooldown": 1.1,
+        "WindupTime": 0.0,
+        "ProjectileSpeed": 0,
+        "GoldMin": 2,
+        "GoldMax": 4,
+        "Exp": 6,
+        "DropItem": "Potion",
+        "DropChance": 0.15,
+        "Radius": 48,
+        "RespawnTime": 12
+      }
+    },
+    {
+      "Name": "Bat",
+      "Values": {
+        "DisplayName": "흡혈 박쥐",
+        "Behavior": "Flyer",
+        "MaxHealth": 22,
+        "ContactDamage": 6,
+        "AttackDamage": 11,
+        "MoveSpeed": 380,
+        "AggroRange": 950,
+        "AttackRange": 430,
+        "AttackCooldown": 2.2,
+        "WindupTime": 0.45,
+        "ProjectileSpeed": 1150,
+        "GoldMin": 2,
+        "GoldMax": 5,
+        "Exp": 8,
+        "DropItem": "Ether",
+        "DropChance": 0.15,
+        "Radius": 50,
+        "RespawnTime": 14
+      }
+    },
+    {
+      "Name": "Goblin",
+      "Values": {
+        "DisplayName": "고블린 도적",
+        "Behavior": "Charger",
+        "MaxHealth": 48,
+        "ContactDamage": 6,
+        "AttackDamage": 14,
+        "MoveSpeed": 330,
+        "AggroRange": 950,
+        "AttackRange": 380,
+        "AttackCooldown": 2.0,
+        "WindupTime": 0.5,
+        "ProjectileSpeed": 1250,
+        "GoldMin": 4,
+        "GoldMax": 8,
+        "Exp": 12,
+        "DropItem": "Potion",
+        "DropChance": 0.2,
+        "Radius": 48,
+        "RespawnTime": 16
+      }
+    },
+    {
+      "Name": "Archer",
+      "Values": {
+        "DisplayName": "해골 궁수",
+        "Behavior": "Archer",
+        "MaxHealth": 36,
+        "ContactDamage": 5,
+        "AttackDamage": 12,
+        "MoveSpeed": 220,
+        "AggroRange": 1300,
+        "AttackRange": 950,
+        "AttackCooldown": 2.4,
+        "WindupTime": 0.75,
+        "ProjectileSpeed": 1100,
+        "GoldMin": 4,
+        "GoldMax": 8,
+        "Exp": 14,
+        "DropItem": "HiPotion",
+        "DropChance": 0.1,
+        "Radius": 46,
+        "RespawnTime": 18
+      }
+    },
+    {
+      "Name": "Mushroom",
+      "Values": {
+        "DisplayName": "독버섯",
+        "Behavior": "Spore",
+        "MaxHealth": 44,
+        "ContactDamage": 6,
+        "AttackDamage": 5,
+        "MoveSpeed": 160,
+        "AggroRange": 750,
+        "AttackRange": 280,
+        "AttackCooldown": 3.2,
+        "WindupTime": 0.6,
+        "ProjectileSpeed": 0,
+        "GoldMin": 3,
+        "GoldMax": 6,
+        "Exp": 10,
+        "DropItem": "Ether",
+        "DropChance": 0.15,
+        "Radius": 50,
+        "RespawnTime": 16
+      }
+    },
+    {
+      "Name": "Golem",
+      "Values": {
+        "DisplayName": "고대의 바위 골렘",
+        "Behavior": "Boss",
+        "MaxHealth": 900,
+        "ContactDamage": 14,
+        "AttackDamage": 24,
+        "MoveSpeed": 170,
+        "AggroRange": 850,
+        "AttackRange": 340,
+        "AttackCooldown": 1.5,
+        "WindupTime": 0.8,
+        "ProjectileSpeed": 900,
+        "GoldMin": 150,
+        "GoldMax": 150,
+        "Exp": 150,
+        "DropItem": "Elixir",
+        "DropChance": 1.0,
+        "Radius": 115,
+        "RespawnTime": 0
+      }
+    }
+  ]
+}

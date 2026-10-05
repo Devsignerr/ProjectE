@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Enemies.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "GoblinWalk0"
+    },
+    {
+      "Slice": "GoblinWalk1"
+    },
+    {
+      "Slice": "GoblinWalk2"
+    },
+    {
+      "Slice": "GoblinWalk3"
+    }
+  ]
+}

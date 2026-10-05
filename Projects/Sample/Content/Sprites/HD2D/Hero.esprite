@@ -2,7 +2,7 @@
   "Version": 1,
   "Texture": "Hero.png",
   "TextureWidth": 265,
-  "TextureHeight": 133,
+  "TextureHeight": 265,
   "UnitsPerPixel": 6.0,
   "Filter": "Point",
   "Slices": [
@@ -329,6 +329,303 @@
       "Name": "DashSide0",
       "X": 166,
       "Y": 100,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSpearDown0",
+      "X": 199,
+      "Y": 100,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSpearDown1",
+      "X": 232,
+      "Y": 100,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSpearDown2",
+      "X": 1,
+      "Y": 133,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSpearUp0",
+      "X": 34,
+      "Y": 133,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSpearUp1",
+      "X": 67,
+      "Y": 133,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSpearUp2",
+      "X": 100,
+      "Y": 133,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSpearSide0",
+      "X": 133,
+      "Y": 133,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSpearSide1",
+      "X": 166,
+      "Y": 133,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSpearSide2",
+      "X": 199,
+      "Y": 133,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackBowDown0",
+      "X": 232,
+      "Y": 133,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackBowDown1",
+      "X": 1,
+      "Y": 166,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackBowDown2",
+      "X": 34,
+      "Y": 166,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackBowUp0",
+      "X": 67,
+      "Y": 166,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackBowUp1",
+      "X": 100,
+      "Y": 166,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackBowUp2",
+      "X": 133,
+      "Y": 166,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackBowSide0",
+      "X": 166,
+      "Y": 166,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackBowSide1",
+      "X": 199,
+      "Y": 166,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackBowSide2",
+      "X": 232,
+      "Y": 166,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackStaffDown0",
+      "X": 1,
+      "Y": 199,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackStaffDown1",
+      "X": 34,
+      "Y": 199,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackStaffDown2",
+      "X": 67,
+      "Y": 199,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackStaffUp0",
+      "X": 100,
+      "Y": 199,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackStaffUp1",
+      "X": 133,
+      "Y": 199,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackStaffUp2",
+      "X": 166,
+      "Y": 199,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackStaffSide0",
+      "X": 199,
+      "Y": 199,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackStaffSide1",
+      "X": 232,
+      "Y": 199,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackStaffSide2",
+      "X": 1,
+      "Y": 232,
       "W": 32,
       "H": 32,
       "Pivot": [

@@ -1,11 +1,20 @@
--- HD-2D 데모 플레이어 (Prefabs/Demo/HD2D/Player.eprefab — 캡슐 이동기 + Visual > Body 도트 스프라이트·Shadow·Heart0~4).
---   조작: WASD/왼쪽 스틱 이동(화면 기준 — W = 화면 안쪽 -Y), J/마우스 왼쪽/패드 A 공격, Space/패드 B 대시 (입력 액션 Move/Attack/Dodge).
---   이동은 이동기가 한다 (스크립트는 AddMovementInput만). 방향 = 마지막 입력의 주된 축 → 아래/위/옆 3방향 플립북, 왼쪽은 좌우 반전.
---   공격: 바라보는 쪽 반원 안의 슬라임(관리자 목록 거리 판정)에 피해 + 넉백, 베기 호 효과(가산), 맞히면 히트스톱·흔들림. 연타하면 호가 위/아래 번갈아.
---   대시: entity:AddKnockback(방향 × DashSpeed, DashTime) — 경직 시간 동안 수평 속도를 덮어써 미끄러지고 그동안 무적 + 잔상.
---   피격: 무적 깜빡임 + 넉백, 머리 위 하트가 잠깐 보인다. 체력 0 → 시작 자리에서 부활.
---   카메라: OnLateUpdate(물리 뒤)에 지정 카메라를 발 위치 + 시작 오프셋으로 부드럽게 따라 놓는다 (카메라 회전은 씬 값 그대로 — 고정 시점 디오라마).
---   이동기가 루트를 이동 방향으로 돌리므로 Visual 회전을 매 프레임 상쇄한다.
+-- HD-2D 데모 플레이어 (Prefabs/Demo/HD2D/Player.eprefab — 캡슐 이동기 + Visual > Body 도트 스프라이트·Shadow).
+--   조작 (입력 액션): Move(WASD/왼쪽 스틱) 이동, Attack(J/마우스 왼쪽) 공격, Dodge(Space) 회피 대시, Interact(E) 대화·상자,
+--             Inventory(I/Tab) 소지품, Skill2(R) 무기 교체, UsePotion1(1) 회복약, UsePotion2(2) 마나 물약.
+--   메뉴(대화·인벤토리·상점)가 열려 있으면 입력을 관리자(HD2DGame:MenuInput)에 넘긴다 — W/S 고르기, E·J 확인, I·Space 닫기.
+--   이동은 이동기가 한다 (스크립트는 AddMovementInput만). 방향 = 마지막 입력/조준의 주된 축 → 아래/위/옆 3방향 플립북, 왼쪽은 좌우 반전.
+--   무기 (Data/Demo/HD2D/Weapons.etable — 관리자의 장비 무기):
+--     Slash  검: 바라보는 쪽 부채꼴, 세 번째 연타는 크게 (피해 ×1.6, 큰 호, 긴 멈춤)
+--     Thrust 창: 좁고 긴 직선 — 줄지은 적을 모두 꿰뚫는다 (찌르기 궤적 효과)
+--     Arrow  활: 가까운 적을 자동 조준해 화살 (관리자 투사체)
+--     Bolt   지팡이: 마나를 써 빛의 탄 — 맞으면 터져 주변도 (꼬리 잔상)
+--   대시: entity:AddKnockback(방향 × DashSpeed, DashTime) — 그동안 무적 + 잔상. 피격: 무적 깜빡임 + 넉백 + 붉은 숫자. 쓰러지면 마을 시작 자리에서 부활.
+--   레벨: 경험치(Balance.ExpTable)가 차면 레벨 업 — 최대 HP/MP·공격 배율 증가, 완전 회복, 빛기둥 연출.
+--   카메라: OnLateUpdate(물리 뒤)에 지정 카메라를 발 위치 + 시작 오프셋으로 부드럽게 따라 놓는다 (회전은 씬 값 — 고정 시점 디오라마).
+--   이동기가 루트를 이동 방향으로 돌리므로 Visual 회전을 매 프레임 상쇄한다. 자동 검증이면 입력을 HD2DAutoPilot.lua가 채운다.
+local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
+local AutoPilot = Script.Require("Scripts/Demo/HD2D/HD2DAutoPilot.lua")
+
 local HD2DPlayer = {
 	Properties = {
 		Camera         = "Camera",
@@ -13,101 +22,19 @@ local HD2DPlayer = {
 		FocusHeight    = 70.0,
 		CameraLag      = 7.0,    -- 1/초 (클수록 바짝 따라감)
 		MinX = -100000.0, MaxX = 100000.0, MinY = -100000.0, MaxY = 100000.0, -- 카메라 초점 범위 (맵 가장자리가 보이지 않게)
-		MaxHealth      = 5,
-		AttackDamage   = 1,
-		AttackRange    = 150.0,  -- 몸에서 호 중심까지 + 판정 반경
-		AttackCooldown = 0.26,
-		DashSpeed      = 1700.0, -- cm/s
-		DashTime       = 0.2,
-		DashCooldown   = 0.5,
 	},
 }
 
-local Books = {}
-for _, Pose in ipairs({ "Idle", "Walk", "Attack", "Dash" }) do
-	for _, Dir in ipairs({ "Down", "Up", "Side" }) do
-		Books[Pose .. Dir] = "Sprites/HD2D/Hero_" .. Pose .. Dir .. ".eflipbook"
-	end
-end
 local HeroSprite = "Sprites/HD2D/Hero.esprite"
--- 방향 이름 → (월드 방향, 화면 각: 화면 반시계 + 도, 옆모습 반전)
+-- 방향 이름 → (월드 방향, 플립북 방향, 옆모습 반전)
 local Dirs = {
-	Down  = { V = Vector3(0, 1, 0),  Angle = 270, Anim = "Down", Flip = false },
-	Up    = { V = Vector3(0, -1, 0), Angle = 90,  Anim = "Up",   Flip = false },
-	Right = { V = Vector3(1, 0, 0),  Angle = 0,   Anim = "Side", Flip = false },
-	Left  = { V = Vector3(-1, 0, 0), Angle = 180, Anim = "Side", Flip = true },
+	Down  = { V = Vector3(0, 1, 0),  Anim = "Down", Flip = false },
+	Up    = { V = Vector3(0, -1, 0), Anim = "Up",   Flip = false },
+	Right = { V = Vector3(1, 0, 0),  Anim = "Side", Flip = false },
+	Left  = { V = Vector3(-1, 0, 0), Anim = "Side", Flip = true },
 }
 
-function HD2DPlayer:OnStart()
-	self.GM = Scene.Find("HD2DGame"):GetScript()
-	self.Visual = self.entity:FindChild("Visual")
-	self.Body = self.Visual:FindChild("Body")
-	self.Sprite = self.Body:GetComponent("SpriteComponent")
-	self.Hearts = {}
-	for I = 0, 4 do
-		local H = self.Visual:FindChild("Heart" .. I)
-		if H then self.Hearts[#self.Hearts + 1] = H end
-	end
-	self.Health = self.Properties.MaxHealth
-	self.Facing = "Down"
-	self.Anim = ""
-	self.AttackTimer, self.AttackCooldown, self.bHitDone, self.SwingSide = 0.0, 0.0, true, 1
-	self.DashTimer, self.DashCooldown, self.AfterimageTimer = 0.0, 0.0, 0.0
-	self.Invuln, self.HurtFlash, self.HeartTimer = 0.0, 0.0, 0.0
-	self.bDead = false
-	self.Start = self.entity:GetWorldPosition()
-	self.LastPos = self.Start
-	self.Stats = { Distance = 0, Attacks = 0, Hits = 0, Dashes = 0, Damaged = 0 }
-	self.Auto = self.GM.Properties.AutoPlay and { Time = 0, DashTimer = 1.5 } or nil
-	self.Camera = Scene.Find(self.Properties.Camera)
-	if self.Camera then
-		self.CamOffset = self.Camera:GetForward() * -self.Properties.CameraDistance
-		self.CamPos = self:CameraTarget()
-		self.Camera:SetPosition(self.CamPos)
-	end
-	self:ShowHearts(0)
-	self:UpdateAnimation(Vector3(0, 0, 0))
-end
-
--- ---- 입력 (사람 또는 자동 플레이)
-function HD2DPlayer:GatherInput(Dt)
-	if self.Auto then
-		return self:AutoInput(Dt)
-	end
-	local MX, MY = Input.GetAction("Move")
-	return { Move = Vector3(MX, -MY, 0), Attack = Input.WasActionPressed("Attack"), Dash = Input.WasActionPressed("Dodge") }
-end
-
--- 자동 플레이: 가장 가까운 슬라임에게 걸어가 때리고, 멀면 대시로 거리를 좁힌다
-function HD2DPlayer:AutoInput(Dt)
-	local A = self.Auto
-	A.Time = A.Time + Dt
-	A.DashTimer = A.DashTimer - Dt
-	local Pos = self.entity:GetWorldPosition()
-	local Target, Dist = self.GM:NearestSlime(Pos)
-	local In = { Move = Vector3(0, 0, 0), Attack = false, Dash = false }
-	if not Target then
-		-- 슬라임이 없으면 들판 가운데로
-		In.Move = (Vector3(1800, -300, Pos.Z) - Pos)
-		In.Move.Z = 0
-		if In.Move:Length() > 50 then In.Move = In.Move:Normalized() else In.Move = Vector3(0, 0, 0) end
-		return In
-	end
-	local To = Target.entity:GetWorldPosition() - Pos
-	To.Z = 0
-	if Dist > 120 then
-		In.Move = To:Normalized()
-	end
-	if Dist < 170 then
-		-- 바라보는 방향을 맞추고 때린다
-		In.Move = To:Normalized() * 0.3
-		In.Attack = self.AttackCooldown <= 0
-	elseif Dist > 450 and A.DashTimer <= 0 then
-		In.Dash = true
-		A.DashTimer = 2.5
-	end
-	return In
-end
+local function Flat(V) return Vector3(V.X, V.Y, 0) end
 
 local function FacingFromMove(Move, Current)
 	if math.abs(Move.X) < 0.1 and math.abs(Move.Y) < 0.1 then
@@ -120,128 +47,352 @@ local function FacingFromMove(Move, Current)
 	return Move.Y > 0 and "Down" or "Up"
 end
 
+function HD2DPlayer:OnStart()
+	self.GM = Scene.Find("HD2DGame"):GetScript()
+	self.Visual = self.entity:FindChild("Visual")
+	self.Body = self.Visual:FindChild("Body")
+	self.Sprite = self.Body:GetComponent("SpriteComponent")
+	local B = D.Balance()
+	self.Name = B.PlayerName
+	self.Level, self.Exp = 1, 0
+	self:ApplyLevel()
+	self.Health, self.Mana = self.MaxHealth, self.MaxMana
+	self.Facing = "Down"
+	self.AimDir = Dirs.Down.V
+	self.Anim = ""
+	self.AttackTimer, self.AttackCooldown, self.bHitDone, self.SwingSide = 0.0, 0.0, true, 1
+	self.Combo, self.ComboWindow, self.bQueued = 0, 0.0, false
+	self.DashTimer, self.DashCooldown, self.AfterimageTimer = 0.0, 0.0, 0.0
+	self.Invuln, self.HurtFlash, self.NoManaTimer = 0.0, 0.0, 0.0
+	self.bDead = false
+	self.DamageTakenScale = 1.0
+	self.Start = self.entity:GetWorldPosition()
+	self.LastPos = self.Start
+	self.Stats = { Distance = 0, Attacks = 0, Hits = 0, Dashes = 0, Damaged = 0, Deaths = 0, LevelUps = 0 }
+	self.MenuHeldDir, self.MenuRepeat = 0, 0.0
+	if self.GM.Properties.AutoPlay ~= "" then
+		self.Pilot = AutoPilot.New(self.GM.Properties.AutoPlay, self, self.GM)
+		self.DamageTakenScale = self.Pilot.DamageTakenScale
+	end
+	self.Camera = Scene.Find(self.Properties.Camera)
+	if self.Camera then
+		self.CamOffset = self.Camera:GetForward() * -self.Properties.CameraDistance
+		self.CamPos = self:CameraTarget()
+		self.Camera:SetPosition(self.CamPos)
+	end
+	self:OnWeaponChanged()
+	self:UpdateAnimation(Vector3(0, 0, 0))
+end
+
+-- ---- 레벨·회복
+function HD2DPlayer:ApplyLevel()
+	local B = D.Balance()
+	self.MaxHealth = math.floor(B.MaxHealth + B.HealthPerLevel * (self.Level - 1))
+	self.MaxMana = math.floor(B.MaxMana + B.ManaPerLevel * (self.Level - 1))
+end
+
+function HD2DPlayer:DamageScale()
+	return 1.0 + D.Balance().DamagePerLevel * (self.Level - 1)
+end
+
+function HD2DPlayer:ExpFraction()
+	local T = D.Balance().ExpTable
+	local Cur, Next = T[self.Level] or 0, T[self.Level + 1]
+	if not Next then return 1.0 end
+	return math.max(0.0, math.min(1.0, (self.Exp - Cur) / (Next - Cur)))
+end
+
+function HD2DPlayer:AddExp(N)
+	self.Exp = self.Exp + N
+	local T = D.Balance().ExpTable
+	while T[self.Level + 1] and self.Exp >= T[self.Level + 1] do
+		local OldHp, OldMp = self.MaxHealth, self.MaxMana
+		self.Level = self.Level + 1
+		self:ApplyLevel()
+		self.Health, self.Mana = self.MaxHealth, self.MaxMana
+		self.Stats.LevelUps = self.Stats.LevelUps + 1
+		self.GM:SpawnLevelFx(self.entity:GetWorldPosition())
+		self.GM:Hud():Announce("LEVEL UP!", string.format("Lv %d   최대 HP +%d   최대 MP +%d", self.Level, self.MaxHealth - OldHp, self.MaxMana - OldMp), 2.5)
+		Audio.PlayOneShot(self.GM.Sounds.Confirm)
+		Log.Info(string.format("[HD2D] 레벨 업: Lv %d (HP %d, MP %d)", self.Level, self.MaxHealth, self.MaxMana))
+	end
+end
+
+function HD2DPlayer:Heal(Hp, Mp)
+	local Pos = self.entity:GetWorldPosition()
+	if Hp > 0 then
+		local Before = self.Health
+		self.Health = math.min(self.MaxHealth, self.Health + Hp)
+		self.GM:DamageNumber(Pos + Vector3(0, 0, 60), "+" .. math.floor(self.Health - Before + 0.5), { 0.5, 1, 0.55, 1 }, 1.0)
+		self.GM:SpawnHealFx(Pos, { 0.6, 1, 0.6, 1 })
+	end
+	if Mp > 0 then
+		local Before = self.Mana
+		self.Mana = math.min(self.MaxMana, self.Mana + Mp)
+		self.GM:DamageNumber(Pos + Vector3(0, 0, 90), "+" .. math.floor(self.Mana - Before + 0.5) .. " MP", { 0.55, 0.75, 1, 1 }, 0.9)
+		self.GM:SpawnHealFx(Pos, { 0.6, 0.8, 1, 1 })
+	end
+end
+
+function HD2DPlayer:OnWeaponChanged()
+	self.Combo = 0
+	self.Weapon = self.GM:GetWeapon()
+	self.GM:Hud():SetWeapon(self.Weapon)
+	self.Anim = ""
+end
+
+-- ---- 입력 (사람 또는 자동 조종)
+function HD2DPlayer:GatherInput()
+	if self.Pilot then
+		return self.Pilot:Step(Time.GetUnscaledDelta())
+	end
+	local MX, MY = Input.GetAction("Move")
+	local In = { Move = Vector3(MX, -MY, 0), Attack = Input.WasActionPressed("Attack"), Dash = Input.WasActionPressed("Dodge"),
+	             Interact = Input.WasActionPressed("Interact"), Inventory = Input.WasActionPressed("Inventory"), Switch = Input.WasActionPressed("Skill2"),
+	             Use1 = Input.WasActionPressed("UsePotion1"), Use2 = Input.WasActionPressed("UsePotion2") }
+	In.Confirm = In.Interact or In.Attack
+	In.Cancel = In.Dash
+	-- 메뉴 위/아래: 누른 순간 + 누르고 있으면 반복
+	local Dir = MY > 0.5 and 1 or (MY < -0.5 and -1 or 0)
+	local UDt = Time.GetUnscaledDelta()
+	if Dir ~= 0 and Dir ~= self.MenuHeldDir then
+		self.MenuRepeat = 0.35
+		In.MenuUp, In.MenuDown = Dir == 1, Dir == -1
+	elseif Dir ~= 0 then
+		self.MenuRepeat = self.MenuRepeat - UDt
+		if self.MenuRepeat <= 0 then
+			self.MenuRepeat = 0.11
+			In.MenuUp, In.MenuDown = Dir == 1, Dir == -1
+		end
+	end
+	self.MenuHeldDir = Dir
+	return In
+end
+
 function HD2DPlayer:OnUpdate(Dt)
 	local E = self.entity
 	local Pos = E:GetWorldPosition()
-	local Step = Pos - self.LastPos
-	Step.Z = 0
+	local Step = Flat(Pos - self.LastPos)
 	if Step:Length() < 500 then self.Stats.Distance = self.Stats.Distance + Step:Length() end
 	self.LastPos = Pos
+
+	local In = self:GatherInput()
+	if self.GM:IsMenuOpen() then
+		self.GM:MenuInput(In)
+		self:UpdateHud()
+		return
+	end
+	self.GM:UpdateInteract(Pos)
 
 	self.AttackCooldown = math.max(0.0, self.AttackCooldown - Dt)
 	self.DashCooldown = math.max(0.0, self.DashCooldown - Dt)
 	self.Invuln = math.max(0.0, self.Invuln - Dt)
-	self.HeartTimer = math.max(0.0, self.HeartTimer - Dt)
-	if self.HeartTimer <= 0 then self:ShowHearts(0) end
+	self.ComboWindow = math.max(0.0, self.ComboWindow - Dt)
+	self.NoManaTimer = math.max(0.0, self.NoManaTimer - Dt)
+	self.Mana = math.min(self.MaxMana, self.Mana + D.Balance().ManaRegen * Dt)
 
-	local In = self:GatherInput(Dt)
+	if In.Inventory then
+		self.GM:OpenInventory()
+		self:UpdateHud()
+		return
+	end
+	if In.Interact and self.GM.Target and self.AttackTimer <= 0 and self.DashTimer <= 0 then
+		self.GM:Interact()
+		self:UpdateHud()
+		return
+	end
+	if In.Switch then self.GM:CycleWeapon() end
+	if In.Use1 then self.GM:QuickUse({ "Potion", "HiPotion", "Elixir" }) end
+	if In.Use2 then self.GM:QuickUse({ "Ether", "Elixir" }) end
+
 	local Move = In.Move
 	if Move:Length() > 1 then Move = Move:Normalized() end
 
-	-- 대시 중: 이동기가 넉백 경직으로 미끄러뜨린다. 잔상만 남긴다
 	if self.DashTimer > 0 then
+		-- 대시 중: 이동기가 넉백 경직으로 미끄러뜨린다. 잔상만 남긴다
 		self.DashTimer = self.DashTimer - Dt
 		self.AfterimageTimer = self.AfterimageTimer - Dt
 		if self.AfterimageTimer <= 0 then
 			self.AfterimageTimer = 0.035
-			local D = Dirs[self.Facing]
-			self.GM:SpawnAfterimage(HeroSprite, "Dash" .. D.Anim .. "0", self.Body:GetWorldPosition() + Vector3(0, -2, 0), D.Flip)
+			local Dd = Dirs[self.Facing]
+			self.GM:SpawnAfterimage(HeroSprite, "Dash" .. Dd.Anim .. "0", self.Body:GetWorldPosition() + Vector3(0, -2, 0), Dd.Flip)
 		end
 	elseif self.AttackTimer > 0 then
-		-- 공격 중: 이동 입력 무시, 두 번째 프레임에 판정
+		-- 공격 중: 이동 입력 무시, HitDelay에 판정. 공격 끝 무렵 누르면 다음 공격 예약 (검 연타)
 		self.AttackTimer = self.AttackTimer - Dt
-		if not self.bHitDone and self.AttackTimer <= 0.2 then
+		if In.Attack then self.bQueued = true end
+		if not self.bHitDone and self.AttackElapsed + Dt >= self.Weapon.HitDelay then
 			self.bHitDone = true
 			self:DoAttackHit()
+		end
+		self.AttackElapsed = self.AttackElapsed + Dt
+		if self.AttackTimer <= 0 then
+			self.ComboWindow = 0.32
 		end
 	else
 		if In.Dash and self.DashCooldown <= 0 then
 			self:StartDash(Move)
-		elseif In.Attack and self.AttackCooldown <= 0 then
-			self.Facing = FacingFromMove(Move, self.Facing)
-			self:StartAttack()
+		elseif (In.Attack or self.bQueued) and self.AttackCooldown <= 0 then
+			self:StartAttack(Move)
 		elseif Move:Length() > 0.05 then
 			self.Facing = FacingFromMove(Move, self.Facing)
+			self.AimDir = Dirs[self.Facing].V
 			E:AddMovementInput(Move)
 		end
 	end
 
 	-- 무적 깜빡임 + 피격 붉은빛
-	if self.HurtFlash > 0 then
-		self.HurtFlash = self.HurtFlash - Dt
-	end
+	if self.HurtFlash > 0 then self.HurtFlash = self.HurtFlash - Dt end
 	self.Sprite.Color = self.HurtFlash > 0 and Vector4(1, 0.4, 0.4, 1) or Vector4(1, 1, 1, 1)
 	self.Sprite.Visible = not (self.Invuln > 0 and self.DashTimer <= 0 and math.floor(self.Invuln * 16) % 2 == 1)
 
 	self:UpdateAnimation(E:GetMovementVelocity())
+	self:UpdateHud()
+end
+
+function HD2DPlayer:UpdateHud()
+	local H = self.GM:Hud()
+	if not H then return end
+	H:SetStatus(self.Name, self.Level, self.Health, self.MaxHealth, self.Mana, self.MaxMana, self:ExpFraction())
+	H:SetGold(self.GM.Gold)
 end
 
 function HD2DPlayer:StartDash(Move)
 	local Dir = Move:Length() > 0.1 and Move:Normalized() or Dirs[self.Facing].V
+	local B = D.Balance()
 	self.Facing = FacingFromMove(Dir, self.Facing)
-	self.DashTimer = self.Properties.DashTime
-	self.DashCooldown = self.Properties.DashCooldown
+	self.DashTimer = B.DashTime
+	self.DashCooldown = B.DashCooldown
 	self.AfterimageTimer = 0.0
-	self.entity:AddKnockback(Dir * self.Properties.DashSpeed, self.Properties.DashTime)
+	self.bQueued = false
+	self.entity:AddKnockback(Dir * B.DashSpeed, B.DashTime)
 	self.GM:SpawnFx("Dust", self.entity:GetWorldPosition() + Vector3(-Dir.X * 40, -Dir.Y * 40 + 4, -82), { FlipX = Dir.X < 0 })
 	Audio.PlayOneShot("Audio/RPG/Dash.wav")
 	self.Stats.Dashes = self.Stats.Dashes + 1
 end
 
-function HD2DPlayer:StartAttack()
-	self.AttackTimer = 0.29
-	self.AttackCooldown = self.Properties.AttackCooldown
+-- 조준 방향: 원거리는 Arc 안 가장 가까운 적 (없으면 사거리 안 아무 적 중 가장 가까운 것이 앞쪽 반원에 있으면), 근접은 가까이 있는 적 쪽으로 돌아선다
+function HD2DPlayer:ChooseAim(Move, W)
+	local Base = Move:Length() > 0.1 and Move:Normalized() or Dirs[self.Facing].V
+	local Pos = self.entity:GetWorldPosition()
+	local bRanged = W.Kind == "Arrow" or W.Kind == "Bolt"
+	local Reach = bRanged and W.Range * 0.9 or W.Range + 80
+	local CosHalf = math.cos(math.rad((bRanged and W.Arc or 120) * 0.5))
+	local Target = self.GM:NearestEnemy(Pos, Reach, function(S)
+		local To = Flat(S.entity:GetWorldPosition() - Pos)
+		local L = To:Length()
+		return L < 1 or (To * (1.0 / L)):Dot(Base) >= CosHalf or Move:Length() <= 0.1
+	end)
+	if Target then
+		local To = Flat(Target.entity:GetWorldPosition() - Pos)
+		if To:Length() > 1 then return To:Normalized() end
+	end
+	return Base
+end
+
+function HD2DPlayer:StartAttack(Move)
+	local W = self.Weapon
+	self.bQueued = false
+	if W.ManaCost > 0 and self.Mana < W.ManaCost then
+		if self.NoManaTimer <= 0 then
+			self.NoManaTimer = 1.0
+			self.GM:Hud():Toast(D.Item("Ether").Icon, "마나가 부족하다")
+			Audio.PlayOneShot(self.GM.Sounds.Error)
+		end
+		return
+	end
+	self.Mana = self.Mana - W.ManaCost
+	self.AimDir = self:ChooseAim(Move, W)
+	self.Facing = FacingFromMove(self.AimDir, self.Facing)
+	self.AttackTimer = W.AttackTime
+	self.AttackElapsed = 0.0
+	self.AttackCooldown = W.AttackTime + W.Cooldown * 0.25
 	self.bHitDone = false
 	self.SwingSide = -self.SwingSide
+	self.Combo = (W.Kind == "Slash" and self.ComboWindow > 0) and (self.Combo % 3 + 1) or 1
 	self.Anim = "" -- 같은 방향 연타도 처음부터
 	self.Stats.Attacks = self.Stats.Attacks + 1
-	Audio.PlayOneShot(self.SwingSide > 0 and "Audio/RPG/Swing1.wav" or "Audio/RPG/Swing2.wav")
-	-- 반 걸음 내딛기
-	self.entity:AddKnockback(Dirs[self.Facing].V * 260, 0.08)
+	Audio.PlayOneShot((W.Kind == "Slash" and self.Combo == 3) and "Audio/RPG/Swing3.wav" or W.Sound)
+	if W.Kind == "Slash" or W.Kind == "Thrust" then
+		self.entity:AddKnockback(self.AimDir * (W.Kind == "Thrust" and 380 or 260), 0.08) -- 반 걸음 내딛기
+	end
+end
+
+-- 피해 굴림 (레벨 배율 · ±10% · 치명타)
+function HD2DPlayer:RollDamage(Base)
+	local B = D.Balance()
+	local Value = Base * self:DamageScale() * (0.9 + 0.2 * self.GM:Random())
+	local bCrit = self.GM:Random() < B.CritChance
+	if bCrit then Value = Value * B.CritMultiplier end
+	return math.max(1, math.floor(Value + 0.5)), bCrit
 end
 
 function HD2DPlayer:DoAttackHit()
-	local D = Dirs[self.Facing]
+	local W = self.Weapon
+	local Aim = self.AimDir
 	local Pos = self.entity:GetWorldPosition()
-	local Center = Pos + D.V * (self.Properties.AttackRange * 0.55)
-	-- 베기 호: 화면 평면에서 바라보는 쪽으로 회전, 몸보다 살짝 앞(카메라 쪽)에
-	local FxPos = Center + Vector3(0, 12, -5)
-	self.GM:SpawnFx("Slash", FxPos, { Rotation = D.Angle, FlipY = self.SwingSide < 0, Blend = 2, Scale = 1.1 })
+	local Angle = self.GM.ScreenAngle(Aim)
+	local bFinisher = W.Kind == "Slash" and self.Combo == 3
+	local Targets = {}
+	if W.Kind == "Slash" then
+		local Center = Pos + Aim * (W.Range * 0.45)
+		self.GM:SpawnFx("Slash", Center + Vector3(0, 12, -5), { Rotation = Angle, FlipY = self.SwingSide < 0, Blend = 2, Scale = bFinisher and 1.6 or 1.1,
+		                                                        Color = bFinisher and { 1, 0.9, 0.6, 1 } or nil })
+		Targets = self.GM:FindEnemiesInCone(Pos, Aim, W.Range * (bFinisher and 1.2 or 1.0), bFinisher and 220 or W.Arc)
+	elseif W.Kind == "Thrust" then
+		self.GM:SpawnFx("Thrust", Pos + Aim * 30 + Vector3(0, 12, -8), { Rotation = Angle, Blend = 2, Scale = { W.Range / 280.0, 1.3 } })
+		Targets = self.GM:FindEnemiesInLine(Pos, Aim, W.Range, 40)
+	else
+		-- 투사체: 관리자가 움직이고 맞힌다
+		local Damage, bCrit = self:RollDamage(W.Damage)
+		self.GM:SpawnProjectile({ Kind = W.Kind, Pos = Pos + Aim * 50 + Vector3(0, 10, 8), Dir = Aim, Speed = W.ProjectileSpeed, Range = W.Range,
+		                          Damage = Damage, Knockback = W.Knockback, Splash = W.Splash, Team = "Player", Crit = bCrit, Weapon = self.GM.Equipped })
+		if W.Kind == "Bolt" then
+			self.GM:SpawnFx("Sparkle", Pos + Aim * 50 + Vector3(0, 14, 20), { Blend = 2, Scale = 0.9, Color = { 0.6, 0.8, 1, 1 } })
+		end
+		return
+	end
 	local Hit = 0
-	for _, S in ipairs(self.GM:FindSlimes(Center, self.Properties.AttackRange * 0.75)) do
-		local Away = S.entity:GetWorldPosition() - Pos
-		Away.Z = 0
-		Away = Away:Length() > 1 and Away:Normalized() or D.V
-		if S:TakeHit(self.Properties.AttackDamage, Away) then
+	for _, S in ipairs(Targets) do
+		local Away = Flat(S.entity:GetWorldPosition() - Pos)
+		Away = Away:Length() > 1 and Away:Normalized() or Aim
+		local Damage, bCrit = self:RollDamage(W.Damage * (bFinisher and 1.6 or 1.0))
+		if self.GM:HitEnemy(S, Damage, Away, W.Knockback * (bFinisher and 1.4 or 1.0), bCrit, self.GM.Equipped) then
 			Hit = Hit + 1
 		end
 	end
 	if Hit > 0 then
 		self.Stats.Hits = self.Stats.Hits + Hit
-		Game.HitStop(0.06)
-		self.GM:AddShake(6, 0.15)
-		Audio.PlayOneShot("Audio/RPG/Hit.wav")
+		Game.HitStop(W.HitStop * (bFinisher and 1.8 or 1.0))
+		self.GM:AddShake(bFinisher and 11 or 6, 0.15)
+		Audio.PlayOneShot((bFinisher or W.Kind == "Thrust") and "Audio/RPG/HitHeavy.wav" or "Audio/RPG/Hit.wav")
 	end
 end
 
--- 슬라임이 부른다. 피해를 받았으면 true
-function HD2DPlayer:TakeDamage(Amount, From)
-	if self.bDead or self.Invuln > 0 or self.DashTimer > 0 then
+-- 적·투사체·독이 부른다. 피해를 받았으면 true. Opt: bNoKnockback, bNoInvuln(독 — 무적 시간을 주지 않음), Color
+function HD2DPlayer:TakeDamage(Amount, From, Opt)
+	Opt = Opt or {}
+	if self.bDead or self.DashTimer > 0 or (self.Invuln > 0 and not Opt.bNoInvuln) then
 		return false
 	end
-	self.Health = self.Health - Amount
+	local Damage = math.max(1, math.floor(Amount * self.DamageTakenScale + 0.5))
+	self.Health = self.Health - Damage
 	self.Stats.Damaged = self.Stats.Damaged + 1
-	self.Invuln = 1.0
+	local Pos = self.entity:GetWorldPosition()
+	self.GM:DamageNumber(Pos + Vector3(0, 0, 70), tostring(Damage), Opt.Color or { 1, 0.4, 0.4, 1 }, 1.1)
 	self.HurtFlash = 0.15
-	self.AttackTimer = 0.0
-	local Away = self.entity:GetWorldPosition() - From
-	Away.Z = 0
-	Away = Away:Length() > 1 and Away:Normalized() or Vector3(0, 1, 0)
-	self.entity:AddKnockback(Away * 650, 0.18)
-	self.GM:AddShake(9, 0.2)
-	self.GM:SpawnFx("Spark", self.entity:GetWorldPosition() + Vector3(0, 30, 0), { Blend = 2, Color = { 1, 0.45, 0.45, 1 } })
-	Audio.PlayOneShot("Audio/RPG/Hurt.wav")
-	self:ShowHearts(2.0)
+	if not Opt.bNoInvuln then
+		self.Invuln = D.Balance().InvulnTime
+		self.AttackTimer = 0.0
+		self.GM:AddShake(9, 0.2)
+		self.GM:SpawnFx("Spark", Pos + Vector3(0, 30, 0), { Blend = 2, Color = { 1, 0.45, 0.45, 1 } })
+		Audio.PlayOneShot("Audio/RPG/Hurt.wav")
+	end
+	if not Opt.bNoKnockback then
+		local Away = Flat(Pos - From)
+		Away = Away:Length() > 1 and Away:Normalized() or Vector3(0, 1, 0)
+		self.entity:AddKnockback(Away * 650, 0.18)
+	end
 	if self.Health <= 0 then
 		self:Respawn()
 	end
@@ -251,37 +402,31 @@ end
 function HD2DPlayer:Respawn()
 	self.GM:SpawnFx("Poof", self.entity:GetWorldPosition() + Vector3(0, 10, -60), { Scale = 1.3 })
 	self.entity:SetPosition(self.Start)
-	self.Health = self.Properties.MaxHealth
+	self.Health = self.MaxHealth
+	self.Mana = self.MaxMana
 	self.Invuln = 2.0
-	self:ShowHearts(2.0)
+	self.Stats.Deaths = self.Stats.Deaths + 1
+	self.GM:Hud():Announce("쓰러졌다…", "마을에서 다시 일어섰다", 2.5)
 	Log.Info("[HD2D] 플레이어 쓰러짐 → 시작 자리에서 부활")
 end
 
-function HD2DPlayer:ShowHearts(Seconds)
-	self.HeartTimer = Seconds
-	for I, H in ipairs(self.Hearts) do
-		local S = H:GetComponent("SpriteComponent")
-		S.Visible = Seconds > 0 and I <= self.Properties.MaxHealth
-		S.Slice = I <= self.Health and "HeartFull" or "HeartEmpty"
-	end
-end
-
 function HD2DPlayer:UpdateAnimation(Velocity)
-	local D = Dirs[self.Facing]
-	local Pose = "Idle"
+	local Dd = Dirs[self.Facing]
+	local Want
 	if self.DashTimer > 0 then
-		Pose = "Dash"
+		Want = "Hero_Dash" .. Dd.Anim
 	elseif self.AttackTimer > 0 then
-		Pose = "Attack"
+		Want = self.Weapon.Flipbook .. Dd.Anim
 	elseif Velocity.X * Velocity.X + Velocity.Y * Velocity.Y > 40 * 40 then
-		Pose = "Walk"
+		Want = "Hero_Walk" .. Dd.Anim
+	else
+		Want = "Hero_Idle" .. Dd.Anim
 	end
-	local Want = Pose .. D.Anim
 	if Want ~= self.Anim then
 		self.Anim = Want
-		self.Body:PlayFlipbook(Books[Want])
+		self.Body:PlayFlipbook("Sprites/HD2D/" .. Want .. ".eflipbook")
 	end
-	self.Body:SetSpriteFlip(D.Flip, false)
+	self.Body:SetSpriteFlip(Dd.Flip, false)
 end
 
 function HD2DPlayer:CameraTarget()
@@ -299,6 +444,12 @@ function HD2DPlayer:OnLateUpdate(Dt)
 		self.CamPos = Vector3.Lerp(self.CamPos, Target, 1.0 - math.exp(-self.Properties.CameraLag * Dt))
 		self.Camera:SetPosition(self.CamPos + self.GM:GetShakeOffset())
 	end
+end
+
+-- 자동 조종용: 즉시 이동 (막혀 오래 못 가면)
+function HD2DPlayer:Teleport(Pos)
+	self.entity:SetPosition(Pos)
+	self.LastPos = Pos
 end
 
 return HD2DPlayer

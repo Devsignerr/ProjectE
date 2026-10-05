@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Enemies.esprite",
+  "Fps": 6.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "MushroomWalk0"
+    },
+    {
+      "Slice": "MushroomWalk1"
+    }
+  ]
+}

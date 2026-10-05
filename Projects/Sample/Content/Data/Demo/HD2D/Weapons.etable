@@ -1,0 +1,94 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/Weapon.estruct",
+  "Rows": [
+    {
+      "Name": "Sword",
+      "Values": {
+        "DisplayName": "여행자의 검",
+        "Kind": "Slash",
+        "Icon": "UI/Demo/HD2D/Icons/Sword.png",
+        "Description": "손에 익은 한손검. 빠르게 세 번 이어 베고, 마지막 일격은 크게 휘두른다.",
+        "Damage": 14,
+        "Cooldown": 0.22,
+        "Range": 155,
+        "Arc": 170,
+        "Knockback": 720,
+        "ProjectileSpeed": 0,
+        "ManaCost": 0,
+        "Splash": 0,
+        "HitStop": 0.05,
+        "AttackTime": 0.29,
+        "HitDelay": 0.09,
+        "Flipbook": "Hero_Attack",
+        "Sound": "Audio/RPG/Swing1.wav"
+      }
+    },
+    {
+      "Name": "Spear",
+      "Values": {
+        "DisplayName": "기사의 창",
+        "Kind": "Thrust",
+        "Icon": "UI/Demo/HD2D/Icons/Spear.png",
+        "Description": "멀리 닿는 긴 창. 앞으로 곧게 찔러 줄지은 적을 한꺼번에 꿰뚫는다.",
+        "Damage": 22,
+        "Cooldown": 0.4,
+        "Range": 290,
+        "Arc": 36,
+        "Knockback": 950,
+        "ProjectileSpeed": 0,
+        "ManaCost": 0,
+        "Splash": 0,
+        "HitStop": 0.07,
+        "AttackTime": 0.39,
+        "HitDelay": 0.08,
+        "Flipbook": "Hero_AttackSpear",
+        "Sound": "Audio/RPG/Swing3.wav"
+      }
+    },
+    {
+      "Name": "Bow",
+      "Values": {
+        "DisplayName": "사냥꾼의 활",
+        "Kind": "Arrow",
+        "Icon": "UI/Demo/HD2D/Icons/Bow.png",
+        "Description": "가벼운 짧은 활. 가까운 적을 겨냥해 빠른 화살을 쏜다.",
+        "Damage": 13,
+        "Cooldown": 0.34,
+        "Range": 1300,
+        "Arc": 50,
+        "Knockback": 300,
+        "ProjectileSpeed": 2400,
+        "ManaCost": 0,
+        "Splash": 0,
+        "HitStop": 0.03,
+        "AttackTime": 0.4,
+        "HitDelay": 0.14,
+        "Flipbook": "Hero_AttackBow",
+        "Sound": "Audio/RPG/Swing2.wav"
+      }
+    },
+    {
+      "Name": "Staff",
+      "Values": {
+        "DisplayName": "현자의 지팡이",
+        "Kind": "Bolt",
+        "Icon": "UI/Demo/HD2D/Icons/Staff.png",
+        "Description": "마나를 담아 빛의 탄을 쏘는 지팡이. 탄은 부딪히면 터져 주변을 휩쓴다.",
+        "Damage": 28,
+        "Cooldown": 0.6,
+        "Range": 1100,
+        "Arc": 60,
+        "Knockback": 600,
+        "ProjectileSpeed": 1300,
+        "ManaCost": 8,
+        "Splash": 170,
+        "HitStop": 0.06,
+        "AttackTime": 0.42,
+        "HitDelay": 0.13,
+        "Flipbook": "Hero_AttackStaff",
+        "Sound": "Audio/RPG/Spin.wav"
+      }
+    }
+  ]
+}

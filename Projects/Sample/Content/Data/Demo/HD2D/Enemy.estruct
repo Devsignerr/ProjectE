@@ -1,0 +1,123 @@
+{
+  "Version": 1,
+  "Name": "Enemy",
+  "Description": "HD2D 적 (Enemies.etable, 행 이름 = 적 종류 = 프리팹 이름)",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "마물",
+      "Description": "표시 이름"
+    },
+    {
+      "Name": "Behavior",
+      "Type": "Enum",
+      "Default": "Hopper",
+      "Description": "행동: 깡충 추적 / 날며 급강하 / 예비 동작 후 돌진 / 거리 두고 활 / 독 웅덩이 / 보스",
+      "Values": [
+        "Hopper",
+        "Flyer",
+        "Charger",
+        "Archer",
+        "Spore",
+        "Boss"
+      ]
+    },
+    {
+      "Name": "MaxHealth",
+      "Type": "Float",
+      "Default": 30,
+      "Description": "체력"
+    },
+    {
+      "Name": "ContactDamage",
+      "Type": "Float",
+      "Default": 6,
+      "Description": "몸에 닿으면"
+    },
+    {
+      "Name": "AttackDamage",
+      "Type": "Float",
+      "Default": 10,
+      "Description": "공격 한 대 (독 웅덩이는 0.5초마다)"
+    },
+    {
+      "Name": "MoveSpeed",
+      "Type": "Float",
+      "Default": 250,
+      "Description": "이동 속도 (cm/s)"
+    },
+    {
+      "Name": "AggroRange",
+      "Type": "Float",
+      "Default": 800,
+      "Description": "발견 거리 (cm)"
+    },
+    {
+      "Name": "AttackRange",
+      "Type": "Float",
+      "Default": 300,
+      "Description": "공격 시작 거리 (cm)"
+    },
+    {
+      "Name": "AttackCooldown",
+      "Type": "Float",
+      "Default": 2.0,
+      "Description": "공격 간격 (초)"
+    },
+    {
+      "Name": "WindupTime",
+      "Type": "Float",
+      "Default": 0.5,
+      "Description": "예비 동작 (초 — 피할 틈)"
+    },
+    {
+      "Name": "ProjectileSpeed",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "투사체·돌진 속도 (cm/s)"
+    },
+    {
+      "Name": "GoldMin",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "떨어뜨리는 골드 최소"
+    },
+    {
+      "Name": "GoldMax",
+      "Type": "Int",
+      "Default": 3,
+      "Description": "최대"
+    },
+    {
+      "Name": "Exp",
+      "Type": "Int",
+      "Default": 5,
+      "Description": "경험치"
+    },
+    {
+      "Name": "DropItem",
+      "Type": "String",
+      "Default": "",
+      "Description": "떨어뜨리는 아이템 id"
+    },
+    {
+      "Name": "DropChance",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "확률 0~1"
+    },
+    {
+      "Name": "Radius",
+      "Type": "Float",
+      "Default": 45,
+      "Description": "피격 판정 반지름 (cm)"
+    },
+    {
+      "Name": "RespawnTime",
+      "Type": "Float",
+      "Default": 15,
+      "Description": "다시 나타나는 시간 (초, 0 = 안 나타남)"
+    }
+  ]
+}

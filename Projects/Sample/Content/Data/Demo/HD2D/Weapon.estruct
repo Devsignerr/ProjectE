@@ -1,0 +1,115 @@
+{
+  "Version": 1,
+  "Name": "Weapon",
+  "Description": "HD2D 무기 (Weapons.etable, 행 이름 = 무기 id = Items.etable의 무기 행)",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "무기",
+      "Description": "표시 이름"
+    },
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Default": "Slash",
+      "Description": "공격 방식: 베기(부채꼴, 3연타) / 찌르기(좁고 긴 직선, 관통) / 화살(투사체) / 마법 탄(투사체 + 폭발)",
+      "Values": [
+        "Slash",
+        "Thrust",
+        "Arrow",
+        "Bolt"
+      ]
+    },
+    {
+      "Name": "Icon",
+      "Type": "String",
+      "Default": "UI/Demo/HD2D/Icons/Sword.png",
+      "Description": "UI 아이콘 (Content 기준)"
+    },
+    {
+      "Name": "Description",
+      "Type": "String",
+      "Default": "",
+      "Description": "인벤토리 설명"
+    },
+    {
+      "Name": "Damage",
+      "Type": "Float",
+      "Default": 10,
+      "Description": "한 대 피해 (레벨 배율 전)"
+    },
+    {
+      "Name": "Cooldown",
+      "Type": "Float",
+      "Default": 0.3,
+      "Description": "공격 사이 최소 간격 (초, 공격 동작 시간과 별개)"
+    },
+    {
+      "Name": "Range",
+      "Type": "Float",
+      "Default": 150,
+      "Description": "근접 = 판정 거리 (cm), 원거리 = 사거리"
+    },
+    {
+      "Name": "Arc",
+      "Type": "Float",
+      "Default": 120,
+      "Description": "근접 = 판정 각 (도), 원거리 = 자동 조준 각"
+    },
+    {
+      "Name": "Knockback",
+      "Type": "Float",
+      "Default": 600,
+      "Description": "넉백 속도 (cm/s)"
+    },
+    {
+      "Name": "ProjectileSpeed",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "투사체 속도 (cm/s)"
+    },
+    {
+      "Name": "ManaCost",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "한 번 쏠 때 마나"
+    },
+    {
+      "Name": "Splash",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "> 0이면 명중 시 폭발 반경 (cm)"
+    },
+    {
+      "Name": "HitStop",
+      "Type": "Float",
+      "Default": 0.05,
+      "Description": "명중 시 멈춤 (초)"
+    },
+    {
+      "Name": "AttackTime",
+      "Type": "Float",
+      "Default": 0.3,
+      "Description": "공격 동작 시간 (초 — 플립북 길이)"
+    },
+    {
+      "Name": "HitDelay",
+      "Type": "Float",
+      "Default": 0.1,
+      "Description": "공격 시작 뒤 판정·발사 시점 (초)"
+    },
+    {
+      "Name": "Flipbook",
+      "Type": "String",
+      "Default": "Hero_Attack",
+      "Description": "용사 공격 플립북 접두사 (+ Down/Up/Side)"
+    },
+    {
+      "Name": "Sound",
+      "Type": "String",
+      "Default": "Audio/RPG/Swing1.wav",
+      "Description": "공격 소리"
+    }
+  ]
+}

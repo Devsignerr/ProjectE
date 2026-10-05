@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Hero.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "AttackBowUp0",
+      "Duration": 0.14
+    },
+    {
+      "Slice": "AttackBowUp1",
+      "Duration": 0.08
+    },
+    {
+      "Slice": "AttackBowUp2",
+      "Duration": 0.18
+    }
+  ]
+}

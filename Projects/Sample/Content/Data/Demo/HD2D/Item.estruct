@@ -1,0 +1,55 @@
+{
+  "Version": 1,
+  "Name": "Item",
+  "Description": "HD2D 아이템 (Items.etable, 행 이름 = 아이템 id — 인벤토리·상점·보물상자·전리품)",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "아이템",
+      "Description": "표시 이름"
+    },
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Default": "Heal",
+      "Description": "무기(장비) / 체력 회복 / 마나 회복 / 둘 다 전부",
+      "Values": [
+        "Weapon",
+        "Heal",
+        "Mana",
+        "Elixir"
+      ]
+    },
+    {
+      "Name": "Amount",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "회복량"
+    },
+    {
+      "Name": "Weapon",
+      "Type": "String",
+      "Default": "",
+      "Description": "무기 id (Kind = Weapon)"
+    },
+    {
+      "Name": "Icon",
+      "Type": "String",
+      "Default": "UI/Demo/HD2D/Icons/Potion.png",
+      "Description": "UI 아이콘 (Content 기준)"
+    },
+    {
+      "Name": "Description",
+      "Type": "String",
+      "Default": "",
+      "Description": "설명 (무기는 비우면 무기 표 설명)"
+    },
+    {
+      "Name": "Price",
+      "Type": "Int",
+      "Default": 10,
+      "Description": "상점 가격 (골드)"
+    }
+  ]
+}

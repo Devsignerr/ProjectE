@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Enemies.esprite",
+  "Fps": 24.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "BatFly0"
+    },
+    {
+      "Slice": "BatFly1"
+    },
+    {
+      "Slice": "BatFly2"
+    },
+    {
+      "Slice": "BatFly1"
+    }
+  ]
+}

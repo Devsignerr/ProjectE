@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "Sprite": "Npcs.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Elder0",
+      "Duration": 0.7
+    },
+    {
+      "Slice": "Elder1",
+      "Duration": 0.5
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Name": "Quest",
+  "Description": "HD2D 퀘스트 단계 (Quests.etable, 행 이름 = Stage<n>, 촌장에게 말하면 다음 단계로)",
+  "Fields": [
+    {
+      "Name": "Title",
+      "Type": "String",
+      "Default": "",
+      "Description": "퀘스트 이름"
+    },
+    {
+      "Name": "Objective",
+      "Type": "String",
+      "Default": "",
+      "Description": "목표 표시"
+    },
+    {
+      "Name": "KillGoal",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "> 0이면 마물 처치 수가 이만큼 되면 다음 단계"
+    },
+    {
+      "Name": "Lines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "이 단계로 넘어갈 때 촌장 대사",
+      "Element": "String"
+    },
+    {
+      "Name": "WaitLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "이 단계에서 아직 넘어갈 수 없을 때 촌장 대사",
+      "Element": "String"
+    }
+  ]
+}

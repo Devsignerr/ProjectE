@@ -4,7 +4,7 @@
 #   --views: 확인용 변형도 쓴다(커밋하지 않음) — Scenes/Demo/_HD2D_<시점>.escene(플레이어 시작 자리만 다름), _HD2DAutoPlay.escene(자동 플레이 검증)
 #   보여 주는 것: 원근 고정 시점 카메라(좁은 시야각 — 디오라마) + 조명 받는 Masked 도트 스프라이트(그림자 드리움, TAA 떨림 없음),
 #                 해 질 녘 하늘·볼류메트릭 안개, 등불·창문·대장간·모닥불 점광원(깜빡임), 파티클(불꽃·연기·반딧불), 물(연못), 풀 폴리지
-#   게임: 플레이어(이동·4방향·공격·대시) + 슬라임(깡충 이동·추적·접촉 피해·부활) — Scripts/Demo/HD2D/*.lua
+#   게임: 게임플레이 콘텐츠(무기·인벤토리·적·보스·보물상자·마을 사람·상점·퀘스트·UI·데이터 표)는 HD2DGameplay.py — Scripts/Demo/HD2D/*.lua
 #   좌표: 엔진 규약 왼손 Z-up, 1 = 1cm. 카메라는 +Y 쪽 위에서 -Y를 내려다본다 → 화면 오른쪽 = +X, 화면 안쪽 = -Y.
 #         마을 = 서쪽(-X), 들판 = 동쪽(+X), 큰 건물·산은 안쪽(-Y)에 두고 카메라 쪽(+Y)에는 낮은 물체만 둔다 (캐릭터를 가리지 않게)
 #   배치를 바꿀 때는 씬 파일이 아니라 이 스크립트를 고치고 다시 실행한다 (결정적 — 고정 시드)
@@ -21,6 +21,7 @@ from SceneBuilder import FScene, QuatFromEuler  # noqa: E402
 from AssetFixes import AlphaModel  # noqa: E402
 from BuildCampfire import Fbm, FlickerScript, PlainMaterial, Smoothstep, WriteFoliage, WriteJson  # noqa: E402
 import HD2DArt  # noqa: E402
+import HD2DGameplay  # noqa: E402
 import ModelBounds  # noqa: E402
 
 ROOT    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -196,69 +197,6 @@ def Flipbook(Path):
 FLAT = QuatFromEuler(Roll=-90.0)  # 스프라이트 평면(XZ, 앞 +Y)을 바닥(XY, 앞 +Z)에 눕힌다 (+Roll = +Y가 아래로)
 
 
-def WritePrefab(Name, Entities):
-	Folder = os.path.join(CONTENT, *PREFABS.split("/"))
-	os.makedirs(Folder, exist_ok=True)
-	with open(os.path.join(Folder, f"{Name}.eprefab"), "w", encoding="utf-8", newline="\n") as File:
-		json.dump({"Entities": Entities, "NextId": len(Entities) + 1, "Version": 1}, File, indent=2, ensure_ascii=False)
-		File.write("\n")
-
-
-PLAYER_RADIUS, PLAYER_HALF = 32.0, 53.0   # 캡슐 바닥 = 중심 - 85
-SLIME_RADIUS, SLIME_HALF   = 38.0, 4.0     # 캡슐 바닥 = 중심 - 42
-
-
-def WritePrefabs():
-	Foot = -(PLAYER_RADIUS + PLAYER_HALF)
-	Player = [
-		{"Name": "Player", "Parent": -1, "Components": {
-			"CharacterMovementComponent": {
-				"AirControl": 0.35, "CapsuleHalfHeight": PLAYER_HALF, "CapsuleRadius": PLAYER_RADIUS, "FaceControlYaw": False,
-				"GravityScale": 1.0, "JumpZVelocity": 0.0, "Mass": 70.0, "MaxSlopeAngle": 50.0, "MaxStepHeight": 35.0,
-				"MaxWalkSpeed": 430.0, "PushForce": 2000.0, "KnockbackDeceleration": 2600.0},
-			"ScriptComponent": {"ExecutionLocation": 2, "ScriptAsset": "Scripts/Demo/HD2D/HD2DPlayer.lua", "PropertyOverrides": json.dumps({
-				"CameraDistance": CAMERA_DISTANCE, "MinX": PLAY_MIN[0] + 900.0, "MaxX": PLAY_MAX[0] - 900.0,
-				"MinY": PLAY_MIN[1] + 500.0, "MaxY": PLAY_MAX[1] - 650.0}, ensure_ascii=False)},
-			"PrefabLinkComponent": Link(1), "TransformComponent": Transform((0, 0, 100))}},
-		{"Name": "Visual", "Parent": 0, "Components": {"PrefabLinkComponent": Link(2), "TransformComponent": Transform()}},
-		{"Name": "Body", "Parent": 1, "Components": {
-			"SpriteComponent": Sprite("Sprites/HD2D/Hero.esprite", "IdleDown0"), "FlipbookComponent": Flipbook("Sprites/HD2D/Hero_IdleDown.eflipbook"),
-			"PrefabLinkComponent": Link(3), "TransformComponent": Transform((0, 0, Foot))}},
-		{"Name": "Shadow", "Parent": 1, "Components": {
-			"SpriteComponent": Sprite("Sprites/HD2D/Fx.esprite", "Shadow", Lit=False, Shadows=False, Blend=0),
-			"PrefabLinkComponent": Link(4), "TransformComponent": Transform((0, 0, Foot + 1.5), FLAT, (0.75, 1.0, 0.75))}},
-	]
-	for Index in range(5):
-		Player.append({"Name": f"Heart{Index}", "Parent": 1, "Components": {
-			"SpriteComponent": Sprite("Sprites/HD2D/Fx.esprite", "HeartFull", Lit=False, Shadows=False, Visible=False),
-			"PrefabLinkComponent": Link(5 + Index), "TransformComponent": Transform(((Index - 2) * 38.0, 8.0, Foot + 205.0), None, (0.7, 1.0, 0.7))}})
-	WritePrefab("Player", Player)
-
-	SlimeFoot = -(SLIME_RADIUS + SLIME_HALF)
-	WritePrefab("Slime", [
-		{"Name": "Slime", "Parent": -1, "Components": {
-			"CharacterMovementComponent": {
-				"AirControl": 1.0, "CapsuleHalfHeight": SLIME_HALF, "CapsuleRadius": SLIME_RADIUS, "FaceControlYaw": False,
-				"GravityScale": 1.0, "JumpZVelocity": 0.0, "Mass": 30.0, "MaxSlopeAngle": 50.0, "MaxStepHeight": 25.0,
-				"MaxWalkSpeed": 300.0, "PushForce": 500.0, "KnockbackDeceleration": 2400.0, "ClientPrediction": False},
-			"ScriptComponent": {"ExecutionLocation": 0, "PropertyOverrides": "", "ScriptAsset": "Scripts/Demo/HD2D/HD2DSlime.lua"},
-			"PrefabLinkComponent": Link(1), "TransformComponent": Transform()}},
-		{"Name": "Visual", "Parent": 0, "Components": {"PrefabLinkComponent": Link(2), "TransformComponent": Transform()}},
-		{"Name": "Body", "Parent": 1, "Components": {
-			"SpriteComponent": Sprite("Sprites/HD2D/Slime.esprite", "Idle0"), "FlipbookComponent": Flipbook("Sprites/HD2D/Slime_Idle.eflipbook"),
-			"PrefabLinkComponent": Link(3), "TransformComponent": Transform((0, 0, SlimeFoot))}},
-		{"Name": "Shadow", "Parent": 1, "Components": {
-			"SpriteComponent": Sprite("Sprites/HD2D/Fx.esprite", "Shadow", Lit=False, Shadows=False, Blend=0),
-			"PrefabLinkComponent": Link(4), "TransformComponent": Transform((0, 0, SlimeFoot + 1.5), FLAT, (0.8, 1.0, 0.8))}},
-	])
-	# 효과 조각: 스크립트 없음 — HD2DGame.lua가 만든 직후 콜백에서 모양을 정하고 수명이 끝나면 지운다
-	WritePrefab("FxSprite", [
-		{"Name": "FxSprite", "Parent": -1, "Components": {
-			"SpriteComponent": Sprite("Sprites/HD2D/Fx.esprite", "Spark0", Lit=False, Shadows=False, Blend=0, Visible=False),
-			"FlipbookComponent": Flipbook(""), "PrefabLinkComponent": Link(1), "TransformComponent": Transform()}},
-	])
-
-
 # ---- 씬 배치 --------------------------------------------------------------------------------------------------------
 TIME_OF_DAY = 16.9          # 해 질 녘 (간이 모델 6~18시) — 고도 약 11도, 긴 그림자 + 따뜻한 빛
 MAX_SUN_ELEVATION = 40.0
@@ -277,8 +215,6 @@ VIEW_STARTS = {
 	"Pond":    (2500.0, -300.0),
 	"Mill":    (3800.0, -700.0),
 }
-SPAWN_POINTS = [(1000.0, -700.0), (1700.0, -250.0), (2300.0, 450.0), (3150.0, -250.0), (3400.0, 750.0), (4300.0, -650.0),
-				(4700.0, 0.0), (1500.0, -1450.0), (3400.0, -1350.0), (900.0, 650.0)]
 
 
 class FBoundsCache:
@@ -545,8 +481,7 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	for X, Y in ((700.0, -60.0), (2100.0, 450.0), (3300.0, 0.0), (4400.0, 600.0), (3550.0, -950.0)):
 		LanternPost(X, Y)
 	# 들판 나무·바위·덤불 (길·연못·야영지·소환 지점은 비움)
-	for X, Y in SPAWN_POINTS:
-		Reserve(X, Y, 150.0)
+	HD2DGameplay.ReserveSpots(Reserve)
 	Trees = [("tree_single_A", 600.0, -1500.0, 1.1), ("tree_single_B", 1900.0, -1700.0, 1.0), ("trees_A_medium", 5100.0, -1400.0, 1.2),
 			 ("tree_single_A", 5000.0, 900.0, 1.0), ("tree_single_B", 2700.0, 1150.0, 0.9), ("trees_B_large", 5600.0, -300.0, 1.3),
 			 ("tree_single_A", -200.0, 1000.0, 0.85), ("tree_single_B", 3900.0, 1150.0, 0.9), ("trees_A_large", 1300.0, -2300.0, 1.4),
@@ -592,12 +527,9 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 		Item = (float(X), float(Y), Z, float(GrassRng.uniform(0, 360)), float(GrassRng.uniform(0.45, 0.85)), float(N[0]), float(N[1]), float(N[2]))
 		(Dry if GrassRng.random() < 0.18 else Grass).append(Item)
 
-	# ---- 게임: 관리자 + 카메라 + 플레이어
-	S.Add("HD2DGame", {"ScriptComponent": {"ScriptAsset": "Scripts/Demo/HD2D/HD2DGame.lua", "ExecutionLocation": 0,
-		"PropertyOverrides": json.dumps({
-			"SpawnPoints": ";".join(f"{X:.0f},{Y:.0f},{Height(X, Y) + SLIME_RADIUS + SLIME_HALF + 4.0:.0f}" for X, Y in SPAWN_POINTS),
-			"SlimeCount": 7, "AutoPlay": AutoPlay}, ensure_ascii=False)}})
-	StartZ = Height(*Start) + PLAYER_RADIUS + PLAYER_HALF + 4.0
+	# ---- 게임: 관리자·HUD(HD2DGameplay) + 카메라 + 플레이어
+	HD2DGameplay.AddGame(S, Height, PATH, AutoPlay)
+	StartZ = Height(*Start) + HD2DGameplay.PLAYER_RADIUS + HD2DGameplay.PLAYER_HALF + 4.0
 	Forward = (0.0, -math.cos(math.radians(-CAMERA_PITCH)), -math.sin(math.radians(-CAMERA_PITCH)))
 	Focus = (Start[0], Start[1], StartZ - 85.0 + 70.0)
 	# 피사계 심도 (HD-2D 미니어처 느낌): 초점 = 카메라에서 플레이어 가슴까지(카메라 거리 고정 — 따라가도 그대로), 앞 땅·뒤 산과 하늘은 흐림
@@ -606,11 +538,7 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 											   "NearTransition": 700.0, "FarTransition": 1800.0, "NearBlurSize": 1.4, "FarBlurSize": 1.7,
 											   "PreviewInEditor": False}},
 		  tuple(Focus[I] - Forward[I] * CAMERA_DISTANCE for I in range(3)), QuatFromEuler(Pitch=CAMERA_PITCH, Yaw=-90.0))
-	PlayerIndex = len(S.Entities)
-	S.Add("Player", {
-		"PrefabInstanceComponent": {"Asset": f"{PREFABS}/Player.eprefab", "Overrides": ""},
-		"PrefabLinkComponent": {"Id": "1", "Root": PlayerIndex}},
-		(Start[0], Start[1], StartZ))
+	HD2DGameplay.AddPlayer(S, Start, Height)
 	return S, Grass, Dry
 
 
@@ -622,7 +550,7 @@ def Main():
 	WriteTerrain(os.path.join(CONTENT, "Terrain", "Demo", "HD2D.eterrain"), H, Weights)
 	Sampler = FHeightSampler(H, Stack)
 	WriteMaterials()
-	WritePrefabs()
+	HD2DGameplay.WriteAll(CONTENT, CAMERA_DISTANCE, PLAY_MIN, PLAY_MAX)
 	Scene, Grass, Dry = BuildScene(Sampler)
 	WriteFoliage(os.path.join(CONTENT, "Foliage", "Demo", "HD2D.efoliage"), [(GRASS_TYPE, Grass), (GRASS_DRY_TYPE, Dry)])
 	Scene.Save(os.path.join(CONTENT, "Scenes", "Demo", "HD2D.escene"))
@@ -631,8 +559,11 @@ def Main():
 		for Name, Start in VIEW_STARTS.items():
 			Variant, _, _ = BuildScene(Sampler, Start)
 			Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", f"_HD2D_{Name}.escene"))
-		Variant, _, _ = BuildScene(Sampler, VIEW_STARTS["Field"], AutoPlay=True)
+		Variant, _, _ = BuildScene(Sampler, HD2DGameplay.AUTOPLAY_START, AutoPlay=True)
 		Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", "_HD2DAutoPlay.escene"))
+		for Name, (ShotStart, Scenario) in HD2DGameplay.SHOT_SCENES.items():
+			Variant, _, _ = BuildScene(Sampler, ShotStart, AutoPlay=Scenario)
+			Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", f"_HD2D{Name}.escene"))
 		print("확인용 변형: Scenes/Demo/_HD2D_*.escene, _HD2DAutoPlay.escene (커밋하지 않음)")
 
 

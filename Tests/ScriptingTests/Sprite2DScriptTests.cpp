@@ -94,6 +94,13 @@ E_TEST(Sprite2DScript_FlipbookEventsAndApi)
 	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Hero, "Log").String == "S0;H2;F;");
 	E_EXPECT_TRUE(Module.Log == "Start0;Hit2;F;");
 	E_EXPECT_EQ(Scene.GetRegistry().Get<FSpriteComponent>(HeroSprite).Runtime.FlipbookSliceIndex, 2);
+	// GetSpriteSlice = 플립북이 지금 보여 주는 슬라이스(마지막 프레임 = 아틀라스 세 번째 슬라이스)와 그 아틀라스 경로, 스프라이트 없으면 nil
+	{
+		const auto&       Runtime = Scene.GetRegistry().Get<FSpriteComponent>(HeroSprite).Runtime;
+		const std::string Expected = Runtime.FlipbookAtlas->Slices[2].Name;
+		E_EXPECT_TRUE(Scripts.RunString("local Slice, Atlas = Scene.Find('HeroSprite'):GetSpriteSlice(); assert(Slice == '" + Expected +
+		                                "' and Atlas:find('Atlas.esprite') ~= nil); assert(Scene.Find('Hero'):GetSpriteSlice() == nil)"));
+	}
 
 	E_EXPECT_TRUE(Scripts.RunString(R"(
 local E = Scene.Find('HeroSprite')

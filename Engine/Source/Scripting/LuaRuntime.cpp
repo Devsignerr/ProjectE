@@ -901,8 +901,31 @@ void FLuaRuntime::RegisterGlobals()
 
 	// ---- Time (Update마다 갱신)
 	sol::table AudioTable     = Lua.create_named_table("Audio");
-	AudioTable["PlayOneShot"] = [this](const std::string& ClipAsset) {
-		if (AudioHooks && AudioHooks->PlayOneShot)
+	// Audio.PlayOneShot(경로[, 위치], [음량], [피치]) — 위치(Vector3)는 둘째 자리에 있어도 되고 생략 가능, 음량·피치는 배율(기본 1)
+	AudioTable["PlayOneShot"] = [this](const std::string& ClipAsset, sol::variadic_args Args) {
+		if (!AudioHooks)
+		{
+			return;
+		}
+		FScriptOneShot Params;
+		uint32         NumberIndex = 0;
+		for (const sol::object Arg : Args)
+		{
+			if (Arg.is<FVector3>())
+			{
+				Params.bHasPosition = true;
+				Params.Position     = Arg.as<FVector3>();
+			}
+			else if (Arg.get_type() == sol::type::number)
+			{
+				(NumberIndex++ == 0 ? Params.Volume : Params.Pitch) = Arg.as<float>();
+			}
+		}
+		if (AudioHooks->PlayOneShotEx)
+		{
+			AudioHooks->PlayOneShotEx(ClipAsset, Params);
+		}
+		else if (AudioHooks->PlayOneShot)
 		{
 			AudioHooks->PlayOneShot(ClipAsset);
 		}

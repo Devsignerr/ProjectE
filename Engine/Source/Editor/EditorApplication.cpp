@@ -182,6 +182,10 @@ bool FEditorApplication::OnInit()
 		[this](FEntity Entity) { AudioSystem.Play(Audio, Entity); },
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
 		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
+		[this](const std::string& ClipAsset, const FScriptOneShot& Params) {
+			Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset), Params.Volume, Params.Pitch,
+			                  Params.bHasPosition ? &Params.Position : nullptr);
+		},
 	});
 	// Lua Game.Quit()은 에디터에서 플레이 정지 (창 모드/VSync는 에디터 창에 적용하지 않는다).
 	// Game.SetMouseLocked는 뷰포트에 빙의 중일 때만 (뷰포트 가운데에 가둠 — Shift+F1/F8/ESC/포커스 이동으로 풀림)

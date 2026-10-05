@@ -28,6 +28,7 @@ struct FSpriteVSOutput
 	nointerpolation uint  TextureIndex  : TEXCOORD1;
 	nointerpolation uint  Flags         : TEXCOORD2;
 	nointerpolation float AlphaCutoff   : TEXCOORD3;
+	nointerpolation uint  Flash         : TEXCOORD6; // 번쩍임 RGBA8 (0 = 없음)
 };
 
 FSpriteVSOutput SpriteVS(uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID)
@@ -36,6 +37,7 @@ FSpriteVSOutput SpriteVS(uint VertexId : SV_VertexID, uint InstanceId : SV_Insta
 	FSpriteInstance Sprite = SpriteInstances[bChunk ? InstanceId : InstanceOffset + InstanceId];
 	const float2    Corner = SpriteCorners[VertexId];
 	float3          PreviousWorld;
+	uint            Flash = 0;
 	if (bChunk)
 	{
 		PreviousWorld = GetSpriteChunkCornerWorld(Sprite, SpritePrevious[0], Corner); // 로컬 인스턴스 그대로 (청크 적용 전)
@@ -45,6 +47,7 @@ FSpriteVSOutput SpriteVS(uint VertexId : SV_VertexID, uint InstanceId : SV_Insta
 	{
 		const FSpritePrev Previous = SpritePrevious[InstanceOffset + InstanceId];
 		PreviousWorld              = Previous.Origin + Previous.AxisX * Corner.x + Previous.AxisZ * Corner.y;
+		Flash                      = Previous.Flash;
 	}
 	const float3 World = GetSpriteCornerWorld(Sprite, Corner);
 
@@ -60,6 +63,7 @@ FSpriteVSOutput SpriteVS(uint VertexId : SV_VertexID, uint InstanceId : SV_Insta
 	Output.TextureIndex  = Sprite.TextureIndex;
 	Output.Flags         = Sprite.Flags;
 	Output.AlphaCutoff   = Sprite.AlphaCutoff;
+	Output.Flash         = Flash;
 	return Output;
 }
 
@@ -80,6 +84,17 @@ float4 SampleSprite(FSpriteVSOutput Input)
 		Texel = Texture.SampleBias(IblSampler, Input.UV, MaterialMipBias);
 	}
 	return Texel * Input.Color;
+}
+
+// 번쩍임 (SpriteRenderer PackFlash와 같은 순서): 조명·안개를 지난 색을 번쩍임 색으로 덮는다 (A = 덮는 정도)
+float3 ApplySpriteFlash(float3 Color, uint Packed)
+{
+	if (Packed == 0)
+	{
+		return Color;
+	}
+	const float4 Flash = float4(Packed & 255u, (Packed >> 8) & 255u, (Packed >> 16) & 255u, Packed >> 24) / 255.0f;
+	return lerp(Color, Flash.rgb, Flash.a);
 }
 
 // 조명: 언릿 = 알베도 그대로. 릿 = 반투명 메시와 같은 EvaluateMeshLighting (방향광 + 섀도맵, 로컬 라이트 + 그림자, IBL/DDGI — 화면 버퍼(SSR/SSAO/데칼) 없음).
@@ -112,7 +127,7 @@ float4 SpritePSAlpha(FSpriteVSOutput Input) : SV_Target
 {
 	const float4 Base  = SampleSprite(Input);
 	const float4 Fog   = EvaluateFog(Input.WorldPosition);
-	const float3 Color = ShadeSprite(Input, Base.rgb) * Fog.a + Fog.rgb;
+	const float3 Color = ApplySpriteFlash(ShadeSprite(Input, Base.rgb) * Fog.a + Fog.rgb, Input.Flash);
 	const float  Alpha = saturate(Base.a);
 #ifdef E_SPRITE_STATIC
 	return float4(Color * Alpha, Alpha);
@@ -127,7 +142,7 @@ float4 SpritePSPremultiplied(FSpriteVSOutput Input) : SV_Target
 {
 	const float4 Texel = SampleSprite(Input) * float4(Input.Color.aaa, 1.0f); // (텍스처 × 색) rgb에 색 알파를 한 번 더
 	const float4 Fog   = EvaluateFog(Input.WorldPosition);
-	return float4(ShadeSprite(Input, Texel.rgb) * Fog.a + Fog.rgb * saturate(Texel.a), saturate(Texel.a));
+	return float4(ApplySpriteFlash(ShadeSprite(Input, Texel.rgb) * Fog.a + Fog.rgb * saturate(Texel.a), Input.Flash), saturate(Texel.a));
 }
 
 // Additive (Src + Dst): 색 × 알파를 더한다. 빛을 더하므로 안개는 투과율만
@@ -157,7 +172,7 @@ FSpriteMaskedOutput SpritePSMasked(FSpriteVSOutput Input)
 	clip(Base.a - Input.AlphaCutoff);
 	const float4 Fog = EvaluateFog(Input.WorldPosition);
 	FSpriteMaskedOutput Output;
-	Output.Color    = float4(ShadeSprite(Input, Base.rgb) * Fog.a + Fog.rgb, 0.0f);
+	Output.Color    = float4(ApplySpriteFlash(ShadeSprite(Input, Base.rgb) * Fog.a + Fog.rgb, Input.Flash), 0.0f);
 	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);
 	return Output;
 }

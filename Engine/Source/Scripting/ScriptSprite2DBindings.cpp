@@ -117,6 +117,26 @@ void FLuaRuntime::RegisterSprite2DBindings()
 	};
 
 	// ---- 스프라이트
+	// entity:GetSpriteSlice() → 지금 그려지는 슬라이스 이름, 그 아틀라스(.esprite) 경로 (플립북이 정한 프레임 반영 — 잔상·효과 조각이 같은 그림을 쓸 때).
+	//   해석 전(첫 프레임 전)이면 컴포넌트에 적힌 Slice·Sprite. 스프라이트가 없으면 nil
+	EntityType["GetSpriteSlice"] = [Require](const FScriptEntity& Entity) -> std::tuple<sol::optional<std::string>, sol::optional<std::string>> {
+		const FSpriteComponent* Sprite = Require(Entity).GetRegistry().TryGet<FSpriteComponent>(Entity.Entity);
+		if (Sprite == nullptr)
+		{
+			return { sol::nullopt, sol::nullopt };
+		}
+		const FSpriteRuntime& Runtime = Sprite->Runtime;
+		if (Runtime.FlipbookAtlas != nullptr && Runtime.FlipbookSliceIndex >= 0 &&
+		    Runtime.FlipbookSliceIndex < static_cast<int32>(Runtime.FlipbookAtlas->Slices.size()))
+		{
+			return { Runtime.FlipbookAtlas->Slices[static_cast<size_t>(Runtime.FlipbookSliceIndex)].Name, Runtime.FlipbookAtlasPath };
+		}
+		if (Runtime.Asset != nullptr && Runtime.SliceIndex >= 0 && Runtime.SliceIndex < static_cast<int32>(Runtime.Asset->Slices.size()))
+		{
+			return { Runtime.Asset->Slices[static_cast<size_t>(Runtime.SliceIndex)].Name, Sprite->Sprite };
+		}
+		return { Sprite->Slice, Sprite->Sprite };
+	};
 	EntityType["SetSpriteFlip"] = [Require](const FScriptEntity& Entity, bool bFlipX, bool bFlipY) {
 		FSpriteComponent* Sprite = Require(Entity).GetRegistry().TryGet<FSpriteComponent>(Entity.Entity);
 		if (Sprite != nullptr)

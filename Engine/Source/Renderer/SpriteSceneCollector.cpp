@@ -362,6 +362,11 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 			Item.AlphaCutoff  = Sprite.AlphaCutoff;
 			Item.bLit         = Sprite.bLit;
 			Item.bCastShadows = Sprite.bCastShadows;
+			if (Sprite.FlashColor.W > 0.0f)
+			{
+				const FVector4 Flash = SrgbToLinearColor(Sprite.FlashColor);
+				Item.Flash           = FVector4(Flash.X, Flash.Y, Flash.Z, FMath::Clamp(Sprite.FlashColor.W, 0.0f, 1.0f));
+			}
 			// 조각들은 원래 사각형을 정확히 덮으므로 컬링은 원래 사각형으로
 			const FBox Bounds = ComputeItemBounds(Item);
 			uint8      Flags  = Frustum.Intersects(Bounds) ? 1 : 0;
@@ -384,6 +389,7 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 				DrawHash        = HashValue(DrawHash, Item.OrderInLayer);
 				DrawHash        = HashValue(DrawHash, Item.Blend);
 				DrawHash        = HashValue(DrawHash, static_cast<uint32>(Item.bLit));
+				DrawHash        = HashValue(DrawHash, Item.Flash);
 				FSpriteHistory& Entry       = History[Source.Entity.Index];
 				const bool      bContinuous = Entry.Generation == Source.Entity.Generation && Entry.LastCollect + 1 == CollectIndex;
 				Entry.Stable                = bContinuous && Entry.ShadowHash == Hash ? std::min(Entry.Stable + 1, 0x7FFFFFFFu) : 0u;

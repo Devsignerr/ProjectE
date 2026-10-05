@@ -379,6 +379,8 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 	ImGui::PopStyleVar();
 
 	bFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+	// 빌보드 스프라이트 선택·경계 = 렌더러가 그리는 방향 (이 뷰포트 카메라)
+	Editor2DScene::SetBillboardView(Context.Camera->GetRightVector(), Context.Camera->GetForwardVector(), Context.Camera->GetUpVector());
 	if (bVisible)
 	{
 		const ImVec2 Avail = ImGui::GetContentRegionAvail();

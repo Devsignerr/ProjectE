@@ -26,6 +26,11 @@ namespace Editor2DScene
 	// 타일맵 셀 크기 (cm, 타일셋 해석 — TilemapCollision::ResolveCellSize). 타일셋이 없으면 컴포넌트 값(0이면 false)
 	bool GetTilemapCellSize(FTilemapComponent& Tilemap, FVector2& OutCellSize);
 
+	// 빌보드 스프라이트(SpriteComponent.Billboard)를 판정할 카메라 축 — 뷰포트가 그리기 전에 매 프레임 편집/게임 카메라로 (렌더러와 같은
+	// SpriteMath::ComputeBillboardWorld). 한 번도 설정하지 않았으면 빌보드를 무시하고 엔티티 회전으로 판정
+	void       SetBillboardView(const FVector3& Right, const FVector3& Forward, const FVector3& Up);
+	FMatrix4x4 GetSpriteWorld(const FMatrix4x4& World, const FSpriteComponent& Sprite);
+
 	// 커서 광선 아래 맨 앞 2D 엔티티: 보이는 스프라이트 사각형(투명 픽셀도 포함), 칠한 타일맵 칸, 2D 콜라이더·이동기만 있는 엔티티(뒤 순위).
 	// 앞뒤 = Editor2DMath::FindFrontmost (정렬 레이어 → 순번 → 카메라 거리). EdgeTolerance = 열린 선분 콜라이더 판정 폭 (cm).
 	// 없으면 NullEntity. OutDistance = 광선 거리

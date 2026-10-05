@@ -21,11 +21,22 @@ class FScene;
 class FScriptDebugger;
 
 // 스크립트가 쓰는 오디오 기능. 앱이 Audio 모듈(FAudioSystem/FAudioEngine)과 연결한다 (비어 있으면 무시)
+// Audio.PlayOneShot 추가 인자 (음량·피치 배율, 위치가 있으면 3D 공간화)
+struct FScriptOneShot
+{
+	float    Volume       = 1.0f;
+	float    Pitch        = 1.0f;
+	bool     bHasPosition = false;
+	FVector3 Position;
+};
+
 struct FScriptAudioHooks
 {
 	std::function<void(FEntity)>             Play;        // 엔티티의 오디오 소스 재생 (처음부터)
 	std::function<void(FEntity)>             Stop;        // 정지
 	std::function<void(const std::string&)> PlayOneShot; // Content 기준 경로의 효과음 (비공간)
+	// 음량·피치·위치가 있는 효과음 (있으면 PlayOneShot 대신 이것 — 비면 PlayOneShot으로 떨어진다)
+	std::function<void(const std::string&, const FScriptOneShot&)> PlayOneShotEx;
 };
 
 struct FScriptRayHit

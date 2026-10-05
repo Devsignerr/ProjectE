@@ -310,6 +310,24 @@ void FAudioEngine::PlayOneShot(const std::filesystem::path& Path)
 	}
 }
 
+void FAudioEngine::PlayOneShot(const std::filesystem::path& Path, float Volume, float Pitch, const FVector3* WorldPosition)
+{
+	FSoundDesc Desc;
+	Desc.Volume   = Volume;
+	Desc.Pitch    = Pitch;
+	Desc.bSpatial = WorldPosition != nullptr;
+	const FSoundHandle Handle = CreateSound(Path, Desc);
+	if (FSound* Sound = FindSound(Handle))
+	{
+		Sound->bOneShot = true;
+		if (WorldPosition != nullptr)
+		{
+			SetWorldPosition(Handle, *WorldPosition);
+		}
+		ma_sound_start(&Sound->Sound);
+	}
+}
+
 void FAudioEngine::Update()
 {
 	// 재생이 끝난 원샷 사운드 정리

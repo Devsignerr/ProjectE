@@ -524,7 +524,7 @@ static_assert(sizeof(FSpriteChunkGpu) == 64);
 struct FSpritePrevGpu
 {
 	FVector3 Origin;
-	uint32   Pad0 = 0;
+	uint32   Flash = 0; // 항목의 번쩍임 RGBA8 (선형 RGB, A = 덮는 정도 — Sprite.hlsl ApplySpriteFlash, 청크 구간 칸은 0)
 	FVector3 AxisX;
 	uint32   Pad1 = 0;
 	FVector3 AxisZ;

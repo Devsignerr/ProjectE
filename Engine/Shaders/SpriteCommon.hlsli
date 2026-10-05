@@ -31,7 +31,7 @@ struct FSpriteChunk
 struct FSpritePrev
 {
 	float3 Origin;
-	uint   Pad0;
+	uint   Flash; // 항목 번쩍임 RGBA8 (Sprite.hlsl ApplySpriteFlash) — 청크 칸은 0
 	float3 AxisX;
 	uint   Pad1;
 	float3 AxisZ;

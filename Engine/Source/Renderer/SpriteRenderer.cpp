@@ -64,6 +64,17 @@ namespace
 		Prev.AxisZ  = Quad.AxisZ;
 		return Prev;
 	}
+
+	// 번쩍임 → RGBA8 (Sprite.hlsl UnpackSpriteFlash와 같은 순서: R 하위 바이트)
+	uint32 PackFlash(const FVector4& Flash)
+	{
+		if (Flash.W <= 0.0f)
+		{
+			return 0;
+		}
+		const auto Byte = [](float V) { return static_cast<uint32>(FMath::Clamp(V, 0.0f, 1.0f) * 255.0f + 0.5f); };
+		return Byte(Flash.X) | (Byte(Flash.Y) << 8) | (Byte(Flash.Z) << 16) | (Byte(Flash.W) << 24);
+	}
 } // namespace
 
 FSpriteRenderer::~FSpriteRenderer()
@@ -306,6 +317,7 @@ void FSpriteRenderer::Prepare(const FCamera& Camera, std::span<const FSpriteDraw
 			{
 				PrevScratch[Index] = MakePrev(Quad);
 			}
+			PrevScratch[Index].Flash = PackFlash(Item.Flash);
 			const ESpriteBlendMode Blend = Item.Blend < ESpriteBlendMode::Count ? Item.Blend : ESpriteBlendMode::Alpha;
 			ItemPipelineKeys[ChunkCount + Index] = static_cast<uint8>(SpriteBatching::MakePipelineKey(Blend, Item.bLit, Item.bStatic && bSameCamera));
 			SortKeys[ChunkCount + Index]         = { Item.SortLayer, Item.OrderInLayer, SpriteMath::ComputeSortDepth(Quad, CameraPosition, CameraForward) };

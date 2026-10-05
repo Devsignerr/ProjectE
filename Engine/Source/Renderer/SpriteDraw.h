@@ -40,6 +40,7 @@ struct FSpriteDrawItem
 	FMatrix4x4     PrevWorld     = FMatrix4x4::Identity;
 	bool           bHasPrevWorld = false;
 	bool           bStatic       = false;
+	FVector4       Flash         = FVector4(0.0f, 0.0f, 0.0f, 0.0f); // 번쩍임 (선형 RGB, A = 덮는 정도 — 0이면 없음)
 };
 
 // 타일맵 청크 하나 (Phase 56-4b — Renderer/SpriteSceneCollector.h가 만든다). 인스턴스는 정적 GPU 버퍼에 이미 있고(타일맵 로컬 공간,

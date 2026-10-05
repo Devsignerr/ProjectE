@@ -5,6 +5,7 @@
 #include "Editor/Editor2D/Editor2DMath.h"
 #include "Editor/EditorContext.h"
 #include "Renderer/Camera.h"
+#include "Renderer/SpriteDraw.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 #include "Scene/Sprite/FlipbookAsset.h"
@@ -94,6 +95,33 @@ bool Editor2DScene::GetSpriteLocalQuad(FSpriteComponent& Sprite, FVector2 (&OutQ
 	return true;
 }
 
+namespace
+{
+	struct FBillboardViewState
+	{
+		FVector3 Right   = FVector3(1.0f, 0.0f, 0.0f);
+		FVector3 Forward = FVector3(0.0f, -1.0f, 0.0f);
+		FVector3 Up      = FVector3(0.0f, 0.0f, 1.0f);
+		bool     bValid  = false;
+	};
+	FBillboardViewState GBillboardView; // 에디터 메인 스레드 전용
+} // namespace
+
+void Editor2DScene::SetBillboardView(const FVector3& Right, const FVector3& Forward, const FVector3& Up)
+{
+	GBillboardView = { Right, Forward, Up, true };
+}
+
+FMatrix4x4 Editor2DScene::GetSpriteWorld(const FMatrix4x4& World, const FSpriteComponent& Sprite)
+{
+	if (Sprite.Billboard == 0 || !GBillboardView.bValid)
+	{
+		return World;
+	}
+	return SpriteMath::ComputeBillboardWorld(World, static_cast<ESpriteBillboard>(Sprite.Billboard), GBillboardView.Right, GBillboardView.Forward,
+	                                         GBillboardView.Up);
+}
+
 bool Editor2DScene::GetTilemapCellSize(FTilemapComponent& Tilemap, FVector2& OutCellSize)
 {
 	if (const std::shared_ptr<const FTilesetAsset> Tileset = Sprite2DRuntime::ResolveTileset(Tilemap))
@@ -117,7 +145,7 @@ FEntity Editor2DScene::Pick(FScene& Scene, const FRay& Ray, float EdgeTolerance,
 		FVector2 Quad[4];
 		FVector2 Local;
 		float    T = 0.0f;
-		if (!Sprite.bVisible || !GetSpriteLocalQuad(Sprite, Quad) || !RayToEntityPlane(Transform.WorldMatrix, Ray, Local, T) ||
+		if (!Sprite.bVisible || !GetSpriteLocalQuad(Sprite, Quad) || !RayToEntityPlane(GetSpriteWorld(Transform.WorldMatrix, Sprite), Ray, Local, T) ||
 		    !Editor2DMath::IsPointInConvexPolygon(Quad, 4, Local))
 		{
 			return;
@@ -186,9 +214,10 @@ bool Editor2DScene::AddBounds(FScene& Scene, FEntity Entity, FBox& InOutBounds)
 		FVector2 Quad[4];
 		if (GetSpriteLocalQuad(*Sprite, Quad))
 		{
+			const FMatrix4x4 SpriteWorld = GetSpriteWorld(World, *Sprite);
 			for (const FVector2& Corner : Quad)
 			{
-				InOutBounds.AddPoint(World.TransformPosition(FVector3(Corner.X, 0.0f, Corner.Y)));
+				InOutBounds.AddPoint(SpriteWorld.TransformPosition(FVector3(Corner.X, 0.0f, Corner.Y)));
 			}
 			bAdded = true;
 		}

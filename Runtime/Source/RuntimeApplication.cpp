@@ -202,6 +202,10 @@ bool FRuntimeApplication::OnInit()
 		[this](FEntity Entity) { AudioSystem.Play(Audio, Entity); },
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
 		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
+		[this](const std::string& ClipAsset, const FScriptOneShot& Params) {
+			Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset), Params.Volume, Params.Pitch,
+			                  Params.bHasPosition ? &Params.Position : nullptr);
+		},
 	});
 	// Lua Game 테이블: 종료 버튼/옵션 메뉴
 	Scripts.SetAppHooks({

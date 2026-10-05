@@ -376,6 +376,23 @@ E_TEST(ScriptSystem_AudioHooksAndAnimationBindings)
 	E_EXPECT_TRUE(Stopped.size() == 1 && Stopped[0] == Speaker);
 	E_EXPECT_TRUE(OneShots.size() == 1 && OneShots[0] == "Audio/Chime.wav");
 
+	// 음량·피치·위치 인자 (PlayOneShotEx가 있으면 그쪽 — 위치는 둘째 자리에 있어도 되고 생략 가능)
+	std::vector<std::pair<std::string, FScriptOneShot>> OneShotsEx;
+	FScriptSystem ScriptsEx;
+	ScriptsEx.SetContentDirectory(GetTestContentDirectory());
+	ScriptsEx.SetAudioHooks({ nullptr, nullptr, [&](const std::string&) { OneShots.push_back("fallback"); },
+	                          [&](const std::string& Clip, const FScriptOneShot& Params) { OneShotsEx.emplace_back(Clip, Params); } });
+	ScriptsEx.BeginPlay(Scene);
+	E_EXPECT_TRUE(ScriptsEx.RunString("Audio.PlayOneShot('A.wav', 0.5, 1.25); Audio.PlayOneShot('B.wav', Vector3(10, 20, 30), 0.8); Audio.PlayOneShot('C.wav')"));
+	E_EXPECT_TRUE(OneShotsEx.size() == 3 && OneShots.size() == 1);
+	E_EXPECT_NEAR(OneShotsEx[0].second.Volume, 0.5f, 1.0e-6f);
+	E_EXPECT_NEAR(OneShotsEx[0].second.Pitch, 1.25f, 1.0e-6f);
+	E_EXPECT_TRUE(!OneShotsEx[0].second.bHasPosition);
+	E_EXPECT_TRUE(OneShotsEx[1].second.bHasPosition && OneShotsEx[1].second.Position.Y == 20.0f);
+	E_EXPECT_NEAR(OneShotsEx[1].second.Volume, 0.8f, 1.0e-6f);
+	E_EXPECT_NEAR(OneShotsEx[2].second.Volume, 1.0f, 1.0e-6f);
+	ScriptsEx.EndPlay();
+
 	// 애니메이션 컴포넌트가 없는 엔티티: 재생 실패(false), 클립 목록 비어 있음 — 오류 없이
 	E_EXPECT_TRUE(Scripts.RunString("local E = Scene.Find('Speaker'); assert(E:PlayAnimation('Walk') == false); assert(#E:GetAnimationClips() == 0); assert(E:GetAnimationClip() == '')"));
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);

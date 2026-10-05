@@ -71,6 +71,8 @@ public:
 
 	// 발사 후 잊기 (핸들 없음, 비공간). 효과음 미리 듣기 등. 끝난 사운드는 Update에서 정리
 	void PlayOneShot(const std::filesystem::path& Path);
+	// 음량·피치 배율, WorldPosition이 있으면 3D 공간화 (청자 기준으로 변환)
+	void PlayOneShot(const std::filesystem::path& Path, float Volume, float Pitch, const FVector3* WorldPosition);
 
 	// 프레임마다 한 번: 끝난 원샷 정리
 	void Update();

@@ -19,7 +19,7 @@ local FarmGame = {
 for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua", "Scripts/FarmBie/FarmInventory.lua", "Scripts/FarmBie/FarmField.lua",
                          "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua", "Scripts/FarmBie/FarmVitals.lua",
                          "Scripts/FarmBie/FarmForage.lua", "Scripts/FarmBie/FarmBuild.lua",
-                         "Scripts/FarmBie/FarmDefense.lua", "Scripts/FarmBie/FarmCraft.lua" }) do
+                         "Scripts/FarmBie/FarmDefense.lua", "Scripts/FarmBie/FarmCraft.lua", "Scripts/FarmBie/FarmBoss.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do FarmGame[Name] = Fn end
 end
 
@@ -50,6 +50,7 @@ function FarmGame:OnStart()
 	if self.MapId == "Farm" then self:InitEconomy() else self.Economy = Script.Require("Scripts/FarmBie/FarmData.lua").Values("Economy.edata"); self.Gold = 0; self.Shipped = {}; self.Stock = {}; self.StockDay = -1 end
 	self:InitForage()
 	self:InitBuild()
+	self:InitBoss()
 	self:InitDefense()
 	self:InitCraft()
 	self:AddInteractable({ Pos = self.SleepSpot, Radius = 170, Prompt = function()
@@ -112,6 +113,7 @@ function FarmGame:OnUpdate(Dt)
 		self:UpdateMerchant()
 		self:UpdateStructures()
 		self:UpdateDefense(Dt)
+		self:UpdateBoss(Dt)
 	end
 	self:UpdateVitals(Dt)
 end

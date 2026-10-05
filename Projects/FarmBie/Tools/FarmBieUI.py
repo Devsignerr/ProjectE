@@ -240,6 +240,14 @@ def HudWidgets():
 			]),
 		]),
 	], Brush=FrameBrush(36), ContentPadding=[18, 8, 18, 10]))
+	# 보스 체력 (디펜스 패널 아래)
+	C.append(Widget("Border", "BossPanel", CanvasSlot((0.5, 0), 0, 96, 0, 0, (0.5, 0), AutoSize=True, Z=1), "Collapsed", [
+		Widget("VerticalBox", "BossBox", BoxSlot(), "HitTestInvisible", [
+			Text("BossName", "", 22, BoxSlot((0, 0, 0, 4), HAlign="Center"), (1.0, 0.6, 0.5, 1), "Center"),
+			Widget("ProgressBar", "BossBar", BoxSlot(HAlign="Center"), MinSize=[460, 16], Brush=Brush((0.05, 0.03, 0.04, 0.92), 2, 1, (0, 0, 0, 1)),
+				   FillBrush=Brush((0.86, 0.2, 0.2, 1), 1), Percent=1.0, FillDirection="LeftToRight"),
+		]),
+	], Brush=FrameBrush(36), ContentPadding=[18, 8, 18, 10]))
 	C.append(Text("RespawnText", "", 30, CanvasSlot((0.5, 0.5), 0, 0, 0, 0, (0.5, 0.5), True, 4), TEXT_RED, "Center", "Collapsed", Outline=3))
 	C.append(Widget("Border", "GameOverWindow", StretchSlot(Z=12), "Collapsed", [
 		Widget("Canvas", "GameOverCanvas", BoxSlot(), "HitTestInvisible", [

@@ -562,6 +562,54 @@ void FFarmDefenseSystem::UpdateZombies(FScene& Scene, FFarmDefenseComponent& Def
 		}
 		const FVector3 Pos  = T.Position;
 		const int32    Cell = CellOf(Pos);
+		// 보스 특성: 소환·오라
+		if (Z.SummonInterval > 0.0f && Z.SummonCount > 0 && !Z.SummonKind.empty())
+		{
+			Z.SummonTimer += Dt;
+			if (Z.SummonTimer >= Z.SummonInterval)
+			{
+				Z.SummonTimer = 0.0f;
+				for (int32 K = 0; K < Z.SummonCount; ++K)
+				{
+					const float A = static_cast<float>(K) * 2.4f + static_cast<float>(Defense.Kills) * 0.7f;
+					Defense.SummonRequests += Z.SummonKind + "," + std::to_string(static_cast<int32>(Pos.X + std::cos(A) * (Z.BodyRadius + 60.0f))) + "," +
+					                          std::to_string(static_cast<int32>(Pos.Y + std::sin(A) * (Z.BodyRadius + 60.0f))) + ";";
+				}
+			}
+		}
+		if (Z.AuraRadius > 0.0f)
+		{
+			if (Z.AuraStructureDps > 0.0f)
+			{
+				Registry.View<FFarmStructureComponent>().Each([&](FEntity, FFarmStructureComponent& S) {
+					if (S.bCrystal || S.bDestroyed || !InGrid(S.TX, S.TY))
+					{
+						return;
+					}
+					if (Flat(CellCenter(S.TY * Width + S.TX) - Pos).Length() < Z.AuraRadius)
+					{
+						DamageStructure(S, Z.AuraStructureDps * Dt);
+						++Defense.AuraTicks;
+					}
+				});
+			}
+			if (Z.AuraHeal > 0.0f)
+			{
+				for (FInfo& Other : List)
+				{
+					if (Other.Z != &Z && !Other.Z->bDead && Flat(Other.T->Position - Pos).Length() < Z.AuraRadius && Other.Z->Hp < Other.Z->MaxHp)
+					{
+						Other.Z->Hp = std::min(Other.Z->MaxHp, Other.Z->Hp + Z.AuraHeal * Dt);
+						++Defense.AuraTicks;
+					}
+				}
+			}
+			if (Z.bAuraSlow && bHasPlayer && Flat(PlayerPos - Pos).Length() < Z.AuraRadius)
+			{
+				Defense.PlayerSlow = std::max(Defense.PlayerSlow, 0.3f);
+				++Defense.AuraTicks;
+			}
+		}
 		// 크리스탈 발견 → 주변 호출
 		if (!Z.bAlerted && CrystalCell >= 0 && Flat(Pos - CrystalPos).Length() < Defense.CrystalDetectRadius)
 		{

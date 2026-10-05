@@ -735,6 +735,8 @@ def Main():
 	os.makedirs(os.path.join(CONTENT, "Scenes", "Tests"), exist_ok=True)
 	BuildScene(Height, AutoPlay="Basic").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmAutoPlay.escene"))
 	BuildScene(Height, AutoPlay="Time").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmTime.escene"))
+	BuildScene(Height, AutoPlay="Boss").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmBoss.escene"))
+	BuildScene(Height, AutoPlay="SeasonBoss").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmSeasonBoss.escene"))
 	BuildScene(Height, AutoPlay="Defense").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmDefense.escene"))
 	BuildScene(Height, AutoPlay="DefenseLoss").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmDefenseLoss.escene"))
 	BuildScene(Height, AutoPlay="GameOver").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmGameOver.escene"))
@@ -743,6 +745,7 @@ def Main():
 	BuildScene(Height, AutoPlay="Economy").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmEconomy.escene"))
 	BuildScene(Height, AutoPlay="Farm").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmFarming.escene"))
 	if "--views" in sys.argv:
+		BuildScene(Height, AutoPlay="BossShot").Save(os.path.join(CONTENT, "Scenes", "_FarmBossShot.escene"))
 		BuildScene(Height, AutoPlay="NightShot").Save(os.path.join(CONTENT, "Scenes", "_FarmNightShot.escene"))
 		BuildScene(Height, AutoPlay="BuildShot").Save(os.path.join(CONTENT, "Scenes", "_FarmBuildShot.escene"))
 		BuildForestScene(ForestHeight, "Shot10").Save(os.path.join(CONTENT, "Scenes", "_ForestShot.escene"))

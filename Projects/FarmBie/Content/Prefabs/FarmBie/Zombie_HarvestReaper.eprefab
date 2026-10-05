@@ -1,0 +1,167 @@
+{
+  "Entities": [
+    {
+      "Name": "Zombie_HarvestReaper",
+      "Parent": -1,
+      "Components": {
+        "FarmZombieComponent": {
+          "Kind": "HarvestReaper",
+          "SpriteBase": "Sprites/FarmBie/Zombie_HarvestReaper",
+          "Hp": 30.0,
+          "MaxHp": 30.0,
+          "Speed": 110.0,
+          "Damage": 6.0,
+          "AttackInterval": 1.0,
+          "StructureDamageMul": 1.0,
+          "CropEatTime": 2.5,
+          "BodyRadius": 26.0,
+          "Explode": false,
+          "ExplodeRadius": 0.0,
+          "ExplodeDamage": 0.0,
+          "RegenPerSec": 0.0,
+          "SlowOnHit": 0.0,
+          "Boss": false,
+          "AggroTime": 0.0,
+          "Alerted": false,
+          "Dead": false
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Body",
+      "Parent": 0,
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Zombie_HarvestReaper.esprite",
+          "Slice": "WalkDown0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/FarmBie/Zombie_HarvestReaper_WalkDown.eflipbook",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Shadow",
+      "Parent": 0,
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Fx.esprite",
+          "Slice": "Shadow",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            1.5
+          ],
+          "Rotation": [
+            -0.7071067811865476,
+            0.0,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.6,
+            1.0,
+            1.6
+          ]
+        }
+      }
+    }
+  ],
+  "NextId": 4,
+  "Version": 1
+}

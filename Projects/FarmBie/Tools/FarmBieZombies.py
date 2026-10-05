@@ -28,6 +28,23 @@ KINDS = {
 	"Frostbite": {"Cell": 42, "Pal": {"Skin": (150, 186, 206), "SkinD": (104, 136, 166), "Shirt": (90, 110, 150), "ShirtD": (64, 80, 116),
 								   "Pants": (70, 80, 110), "PantsD": (50, 58, 84), "Eye": (180, 240, 255)}, "Trait": "Ice"},
 }
+# 보스 (Bosses.etable과 같은 이름 — 더 큰 칸 + 고유 장식)
+KINDS.update({
+	"Rotgiant":        {"Cell": 64, "Pal": {"Skin": (120, 140, 96), "SkinD": (84, 100, 66), "Shirt": (110, 80, 66), "ShirtD": (78, 56, 46),
+									     "Pants": (70, 60, 64), "PantsD": (48, 40, 44), "Eye": (255, 220, 90)}, "Trait": "Giant"},
+	"Broodmother":     {"Cell": 60, "Pal": {"Skin": (170, 150, 120), "SkinD": (124, 106, 84), "Shirt": (150, 120, 100), "ShirtD": (110, 86, 70),
+									     "Pants": (90, 70, 66), "PantsD": (64, 50, 46), "Eye": (255, 120, 80)}, "Trait": "Brood"},
+	"PlagueScarecrow": {"Cell": 56, "Pal": {"Skin": (150, 140, 90), "SkinD": (110, 100, 62), "Shirt": (110, 140, 70), "ShirtD": (80, 104, 50),
+									     "Pants": (100, 84, 60), "PantsD": (72, 60, 44), "Eye": (200, 255, 90)}, "Trait": "PlagueStraw"},
+	"BloomLich":       {"Cell": 64, "Pal": {"Skin": (180, 200, 170), "SkinD": (130, 150, 120), "Shirt": (70, 120, 80), "ShirtD": (46, 86, 56),
+									     "Pants": (60, 96, 66), "PantsD": (40, 70, 46), "Eye": (255, 160, 220)}, "Trait": "Lich"},
+	"SunDevourer":     {"Cell": 64, "Pal": {"Skin": (150, 70, 40), "SkinD": (100, 44, 28), "Shirt": (90, 40, 30), "ShirtD": (60, 26, 20),
+									     "Pants": (70, 34, 26), "PantsD": (48, 22, 18), "Eye": (255, 240, 120)}, "Trait": "Sun"},
+	"HarvestReaper":   {"Cell": 64, "Pal": {"Skin": (220, 214, 196), "SkinD": (170, 164, 150), "Shirt": (40, 32, 44), "ShirtD": (26, 20, 30),
+									     "Pants": (34, 28, 38), "PantsD": (22, 18, 26), "Eye": (255, 140, 40)}, "Trait": "Reaper"},
+	"FrostColossus":   {"Cell": 72, "Pal": {"Skin": (170, 210, 236), "SkinD": (120, 160, 196), "Shirt": (110, 150, 196), "ShirtD": (80, 112, 156),
+									     "Pants": (90, 120, 160), "PantsD": (64, 88, 124), "Eye": (220, 250, 255)}, "Trait": "Colossus"},
+})
 POSES = {"Walk": 4, "Attack": 2, "Die": 3}
 POSE_TIMES = {"Walk": (7.0, "Loop"), "Attack": (6.0, "Loop"), "Die": (8.0, "Once")}
 
@@ -133,6 +150,52 @@ def _Humanoid(C, P, Dir, Pose, Frame, Size, Trait):
 	elif Trait == "Ice":
 		for X, Y in ((10, 15), (21, 16), (12, 7), (19, 7)):
 			R(X, Y + Bob, X, Y + 2 + Bob, (230, 250, 255))
+	elif Trait == "Giant":
+		for K in range(5):
+			Px(12 + K * 2, 18 + Bob, (40, 30, 30))
+			Px(13 + K * 2, 19 + Bob, (40, 30, 30))
+		R(9, 21 + Bob, 11, 23 + Bob, (170, 60, 60))   # 터진 상처
+		R(20, 16 + Bob, 21, 17 + Bob, (170, 60, 60))
+	elif Trait == "Brood":
+		for X, Y in ((10, 16), (13, 15), (17, 15), (20, 16), (11, 19), (19, 19)):
+			R(X, Y + Bob, X + 1, Y + 1 + Bob, (240, 236, 200))  # 알
+			Px(X, Y + Bob, (255, 255, 240))
+		R(12, 22 + Bob, 19, 24 + Bob, (200, 120, 110))
+	elif Trait == "PlagueStraw":
+		R(8, 4 + Bob, 23, 5 + Bob, (170, 150, 70))
+		R(11, 0 + Bob, 20, 4 + Bob, (190, 170, 80))
+		for X, Y in ((11, 18), (19, 20), (14, 22), (16, 16)):
+			R(X, Y + Bob, X + 1, Y + 1 + Bob, (150, 220, 80))
+		for X in (7, 24):
+			R(X, 17 + Bob, X, 25 + Bob, (180, 150, 80))
+	elif Trait == "Lich":
+		R(11, 2 + Bob, 20, 4 + Bob, (230, 200, 90))       # 왕관
+		for X in (11, 14, 17, 20):
+			Px(X, 1 + Bob, (230, 200, 90))
+		for X, Y, Col in ((10, 15, (250, 180, 220)), (21, 17, (255, 240, 150)), (13, 21, (250, 180, 220)), (19, 23, (255, 255, 255)), (16, 18, (255, 240, 150))):
+			R(X, Y + Bob, X + 1, Y + 1 + Bob, Col)
+		R(9, 25, 22, 30, P["ShirtD"])                       # 긴 옷자락
+	elif Trait == "Sun":
+		for X in range(10, 22, 2):
+			R(X, 1 + Bob + (X % 4) // 2, X, 5 + Bob, (255, 170, 40))  # 불꽃 머리
+			Px(X, 0 + Bob + (X % 4) // 2, (255, 240, 150))
+		for X, Y in ((11, 17), (19, 19), (14, 22), (17, 15), (12, 24)):
+			R(X, Y + Bob, X + 1, Y + Bob, (255, 150, 30))
+	elif Trait == "Reaper":
+		R(9, 3 + Bob, 22, 13 + Bob, P["Shirt"])            # 두건
+		R(12, 7 + Bob, 19, 13 + Bob, P["Skin"])            # 해골 얼굴
+		R(13, 9 + Bob, 14, 10 + Bob, (20, 10, 10))
+		R(17, 9 + Bob, 18, 10 + Bob, (20, 10, 10))
+		Px(13, 9 + Bob, P["Eye"])
+		Px(18, 9 + Bob, P["Eye"])
+		R(9, 24, 22, 31, P["ShirtD"])
+		R(26, 4 + Bob, 26, 30, (110, 80, 50))             # 낫 자루
+		R(20, 4 + Bob, 27, 5 + Bob, (200, 206, 216))       # 낫 날
+		R(19, 6 + Bob, 21, 7 + Bob, (170, 176, 186))
+	elif Trait == "Colossus":
+		for X, Y in ((8, 14), (23, 15), (11, 6), (20, 6), (15, 3), (9, 22), (22, 22)):
+			R(X, Y + Bob, X, Y + 3 + Bob, (235, 250, 255))
+			Px(X, Y + Bob, (255, 255, 255))
 
 
 def DrawZombie(Kind, Dir, Pose, Frame):

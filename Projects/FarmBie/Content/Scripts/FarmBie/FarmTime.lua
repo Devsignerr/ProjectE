@@ -82,7 +82,9 @@ end
 function Time_:HoursPerSecond()
 	local C = self.Calendar
 	if self.Phase == "Night" then
-		return (C.NightEndHour + 24 - C.NightStartHour) / (C.NightRealMinutes * 60)
+		-- 보스 밤은 더 길다 (BossRules.BossNightMul)
+		local Mul = (self.IsBossNight and self:IsBossNight() and self.BossRules) and self.BossRules.BossNightMul or 1.0
+		return (C.NightEndHour + 24 - C.NightStartHour) / (C.NightRealMinutes * 60 * Mul)
 	end
 	return (C.NightStartHour - C.DayStartHour) / (C.DayRealMinutes * 60)
 end
@@ -120,6 +122,12 @@ end
 -- 잠들기 시작 (Reason: "Bed" 스스로 잠 / "Dawn" 새벽이 되어 쓰러지듯 잠)
 function Time_:BeginSleep(Reason)
 	if self.Phase == "Sleep" then return end
+	if self.bForceCollapse then
+		-- 중간 보스 패배: 쓰러짐 (아침에 쓰러짐 벌칙)
+		self.bForceCollapse = false
+		Reason = "Collapse"
+		self.Report.Collapses = (self.Report.Collapses or 0) + 1
+	end
 	self.Phase = "Sleep"
 	self.SleepReason = Reason
 	self.SleepTimer = 0

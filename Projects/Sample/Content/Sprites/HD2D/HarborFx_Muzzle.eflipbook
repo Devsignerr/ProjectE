@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "HarborFx.esprite",
+  "Fps": 18.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Muzzle0"
+    },
+    {
+      "Slice": "Muzzle1"
+    }
+  ]
+}

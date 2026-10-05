@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DHarborLampOn",
+  "BaseColorFactor": [
+    0.25,
+    0.18,
+    0.08,
+    1.0
+  ],
+  "EmissiveFactor": [
+    5.5,
+    3.4,
+    1.3
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.3,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

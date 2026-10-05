@@ -1,0 +1,76 @@
+{
+  "Version": 1,
+  "Texture": "HarborFx.png",
+  "TextureWidth": 128,
+  "TextureHeight": 18,
+  "UnitsPerPixel": 6.0,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "Bullet",
+      "X": 1,
+      "Y": 1,
+      "W": 10,
+      "H": 5,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Keg0",
+      "X": 12,
+      "Y": 1,
+      "W": 14,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Muzzle0",
+      "X": 27,
+      "Y": 1,
+      "W": 14,
+      "H": 12,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Keg1",
+      "X": 42,
+      "Y": 1,
+      "W": 14,
+      "H": 16,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Muzzle1",
+      "X": 57,
+      "Y": 1,
+      "W": 14,
+      "H": 12,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "Cannonball",
+      "X": 72,
+      "Y": 1,
+      "W": 10,
+      "H": 10,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Sprite": "HarborNpcs.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Fisher0",
+      "Duration": 0.7
+    },
+    {
+      "Slice": "Fisher1",
+      "Duration": 0.45
+    },
+    {
+      "Slice": "Fisher2",
+      "Duration": 0.55
+    },
+    {
+      "Slice": "Fisher3",
+      "Duration": 0.12
+    }
+  ]
+}

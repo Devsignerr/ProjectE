@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DHarborIron",
+  "BaseColorFactor": [
+    0.05,
+    0.05,
+    0.055,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 1.0,
+  "Roughness": 0.5,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

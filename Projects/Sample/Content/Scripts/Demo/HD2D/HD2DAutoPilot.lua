@@ -28,7 +28,7 @@ function AutoPilot.New(Scenario, Player, GM)
 	local A = setmetatable({ Scenario = Scenario, Player = Player, GM = GM, Time = 0, Frame = 0, Failures = {}, Checks = 0, Teleports = 0,
 	                         DamageTakenScale = Scenario == "Full" and 0.35 or 0.25, PotionTimer = 0 }, AutoPilot)
 	local Name = Scenario
-	if Scenario == "Full" or Scenario == "Cave" then
+	if Scenario == "Full" or Scenario == "Cave" or Scenario == "Harbor" then
 		A.Phase = Game.GetPersistent("HD2D_AutoPhase", Scenario == "Full" and "Main" or "Run")
 		Name = Scenario .. A.Phase
 		-- 앞 단계의 실패·확인 수를 잇는다
@@ -192,7 +192,7 @@ function AutoPilot:MoveToward(Target, Scale)
 		self.StuckFrom = Pos
 	end
 	if (self.StuckTotal or 0) > 4.5 then
-		self:Note(string.format("막힘 → 순간이동 (%.0f, %.0f)", Target.X, Target.Y))
+		self:Note(string.format("막힘 → 순간이동 (%.0f, %.0f) — 막힌 자리 (%.0f, %.0f)", Target.X, Target.Y, Pos.X, Pos.Y))
 		self.Teleports = self.Teleports + 1
 		self.Player:Teleport(Vector3(Target.X, Target.Y, self:GroundZ(Target, Pos.Z) + 90))
 		self.StuckTotal = 0
@@ -210,7 +210,7 @@ function AutoPilot:GoTo(Target, Radius, Timeout, Label)
 	local Until = self.Time + (Timeout or 50)
 	local Nav0 = self.NavRoutes or 0
 	local Route = self:Route(self:Pos(), Target)
-	if self.Scenario == "Cave" and Label then
+	if (self.Scenario == "Cave" or self.Scenario == "Harbor") and Label then
 		local From = self:Pos()
 		self:Note(string.format("길 %s: %d점 (%s, 출발 %.0f, %.0f, %.0f)", Label, #Route, (self.NavRoutes or 0) > Nav0 and "내비메시" or "직선/Path", From.X, From.Y, From.Z))
 	end
@@ -1136,5 +1136,8 @@ function AutoPilot:RunBoss()
 		self:Yield()
 	end
 end
+
+-- 항구·낮밤 시나리오 (HD2DHarborPilot.lua — Harbor·HarborDay/Night/Lighthouse/Combat/Boss·VillageNight/Day)
+for Name, Fn in pairs(Script.Require("Scripts/Demo/HD2D/HD2DHarborPilot.lua")) do AutoPilot[Name] = Fn end
 
 return AutoPilot

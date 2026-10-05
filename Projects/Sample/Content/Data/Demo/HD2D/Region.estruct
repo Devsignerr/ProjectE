@@ -1,0 +1,45 @@
+{
+  "Version": 1,
+  "Name": "Region",
+  "Description": "HD2D 지역 (Regions.etable, 행 이름 = 맵 id — 관리자 Map 속성): 도착 이름 표시 + 낮밤 적용",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "",
+      "Description": "지역 이름 (맵 이동 도착 때 화면 위 가운데)"
+    },
+    {
+      "Name": "Subtitle",
+      "Type": "String",
+      "Default": "",
+      "Description": "지역 부제"
+    },
+    {
+      "Name": "DayNight",
+      "Type": "Bool",
+      "Default": true,
+      "Description": "하늘·색 보정·등불이 게임 시각을 따르는가 (동굴은 끔 — 입구 빛만 DayLights)"
+    },
+    {
+      "Name": "NightLights",
+      "Type": "Array",
+      "Default": [],
+      "Description": "밤에 켜는 점광원 엔티티 이름 (# = 0부터 번호, 없으면 멈춤)",
+      "Element": "String"
+    },
+    {
+      "Name": "NightWindows",
+      "Type": "String",
+      "Default": "",
+      "Description": "밤에 불 켜는 창 유리 엔티티 이름 (# = 번호) — 머티리얼을 바꾼다"
+    },
+    {
+      "Name": "DayLights",
+      "Type": "Array",
+      "Default": [],
+      "Description": "낮 밝기에 비례하는 빛 엔티티 이름 (동굴 입구 달빛·햇빛)",
+      "Element": "String"
+    }
+  ]
+}

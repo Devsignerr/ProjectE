@@ -1,0 +1,259 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ProjectE HD2DMeshKit"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "HarborNetRack",
+   "mesh": 0
+  }
+ ],
+ "meshes": [
+  {
+   "name": "HarborNetRack",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    },
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "HarborNetPost",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.62,
+     0.52,
+     0.42,
+     1.0
+    ],
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0,
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   },
+   "doubleSided": false,
+   "normalTexture": {
+    "index": 2,
+    "scale": 1.0
+   },
+   "occlusionTexture": {
+    "index": 1
+   }
+  },
+  {
+   "name": "HarborNet",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.85,
+     0.82,
+     0.72,
+     1.0
+    ],
+    "metallicFactor": 0.0,
+    "roughnessFactor": 0.95,
+    "baseColorTexture": {
+     "index": 3
+    }
+   },
+   "doubleSided": true,
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.35
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 288,
+   "type": "VEC3",
+   "min": [
+    -0.05999999865889549,
+    -0.20000000298023224,
+    -1.350000023841858
+   ],
+   "max": [
+    0.05999999865889549,
+    1.899999976158142,
+    1.350000023841858
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 288,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 288,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5125,
+   "count": 288,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 504,
+   "type": "VEC3",
+   "min": [
+    -0.03910120576620102,
+    -0.009270711801946163,
+    -1.1799999475479126
+   ],
+   "max": [
+    0.14478394389152527,
+    1.7799999713897705,
+    1.1799999475479126
+   ]
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 504,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 504,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5125,
+   "count": 504,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 3456,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 3456,
+   "byteLength": 3456,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 6912,
+   "byteLength": 2304,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 9216,
+   "byteLength": 1152,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 10368,
+   "byteLength": 6048,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 16416,
+   "byteLength": 6048,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 22464,
+   "byteLength": 4032,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 26496,
+   "byteLength": 2016,
+   "target": 34963
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "HarborNetRack.bin",
+   "byteLength": 28512
+  }
+ ],
+ "images": [
+  {
+   "uri": "../../../../Asset/PolyHaven/dark_wooden_planks/dark_wooden_planks_diff_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/dark_wooden_planks/dark_wooden_planks_arm_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/dark_wooden_planks/dark_wooden_planks_nor_gl_2k.jpg"
+  },
+  {
+   "uri": "HarborNet.png"
+  }
+ ],
+ "textures": [
+  {
+   "source": 0,
+   "sampler": 0
+  },
+  {
+   "source": 1,
+   "sampler": 0
+  },
+  {
+   "source": 2,
+   "sampler": 0
+  },
+  {
+   "source": 3,
+   "sampler": 0
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ]
+}

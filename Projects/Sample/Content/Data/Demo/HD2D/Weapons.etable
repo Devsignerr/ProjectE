@@ -111,6 +111,28 @@
         "Flipbook": "Hero_Attack",
         "Sound": "Audio/RPG/Swing1.wav"
       }
+    },
+    {
+      "Name": "Harpoon",
+      "Values": {
+        "DisplayName": "어부의 작살",
+        "Kind": "Thrust",
+        "Description": "어부 토마가 쓰던 묵직한 작살. 창보다 조금 더 멀리 닿고 맞은 적을 크게 밀어낸다.",
+        "Damage": 26,
+        "Cooldown": 0.38,
+        "Range": 310,
+        "Arc": 34,
+        "Knockback": 1050,
+        "ProjectileSpeed": 0,
+        "ManaCost": 0,
+        "Splash": 0,
+        "HitStop": 0.07,
+        "AttackTime": 0.39,
+        "HitDelay": 0.08,
+        "Flipbook": "Hero_AttackSpear",
+        "Sound": "Audio/RPG/Swing3.wav",
+        "Icon": "UI/Demo/HD2D/Icons/Harpoon.png"
+      }
     }
   ]
 }

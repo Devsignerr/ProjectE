@@ -1,0 +1,41 @@
+{
+  "Name": "HD2DHarborPlasterWhite",
+  "Parent": "../HD2DTriplanar.emat",
+  "Parameters": [
+    {
+      "Name": "Albedo",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/plastered_wall_04/plastered_wall_04_diff_2k.jpg"
+    },
+    {
+      "Name": "Arm",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/plastered_wall_04/plastered_wall_04_arm_2k.jpg"
+    },
+    {
+      "Name": "Normal",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/plastered_wall_04/plastered_wall_04_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.0038461538461538464
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.08,
+        1.06,
+        1.02,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

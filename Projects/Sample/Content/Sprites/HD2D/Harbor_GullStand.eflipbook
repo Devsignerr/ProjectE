@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "HarborProps.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "GullStand0",
+      "Duration": 1.4
+    },
+    {
+      "Slice": "GullStand0",
+      "Duration": 0.5
+    },
+    {
+      "Slice": "GullStand1",
+      "Duration": 0.35
+    }
+  ]
+}

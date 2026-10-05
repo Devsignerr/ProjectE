@@ -1,0 +1,260 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ProjectE HD2DMeshKit"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "HarborJettyRound",
+   "mesh": 0
+  }
+ ],
+ "meshes": [
+  {
+   "name": "HarborJettyRound",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    },
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "HarborJettyWet",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.46,
+     0.5,
+     0.5,
+     1.0
+    ],
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0,
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   },
+   "doubleSided": false,
+   "normalTexture": {
+    "index": 2,
+    "scale": 1.0
+   },
+   "occlusionTexture": {
+    "index": 1
+   }
+  },
+  {
+   "name": "HarborJettyStone",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.86,
+     0.84,
+     0.8,
+     1.0
+    ],
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0,
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   },
+   "doubleSided": false,
+   "normalTexture": {
+    "index": 2,
+    "scale": 1.0
+   },
+   "occlusionTexture": {
+    "index": 1
+   }
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 216,
+   "type": "VEC3",
+   "min": [
+    -3.0,
+    -3.299999952316284,
+    -3.0
+   ],
+   "max": [
+    3.0,
+    -0.30000001192092896,
+    3.0
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 216,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 216,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5125,
+   "count": 216,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 324,
+   "type": "VEC3",
+   "min": [
+    -2.859999895095825,
+    -0.30000001192092896,
+    -2.859999895095825
+   ],
+   "max": [
+    2.859999895095825,
+    0.10000000149011612,
+    2.859999895095825
+   ]
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 324,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 324,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5125,
+   "count": 324,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 2592,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 2592,
+   "byteLength": 2592,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 5184,
+   "byteLength": 1728,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 6912,
+   "byteLength": 864,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 7776,
+   "byteLength": 3888,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 11664,
+   "byteLength": 3888,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 15552,
+   "byteLength": 2592,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 18144,
+   "byteLength": 1296,
+   "target": 34963
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "HarborJettyRound.bin",
+   "byteLength": 19440
+  }
+ ],
+ "images": [
+  {
+   "uri": "../../../../Asset/PolyHaven/modular_fort_01/textures/modular_fort_01_wall_diff_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/modular_fort_01/textures/modular_fort_01_wall_arm_2k.jpg"
+  },
+  {
+   "uri": "../../../../Asset/PolyHaven/modular_fort_01/textures/modular_fort_01_wall_nor_gl_2k.jpg"
+  }
+ ],
+ "textures": [
+  {
+   "source": 0,
+   "sampler": 0
+  },
+  {
+   "source": 1,
+   "sampler": 0
+  },
+  {
+   "source": 2,
+   "sampler": 0
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ]
+}

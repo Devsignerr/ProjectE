@@ -64,6 +64,33 @@
         "Objective": "허수아비 근처의 마물을 쓰러뜨리자",
         "Report": "농부 한스에게 돌아가 보고하자"
       }
+    },
+    {
+      "Name": "Sub_Lighthouse",
+      "Values": {
+        "Title": "꺼진 등대",
+        "Summary": "",
+        "Objective": "해적 야영지에서 등대 렌즈를 찾자",
+        "Report": "등대지기 노아에게 렌즈를 돌려주자"
+      }
+    },
+    {
+      "Name": "Sub_Pirates",
+      "Values": {
+        "Title": "해적 소탕",
+        "Summary": "",
+        "Objective": "동쪽 절벽 길의 해적·마물을 쓰러뜨리자",
+        "Report": "어부 토마에게 보고하자"
+      }
+    },
+    {
+      "Name": "Sub_Captain",
+      "Values": {
+        "Title": "해적 선장",
+        "Summary": "",
+        "Objective": "동쪽 후미의 해적 선장 바렌을 쓰러뜨리자",
+        "Report": "항만장 마르타에게 보고하자"
+      }
     }
   ]
 }

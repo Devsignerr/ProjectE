@@ -1,0 +1,41 @@
+{
+  "Name": "HD2DHarborSeaRock",
+  "Parent": "../HD2DTriplanar.emat",
+  "Parameters": [
+    {
+      "Name": "Albedo",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/cliff_side/cliff_side_diff_2k.jpg"
+    },
+    {
+      "Name": "Arm",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/cliff_side/cliff_side_arm_2k.jpg"
+    },
+    {
+      "Name": "Normal",
+      "Type": "Texture",
+      "Value": "../../../../Asset/PolyHaven/cliff_side/cliff_side_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.002631578947368421
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.72,
+        0.7,
+        0.66,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

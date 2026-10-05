@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DHarborEmber",
+  "BaseColorFactor": [
+    0.05,
+    0.02,
+    0.01,
+    1.0
+  ],
+  "EmissiveFactor": [
+    6.0,
+    1.8,
+    0.4
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.9,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

@@ -91,6 +91,56 @@
         "PictureW": 77,
         "PictureH": 55
       }
+    },
+    {
+      "Name": "Crab",
+      "Values": {
+        "Habitat": "해안 절벽 길",
+        "Description": "바위틈에 사는 붉은 게. 집게를 치켜들었다가 옆걸음으로 돌진해 꼬집는다. 구워 먹으면 맛있다는 소문.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Crab.png",
+        "PictureW": 140,
+        "PictureH": 95
+      }
+    },
+    {
+      "Name": "Seagull",
+      "Values": {
+        "Habitat": "해안 절벽 길",
+        "Description": "생선 냄새에 사나워진 갈매기. 머리 위를 맴돌다 부리로 내리꽂는다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Seagull.png",
+        "PictureW": 145,
+        "PictureH": 85
+      }
+    },
+    {
+      "Name": "Pirate",
+      "Values": {
+        "Habitat": "해적 야영지",
+        "Description": "바렌 선장을 따르는 해적 졸개. 칼을 치켜들었다가 단숨에 베어 들어온다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Pirate.png",
+        "PictureW": 100,
+        "PictureH": 150
+      }
+    },
+    {
+      "Name": "Ghost",
+      "Values": {
+        "Habitat": "밤의 절벽 길",
+        "Description": "밤바다에서 길을 잃은 혼. 해가 지면 절벽 길을 떠돌다 해가 뜨면 사라진다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/Ghost.png",
+        "PictureW": 115,
+        "PictureH": 135
+      }
+    },
+    {
+      "Name": "PirateCaptain",
+      "Values": {
+        "Habitat": "해적 후미",
+        "Description": "갈매기 항구를 노리는 해적 선장 바렌. 칼 돌진·권총·화약통을 쓰고, 화나면 앞바다 배에서 포격을 부른다.",
+        "Picture": "UI/Demo/HD2D/Bestiary/PirateCaptain.png",
+        "PictureW": 88,
+        "PictureH": 124
+      }
     }
   ]
 }

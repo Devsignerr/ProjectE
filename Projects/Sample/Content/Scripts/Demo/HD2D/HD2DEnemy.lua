@@ -27,6 +27,11 @@ local Shapes = {
 	Goblin   = { Lift = 0, HitHeight = 70, bFlip = true },
 	Archer   = { Lift = 0, HitHeight = 90, bFlip = true },
 	Mushroom = { Lift = 0, HitHeight = 60, bFlip = false },
+	-- 항구 (HD2DWorldArt — HarborEnemies.esprite)
+	Crab     = { Lift = 0, HitHeight = 35, bFlip = false },
+	Pirate   = { Lift = 0, HitHeight = 85, bFlip = true },
+	Seagull  = { Lift = 105, HitHeight = 110, bFlip = false },
+	Ghost    = { Lift = 80, HitHeight = 95, bFlip = true },
 }
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end

@@ -19,11 +19,12 @@
       "Name": "Kind",
       "Type": "Enum",
       "Default": "Find",
-      "Description": "찾기(Target 아이템 1개 — 맵의 소품을 조사) / 모으기(Target 아이템 Count개) / 사냥(구역 안 처치 Count번)",
+      "Description": "찾기(Target 아이템 1개 — 맵의 소품을 조사) / 모으기(Target 아이템 Count개) / 사냥(구역 안 처치 Count번) / 보스(Target 맵의 보스 처치)",
       "Values": [
         "Find",
         "Collect",
-        "Hunt"
+        "Hunt",
+        "Boss"
       ]
     },
     {

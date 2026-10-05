@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "HarborEnemies.esprite",
+  "Fps": 13.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "SeagullMove0"
+    },
+    {
+      "Slice": "SeagullMove1"
+    },
+    {
+      "Slice": "SeagullMove2"
+    },
+    {
+      "Slice": "SeagullMove3"
+    }
+  ]
+}

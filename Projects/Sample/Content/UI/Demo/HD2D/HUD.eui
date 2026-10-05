@@ -14243,6 +14243,3053 @@
             ]
           }
         ]
+      },
+      {
+        "Type": "VerticalBox",
+        "Name": "TagTemplate",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": -1
+        },
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "TagName",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Collapsed",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                2
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "",
+            "FontSize": 16,
+            "TextColor": [
+              1.0,
+              0.85,
+              0.42,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.03,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.55
+            ]
+          },
+          {
+            "Type": "HorizontalBox",
+            "Name": "TagStatus",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Collapsed",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                2
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "TagSt0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    1,
+                    0,
+                    1,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/StatusPoison.png"
+                },
+                "ImageSize": [
+                  26,
+                  26
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "TagSt1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    1,
+                    0,
+                    1,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/StatusPoison.png"
+                },
+                "ImageSize": [
+                  26,
+                  26
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "TagSt2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    1,
+                    0,
+                    1,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/StatusPoison.png"
+                },
+                "ImageSize": [
+                  26,
+                  26
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "TagSt3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    1,
+                    0,
+                    1,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/StatusPoison.png"
+                },
+                "ImageSize": [
+                  26,
+                  26
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "HorizontalBox",
+            "Name": "TagRow",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Overlay",
+                "Name": "TagShieldBox",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    3,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "TagShield",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/Demo/HD2D/Combat/Shield.png"
+                    },
+                    "ImageSize": [
+                      42,
+                      42
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "TagShieldNum",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        3
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "0",
+                    "FontSize": 19,
+                    "TextColor": [
+                      1,
+                      1,
+                      1,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.03,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.55
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "TagWeak0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    1,
+                    0,
+                    1,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/ElemUnknown.png"
+                },
+                "ImageSize": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "TagWeak1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    1,
+                    0,
+                    1,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/ElemUnknown.png"
+                },
+                "ImageSize": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "TagWeak2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    1,
+                    0,
+                    1,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/ElemUnknown.png"
+                },
+                "ImageSize": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "TagWeak3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    1,
+                    0,
+                    1,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/ElemUnknown.png"
+                },
+                "ImageSize": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "TagWeak4",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    1,
+                    0,
+                    1,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/ElemUnknown.png"
+                },
+                "ImageSize": [
+                  30,
+                  30
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "ProgressBar",
+            "Name": "TagHp",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Collapsed",
+            "Slot": {
+              "Padding": [
+                0,
+                2,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "MinSize": [
+              64,
+              6
+            ],
+            "Brush": {
+              "Color": [
+                0.05,
+                0.03,
+                0.06,
+                0.85
+              ],
+              "CornerRadius": 1,
+              "BorderWidth": 1,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "FillBrush": {
+              "Color": [
+                0.92,
+                0.3,
+                0.28,
+                1
+              ],
+              "CornerRadius": 1,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "Percent": 1.0,
+            "FillDirection": "LeftToRight"
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "ScreenProbe",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Hidden",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": -2
+        },
+        "Brush": {
+          "Color": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "BreakBanner",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0.5
+          ],
+          "AutoSize": true,
+          "ZOrder": 7
+        },
+        "Text": "BREAK!",
+        "FontSize": 46,
+        "TextColor": [
+          1.0,
+          0.86,
+          0.32,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 4,
+        "OutlineColor": [
+          0.03,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.55
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "SkillNamePanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            1
+          ],
+          "AnchorMax": [
+            0,
+            1
+          ],
+          "Offsets": [
+            18,
+            -178,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 6
+        },
+        "Brush": {
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Texture": "UI/Demo/HD2D/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "TextureSize": [
+            30,
+            30
+          ]
+        },
+        "ContentPadding": [
+          18,
+          8,
+          22,
+          8
+        ],
+        "Children": [
+          {
+            "Type": "HorizontalBox",
+            "Name": "SkillNameRow",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "SkillNameIcon",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    10,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillWhirl.png"
+                },
+                "ImageSize": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillNameText",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 24,
+                "TextColor": [
+                  1.0,
+                  0.85,
+                  0.42,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "CompanionPanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            16,
+            222,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Texture": "UI/Demo/HD2D/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "TextureSize": [
+            30,
+            30
+          ]
+        },
+        "ContentPadding": [
+          12,
+          8,
+          16,
+          10
+        ],
+        "Children": [
+          {
+            "Type": "HorizontalBox",
+            "Name": "CompanionRow",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "CompanionPortrait",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    10,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Portraits/Mage.png"
+                },
+                "ImageSize": [
+                  40,
+                  40
+                ]
+              },
+              {
+                "Type": "VerticalBox",
+                "Name": "CompanionTexts",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "HorizontalBox",
+                    "Name": "CompanionNameRow",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        4
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Text",
+                        "Name": "CompanionName",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Fill",
+                          "FillWeight": 1
+                        },
+                        "Text": "엘라",
+                        "FontSize": 18,
+                        "TextColor": [
+                          1.0,
+                          0.85,
+                          0.42,
+                          1
+                        ],
+                        "Justify": "Left",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [
+                          0.03,
+                          0.02,
+                          0.06,
+                          1
+                        ],
+                        "ShadowOffset": [
+                          0,
+                          2
+                        ],
+                        "ShadowColor": [
+                          0,
+                          0,
+                          0,
+                          0.55
+                        ]
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "CompanionState",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            10,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Text": "",
+                        "FontSize": 15,
+                        "TextColor": [
+                          1.0,
+                          0.55,
+                          0.5,
+                          1
+                        ],
+                        "Justify": "Right",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [
+                          0.03,
+                          0.02,
+                          0.06,
+                          1
+                        ],
+                        "ShadowOffset": [
+                          0,
+                          2
+                        ],
+                        "ShadowColor": [
+                          0,
+                          0,
+                          0,
+                          0.55
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Overlay",
+                    "Name": "CompanionHpBox",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "ProgressBar",
+                        "Name": "CompanionHp",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "MinSize": [
+                          150,
+                          12
+                        ],
+                        "Brush": {
+                          "Color": [
+                            0.05,
+                            0.04,
+                            0.08,
+                            0.9
+                          ],
+                          "CornerRadius": 2,
+                          "BorderWidth": 1,
+                          "BorderColor": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1
+                          ]
+                        },
+                        "FillBrush": {
+                          "Color": [
+                            0.4,
+                            0.86,
+                            0.52,
+                            1
+                          ],
+                          "CornerRadius": 1,
+                          "BorderWidth": 0,
+                          "BorderColor": [
+                            0,
+                            0,
+                            0,
+                            1
+                          ]
+                        },
+                        "Percent": 1.0,
+                        "FillDirection": "LeftToRight"
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "CompanionHpText",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Slot": {
+                          "Padding": [
+                            0,
+                            0,
+                            0,
+                            0
+                          ],
+                          "HAlign": "Center",
+                          "VAlign": "Center",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Text": "",
+                        "FontSize": 12,
+                        "TextColor": [
+                          0.96,
+                          0.93,
+                          0.86,
+                          1
+                        ],
+                        "Justify": "Center",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [
+                          0.03,
+                          0.02,
+                          0.06,
+                          1
+                        ],
+                        "ShadowOffset": [
+                          0,
+                          2
+                        ],
+                        "ShadowColor": [
+                          0,
+                          0,
+                          0,
+                          0.55
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "HorizontalBox",
+        "Name": "SkillBar",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            1
+          ],
+          "AnchorMax": [
+            0,
+            1
+          ],
+          "Offsets": [
+            18,
+            -112,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 1
+        },
+        "Children": [
+          {
+            "Type": "Overlay",
+            "Name": "Skill0",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                6,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "SkillBg0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillFrame.png"
+                },
+                "ImageSize": [
+                  60,
+                  60
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "SkillIcon0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillWhirl.png"
+                },
+                "ImageSize": [
+                  40,
+                  40
+                ]
+              },
+              {
+                "Type": "ProgressBar",
+                "Name": "SkillCd0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "MinSize": [
+                  46,
+                  46
+                ],
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "FillBrush": {
+                  "Color": [
+                    0.02,
+                    0.01,
+                    0.06,
+                    0.72
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "Percent": 0.0,
+                "FillDirection": "BottomToTop"
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillTime0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 19,
+                "TextColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillLock0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 15,
+                "TextColor": [
+                  0.72,
+                  0.7,
+                  0.78,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillKey0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    5,
+                    2,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Left",
+                  "VAlign": "Top",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "K",
+                "FontSize": 15,
+                "TextColor": [
+                  1.0,
+                  0.85,
+                  0.42,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillMp0",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    5,
+                    3
+                  ],
+                  "HAlign": "Right",
+                  "VAlign": "Bottom",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 13,
+                "TextColor": [
+                  0.6,
+                  0.86,
+                  1.0,
+                  1
+                ],
+                "Justify": "Right",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "Overlay",
+            "Name": "Skill1",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                14,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "SkillBg1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillFrame.png"
+                },
+                "ImageSize": [
+                  60,
+                  60
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "SkillIcon1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillWhirl.png"
+                },
+                "ImageSize": [
+                  40,
+                  40
+                ]
+              },
+              {
+                "Type": "ProgressBar",
+                "Name": "SkillCd1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "MinSize": [
+                  46,
+                  46
+                ],
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "FillBrush": {
+                  "Color": [
+                    0.02,
+                    0.01,
+                    0.06,
+                    0.72
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "Percent": 0.0,
+                "FillDirection": "BottomToTop"
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillTime1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 19,
+                "TextColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillLock1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 15,
+                "TextColor": [
+                  0.72,
+                  0.7,
+                  0.78,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillKey1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    5,
+                    2,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Left",
+                  "VAlign": "Top",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "L",
+                "FontSize": 15,
+                "TextColor": [
+                  1.0,
+                  0.85,
+                  0.42,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillMp1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    5,
+                    3
+                  ],
+                  "HAlign": "Right",
+                  "VAlign": "Bottom",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 13,
+                "TextColor": [
+                  0.6,
+                  0.86,
+                  1.0,
+                  1
+                ],
+                "Justify": "Right",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "Overlay",
+            "Name": "Skill2",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                6,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "SkillBg2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillFrame.png"
+                },
+                "ImageSize": [
+                  60,
+                  60
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "SkillIcon2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillWhirl.png"
+                },
+                "ImageSize": [
+                  40,
+                  40
+                ]
+              },
+              {
+                "Type": "ProgressBar",
+                "Name": "SkillCd2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "MinSize": [
+                  46,
+                  46
+                ],
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "FillBrush": {
+                  "Color": [
+                    0.02,
+                    0.01,
+                    0.06,
+                    0.72
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "Percent": 0.0,
+                "FillDirection": "BottomToTop"
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillTime2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 19,
+                "TextColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillLock2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 15,
+                "TextColor": [
+                  0.72,
+                  0.7,
+                  0.78,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillKey2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    5,
+                    2,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Left",
+                  "VAlign": "Top",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "3",
+                "FontSize": 15,
+                "TextColor": [
+                  1.0,
+                  0.85,
+                  0.42,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillMp2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    5,
+                    3
+                  ],
+                  "HAlign": "Right",
+                  "VAlign": "Bottom",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 13,
+                "TextColor": [
+                  0.6,
+                  0.86,
+                  1.0,
+                  1
+                ],
+                "Justify": "Right",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "Overlay",
+            "Name": "Skill3",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                6,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "SkillBg3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillFrame.png"
+                },
+                "ImageSize": [
+                  60,
+                  60
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "SkillIcon3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillWhirl.png"
+                },
+                "ImageSize": [
+                  40,
+                  40
+                ]
+              },
+              {
+                "Type": "ProgressBar",
+                "Name": "SkillCd3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "MinSize": [
+                  46,
+                  46
+                ],
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "FillBrush": {
+                  "Color": [
+                    0.02,
+                    0.01,
+                    0.06,
+                    0.72
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "Percent": 0.0,
+                "FillDirection": "BottomToTop"
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillTime3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 19,
+                "TextColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillLock3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 15,
+                "TextColor": [
+                  0.72,
+                  0.7,
+                  0.78,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillKey3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    5,
+                    2,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Left",
+                  "VAlign": "Top",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "4",
+                "FontSize": 15,
+                "TextColor": [
+                  1.0,
+                  0.85,
+                  0.42,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillMp3",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    5,
+                    3
+                  ],
+                  "HAlign": "Right",
+                  "VAlign": "Bottom",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 13,
+                "TextColor": [
+                  0.6,
+                  0.86,
+                  1.0,
+                  1
+                ],
+                "Justify": "Right",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "Overlay",
+            "Name": "Skill4",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                6,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "SkillBg4",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillFrame.png"
+                },
+                "ImageSize": [
+                  60,
+                  60
+                ]
+              },
+              {
+                "Type": "Image",
+                "Name": "SkillIcon4",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "Texture": "UI/Demo/HD2D/Combat/SkillWhirl.png"
+                },
+                "ImageSize": [
+                  40,
+                  40
+                ]
+              },
+              {
+                "Type": "ProgressBar",
+                "Name": "SkillCd4",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "MinSize": [
+                  46,
+                  46
+                ],
+                "Brush": {
+                  "Color": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "FillBrush": {
+                  "Color": [
+                    0.02,
+                    0.01,
+                    0.06,
+                    0.72
+                  ],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "Percent": 0.0,
+                "FillDirection": "BottomToTop"
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillTime4",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 19,
+                "TextColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillLock4",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Collapsed",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 15,
+                "TextColor": [
+                  0.72,
+                  0.7,
+                  0.78,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillKey4",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    5,
+                    2,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Left",
+                  "VAlign": "Top",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "5",
+                "FontSize": 15,
+                "TextColor": [
+                  1.0,
+                  0.85,
+                  0.42,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "SkillMp4",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    5,
+                    3
+                  ],
+                  "HAlign": "Right",
+                  "VAlign": "Bottom",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 13,
+                "TextColor": [
+                  0.6,
+                  0.86,
+                  1.0,
+                  1
+                ],
+                "Justify": "Right",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.03,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.55
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   },

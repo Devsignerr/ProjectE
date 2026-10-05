@@ -1,0 +1,32 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Shatter0",
+      "Duration": 0.05
+    },
+    {
+      "Slice": "Shatter1",
+      "Duration": 0.06
+    },
+    {
+      "Slice": "Shatter2",
+      "Duration": 0.06
+    },
+    {
+      "Slice": "Shatter3",
+      "Duration": 0.07
+    },
+    {
+      "Slice": "Shatter4",
+      "Duration": 0.08
+    },
+    {
+      "Slice": "Shatter5",
+      "Duration": 0.1
+    }
+  ]
+}

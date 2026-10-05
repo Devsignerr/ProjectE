@@ -44,6 +44,7 @@ function HD2DPirateCaptain:OnStart()
 	self.FlipX = false
 	self.GM:RegisterEnemy(self)
 	self:Play("Dormant")
+	self.GM:InitEnemyCombat(self) -- 약점·실드(2단계에 바뀜)·상태 이상 (HD2DCombat.lua)
 end
 
 function HD2DPirateCaptain:OnDestroy()
@@ -94,6 +95,9 @@ end
 
 function HD2DPirateCaptain:OnUpdate(Dt)
 	if self.bDead or Dt <= 0 then return end
+	local bSkip
+	bSkip, Dt = self.GM:UpdateEnemyCombat(self, Dt) -- 브레이크·기절이면 건너뜀, 빙결이면 느리게
+	if bSkip then return end
 	local E = self.entity
 	local R = self.Row
 	local Pos = E:GetWorldPosition()
@@ -162,7 +166,7 @@ function HD2DPirateCaptain:OnUpdate(Dt)
 			end
 		end
 		if Player and not self.bLungeHit and Dist < self.Radius + 90 then
-			self.bLungeHit = Player:TakeDamage(R.AttackDamage * 1.25, Pos) or self.bLungeHit
+			self.bLungeHit = Player:TakeDamage(R.AttackDamage * 1.25, Pos, self.HitOpt) or self.bLungeHit -- 돌진 베기 = 출혈(독) (표 Inflict)
 		end
 		if self.Timer <= 0 then
 			self.GM:KillFx(self.Warn)
@@ -206,7 +210,7 @@ function HD2DPirateCaptain:OnUpdate(Dt)
 					Off = Vector3(math.cos(A), math.sin(A), 0) * 230
 				end
 				local P = self.GM:SpawnProjectile({ Kind = "Rock", Pos = Ground + Vector3(0, 10, 230), Target = Center + Off, Duration = 0.95 + (I - 1) * 0.12,
-				                                    Height = 380, Damage = R.AttackDamage, Team = "Enemy" })
+				                                    Height = 380, Damage = R.AttackDamage, Team = "Enemy", HitOpt = { Status = "Burn", Chance = 0.7 } }) -- 화약통 = 화상
 				self:Reskin(P, "", "Sprites/HD2D/HarborFx_Keg.eflipbook", 1.6)
 			end
 			self:Sound("Audio/RPG/Swing2.wav", 1.0, 0.7)
@@ -221,7 +225,7 @@ function HD2DPirateCaptain:OnUpdate(Dt)
 				local Off = I == 1 and Vector3(0, 0, 0) or Vector3(math.cos(A), math.sin(A), 0) * 260
 				local Target = Vector3(PP.X + Off.X, PP.Y + Off.Y, Ground.Z)
 				local P = self.GM:SpawnProjectile({ Kind = "Rock", Pos = Target + Vector3(500, 1600, 900), Target = Target, Duration = 1.0 + I * 0.18,
-				                                    Height = 250, Damage = R.AttackDamage * 1.1, Team = "Enemy" })
+				                                    Height = 250, Damage = R.AttackDamage * 1.1, Team = "Enemy", HitOpt = { Status = "Stun", Chance = 0.5 } }) -- 포탄 = 기절
 				self:Reskin(P, "Cannonball", nil, 1.6)
 			end
 			self:Sound("Audio/RPG/HitHeavy.wav", 1.0, 0.5)

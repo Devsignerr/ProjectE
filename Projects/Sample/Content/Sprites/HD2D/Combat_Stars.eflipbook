@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 9.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Stars0"
+    },
+    {
+      "Slice": "Stars1"
+    },
+    {
+      "Slice": "Stars2"
+    },
+    {
+      "Slice": "Stars3"
+    }
+  ]
+}

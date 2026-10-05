@@ -31,7 +31,7 @@ ENEMY_KINDS = {
 	"Fork":     ["Archer", "Mushroom"],
 	"Ledge":    ["Archer"],
 	"Corridor": ["CaveBat", "CaveBat", "CaveBat"],
-	"Lake":     ["Goblin", "CrystalSlime", "Archer"],
+	"Lake":     ["Goblin", "CrystalSlime", "EliteArcher"],  # 호수의 정예 궁수 (HD2DCombatGen.ELITES — 넓은 방이라 물러서며 쏜다)
 }
 
 # 보물상자 자리 (X, Y) — 갈림길 뒤 단 끝(숨은 보물, +160 단 위), 호수 동쪽 물가, 보스 방 뒤 제단 옆 / 내용 (아이템*개수+..., Gold*n)

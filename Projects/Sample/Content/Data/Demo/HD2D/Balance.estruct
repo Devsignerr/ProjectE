@@ -197,6 +197,94 @@
       "Default": [],
       "Description": "엔딩·크레딧 쪽 (제목|본문, 본문 줄바꿈 \\n)",
       "Element": "String"
+    },
+    {
+      "Name": "MagicSkills",
+      "Type": "Array",
+      "Default": [],
+      "Description": "마법 칸 3/4/5 (Skills.etable)",
+      "Element": "String"
+    },
+    {
+      "Name": "CompanionName",
+      "Type": "String",
+      "Default": "엘라",
+      "Description": "동료 이름"
+    },
+    {
+      "Name": "CompanionHealth",
+      "Type": "Float",
+      "Default": 90,
+      "Description": "동료 1레벨 체력 (플레이어 레벨을 따른다)"
+    },
+    {
+      "Name": "CompanionHealthPerLevel",
+      "Type": "Float",
+      "Default": 12,
+      "Description": "레벨마다 동료 체력 +"
+    },
+    {
+      "Name": "CompanionDamage",
+      "Type": "Float",
+      "Default": 15,
+      "Description": "동료 마법 한 대 (플레이어 레벨 배율)"
+    },
+    {
+      "Name": "CompanionCastInterval",
+      "Type": "Float",
+      "Default": 2.8,
+      "Description": "동료 마법 간격 (초)"
+    },
+    {
+      "Name": "CompanionHealInterval",
+      "Type": "Float",
+      "Default": 14.0,
+      "Description": "동료 치유 간격 (초)"
+    },
+    {
+      "Name": "CompanionHealRatio",
+      "Type": "Float",
+      "Default": 0.25,
+      "Description": "동료 치유량 (플레이어 최대 HP 비율)"
+    },
+    {
+      "Name": "CompanionReviveTime",
+      "Type": "Float",
+      "Default": 8.0,
+      "Description": "쓰러진 뒤 일어나기까지 (초)"
+    },
+    {
+      "Name": "CompanionLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "영입 대사 (이름|초상화|대사)",
+      "Element": "String"
+    },
+    {
+      "Name": "CompanionWaitLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "영입 전 대사 (촌장 퀘스트 전)",
+      "Element": "String"
+    },
+    {
+      "Name": "CompanionTalkLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "영입 뒤 말 걸면",
+      "Element": "String"
+    },
+    {
+      "Name": "BreakDamage",
+      "Type": "Float",
+      "Default": 1.5,
+      "Description": "브레이크 중 받는 피해 배율"
+    },
+    {
+      "Name": "WeakDamage",
+      "Type": "Float",
+      "Default": 1.25,
+      "Description": "약점 공격 피해 배율"
     }
   ]
 }

@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Lightning0",
+      "Duration": 0.05
+    },
+    {
+      "Slice": "Lightning1",
+      "Duration": 0.07
+    },
+    {
+      "Slice": "Lightning2",
+      "Duration": 0.06
+    },
+    {
+      "Slice": "Lightning3",
+      "Duration": 0.1
+    }
+  ]
+}

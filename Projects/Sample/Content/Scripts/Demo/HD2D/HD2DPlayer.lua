@@ -28,6 +28,8 @@ local HD2DPlayer = {
 	},
 }
 
+for Name, Fn in pairs(Script.Require("Scripts/Demo/HD2D/HD2DSkills.lua")) do HD2DPlayer[Name] = Fn end -- 스킬 K/L·마법 3/4/5
+
 local HeroSprite = "Sprites/HD2D/Hero.esprite"
 -- 방향 이름 → (월드 방향, 플립북 방향, 옆모습 반전)
 local Dirs = {
@@ -52,6 +54,7 @@ end
 
 function HD2DPlayer:OnStart()
 	self.GM = Scene.Find("HD2DGame"):GetScript()
+	self:InitSkills()
 	self.Visual = self.entity:FindChild("Visual")
 	self.Body = self.Visual:FindChild("Body")
 	self.Sprite = self.Body:GetComponent("SpriteComponent")
@@ -121,7 +124,7 @@ function HD2DPlayer:RecalcStats()
 	end
 	self.Defense = Gear.Defense
 	self.CritBonus = Gear.CritBonus
-	self.Mover.MaxWalkSpeed = self.BaseWalkSpeed * (1.0 + Gear.SpeedBonus)
+	self.Mover.MaxWalkSpeed = self.BaseWalkSpeed * (1.0 + Gear.SpeedBonus) * self.GM:PlayerSpeedScale(self) -- 빙결이면 느리게
 end
 
 function HD2DPlayer:SnapCamera()
@@ -218,6 +221,7 @@ function HD2DPlayer:GatherInput()
 		end
 	end
 	self.MenuHeldDir = Dir
+	self:GatherSkillInput(In)
 	return In
 end
 
@@ -234,6 +238,9 @@ function HD2DPlayer:OnUpdate(Dt)
 		self:UpdateHud()
 		return
 	end
+	self:UpdateSkills(Dt)
+	self.GM:UpdatePlayerStatus(self, Dt) -- 독·화상·빙결·기절 (HD2DCombat.lua)
+	if self.GM:HasStatus(self, "Stun") then In = { Move = Vector3(0, 0, 0) } end -- 기절: 아무것도 못 한다
 	self.GM:UpdateInteract(Pos)
 
 	self.AttackCooldown = math.max(0.0, self.AttackCooldown - Dt)
@@ -267,7 +274,9 @@ function HD2DPlayer:OnUpdate(Dt)
 	local Move = In.Move
 	if Move:Length() > 1 then Move = Move:Normalized() end
 
-	if self.DashTimer > 0 then
+	if self.Cast then
+		self:UpdateSkillCast(Dt) -- 스킬 시전 중 (HD2DSkills.lua)
+	elseif self.DashTimer > 0 then
 		-- 대시 중: 이동기가 넉백 경직으로 미끄러뜨린다. 잔상만 남긴다
 		self.DashTimer = self.DashTimer - Dt
 		self.AfterimageTimer = self.AfterimageTimer - Dt
@@ -292,6 +301,8 @@ function HD2DPlayer:OnUpdate(Dt)
 	else
 		if In.Dash and self.DashCooldown <= 0 then
 			self:StartDash(Move)
+		elseif self:TryStartSkill(In, Move) then
+			-- 스킬 시작 (다음 프레임부터 시전)
 		elseif (In.Attack or self.bQueued) and self.AttackCooldown <= 0 then
 			self:StartAttack(Move)
 		elseif Move:Length() > 0.05 then
@@ -303,7 +314,7 @@ function HD2DPlayer:OnUpdate(Dt)
 
 	-- 무적 깜빡임 + 피격 붉은빛
 	if self.HurtFlash > 0 then self.HurtFlash = self.HurtFlash - Dt end
-	self.Sprite.Color = self.HurtFlash > 0 and Vector4(1, 0.4, 0.4, 1) or Vector4(1, 1, 1, 1)
+	self.Sprite.Color = self.HurtFlash > 0 and Vector4(1, 0.4, 0.4, 1) or self.GM:PlayerTint(self)
 	self.Sprite.Visible = not (self.Invuln > 0 and self.DashTimer <= 0 and math.floor(self.Invuln * 16) % 2 == 1)
 
 	self:UpdateAnimation(E:GetMovementVelocity())
@@ -316,6 +327,7 @@ function HD2DPlayer:UpdateHud()
 	H:SetStatus(self.Name, self.Level, self.Health, self.MaxHealth, self.Mana, self.MaxMana, self:ExpFraction())
 	H:SetGold(self.GM.Gold)
 	H:SetBoost(self.BP, self.BoostLevel, D.Balance().BoostMax)
+	self:UpdateSkillHud()
 end
 
 -- ---- 부스트 (BP)
@@ -515,7 +527,8 @@ function HD2DPlayer:TakeDamage(Amount, From, Opt)
 	if self.bDead or self.DashTimer > 0 or (self.Invuln > 0 and not Opt.bNoInvuln) then
 		return false
 	end
-	local Damage = math.max(1, math.floor(Amount * self.DamageTakenScale * 60.0 / (60.0 + (self.Defense or 0) * 3.0) + 0.5))
+	local Defense = Opt.bNoDefense and 0 or (self.Defense or 0)
+	local Damage = math.max(1, math.floor(Amount * (Opt.bNoDefense and 1.0 or self.DamageTakenScale) * 60.0 / (60.0 + Defense * 3.0) + 0.5))
 	self.Health = self.Health - Damage
 	self.Stats.Damaged = self.Stats.Damaged + 1
 	local Pos = self.entity:GetWorldPosition()
@@ -533,6 +546,9 @@ function HD2DPlayer:TakeDamage(Amount, From, Opt)
 		Away = Away:Length() > 1 and Away:Normalized() or Vector3(0, 1, 0)
 		self.entity:AddKnockback(Away * 650, 0.18)
 	end
+	if Opt.Status and self.Health > 0 and self.GM:Random() < (Opt.Chance or 1.0) then
+		self.GM:ApplyStatus(self, Opt.Status) -- 독·화상·빙결·기절 (적 표 Inflict, 투사체·장판 HitOpt)
+	end
 	if self.Health <= 0 then
 		self:Respawn()
 	end
@@ -545,6 +561,8 @@ function HD2DPlayer:Respawn()
 	self.Health = self.MaxHealth
 	self.Mana = self.MaxMana
 	self.Invuln = 2.0
+	for Kind in pairs(self.Status) do self.GM:ClearStatus(self, Kind) end
+	self.Cast, self.SkillEvents = nil, {}
 	self.Stats.Deaths = self.Stats.Deaths + 1
 	self.GM:Hud():Announce("쓰러졌다…", self.GM.Properties.Map == "Village" and "마을에서 다시 일어섰다" or "입구에서 다시 일어섰다", 2.5)
 	Log.Info("[HD2D] 플레이어 쓰러짐 → 시작 자리에서 부활")

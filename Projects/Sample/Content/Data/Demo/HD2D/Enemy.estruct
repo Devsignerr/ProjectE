@@ -136,6 +136,68 @@
       ],
       "Description": "몸 스프라이트 색 배율 RGBA (변형 색)",
       "Element": "Float"
+    },
+    {
+      "Name": "Weakness",
+      "Type": "Array",
+      "Default": [],
+      "Description": "약점 속성 (맞히면 실드 -1)",
+      "Element": "String"
+    },
+    {
+      "Name": "Shield",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "실드 수 (0이 되면 브레이크)"
+    },
+    {
+      "Name": "Weakness2",
+      "Type": "Array",
+      "Default": [],
+      "Description": "보스 2단계 약점 (비면 그대로)",
+      "Element": "String"
+    },
+    {
+      "Name": "Shield2",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "보스 2단계 실드 (0이면 그대로)"
+    },
+    {
+      "Name": "BreakTime",
+      "Type": "Float",
+      "Default": 3.5,
+      "Description": "브레이크 기절 시간 (초)"
+    },
+    {
+      "Name": "TagHeight",
+      "Type": "Float",
+      "Default": 150,
+      "Description": "머리 위 태그(실드·약점·체력) 아래 끝 높이 (발 위 cm — HD2DGameplay.ENEMY_CAPSULE 체력바 높이)"
+    },
+    {
+      "Name": "Guard",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "브레이크가 아닐 때 받는 피해 배율 (보스 0.6 — 실드를 깨야 잡힌다)"
+    },
+    {
+      "Name": "Elite",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "정예 (금빛 윤곽 · 이름표)"
+    },
+    {
+      "Name": "Inflict",
+      "Type": "String",
+      "Default": "",
+      "Description": "몸·공격에 맞으면 거는 상태 이상 (Poison/Burn/Freeze/Stun)"
+    },
+    {
+      "Name": "InflictChance",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "확률 0~1"
     }
   ]
 }

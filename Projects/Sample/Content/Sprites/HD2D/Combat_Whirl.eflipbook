@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Whirl0",
+      "Duration": 0.04
+    },
+    {
+      "Slice": "Whirl1",
+      "Duration": 0.05
+    },
+    {
+      "Slice": "Whirl2",
+      "Duration": 0.06
+    },
+    {
+      "Slice": "Whirl3",
+      "Duration": 0.08
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 11.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Flame0"
+    },
+    {
+      "Slice": "Flame1"
+    },
+    {
+      "Slice": "Flame2"
+    }
+  ]
+}

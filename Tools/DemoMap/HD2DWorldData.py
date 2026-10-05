@@ -48,7 +48,7 @@ def ExtendTables(G):
 		("Ghost", {"DisplayName": "떠도는 망령", "Behavior": "Flyer", "MaxHealth": 70, "ContactDamage": 10, "AttackDamage": 16, "MoveSpeed": 300, "AggroRange": 1100,
 				   "AttackRange": 520, "AttackCooldown": 2.2, "WindupTime": 0.6, "ProjectileSpeed": 1100, "GoldMin": 8, "GoldMax": 14, "Exp": 22,
 				   "DropItem": "Ether", "DropChance": 0.3, "Radius": 52, "RespawnTime": 0, "Look": "", "Tint": [1.15, 1.25, 1.5, 1]}),
-		("PirateCaptain", {"DisplayName": "해적 선장 바렌", "Behavior": "Boss", "MaxHealth": 1300, "ContactDamage": 14, "AttackDamage": 20, "MoveSpeed": 270,
+		("PirateCaptain", {"DisplayName": "해적 선장 바렌", "Behavior": "Boss", "MaxHealth": 3600, "ContactDamage": 20, "AttackDamage": 30, "MoveSpeed": 270,  # 전투 깊이: 실드·브레이크 기준 (HD2DCombatGen 보스 근거)
 						   "AggroRange": 820, "AttackRange": 480, "AttackCooldown": 1.4, "WindupTime": 0.65, "ProjectileSpeed": 1400, "GoldMin": 200,
 						   "GoldMax": 200, "Exp": 200, "DropItem": "Elixir", "DropChance": 1.0, "Radius": 105, "RespawnTime": 0, "Look": "", "Tint": [1, 1, 1, 1]}),
 	])

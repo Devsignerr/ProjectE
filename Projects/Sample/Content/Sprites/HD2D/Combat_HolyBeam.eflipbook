@@ -1,0 +1,28 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "HolyBeam0",
+      "Duration": 0.06
+    },
+    {
+      "Slice": "HolyBeam1",
+      "Duration": 0.08
+    },
+    {
+      "Slice": "HolyBeam2",
+      "Duration": 0.2
+    },
+    {
+      "Slice": "HolyBeam3",
+      "Duration": 0.1
+    },
+    {
+      "Slice": "HolyBeam4",
+      "Duration": 0.1
+    }
+  ]
+}

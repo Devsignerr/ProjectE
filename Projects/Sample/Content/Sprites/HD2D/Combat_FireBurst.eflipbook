@@ -1,0 +1,32 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "FireBurst0",
+      "Duration": 0.04
+    },
+    {
+      "Slice": "FireBurst1",
+      "Duration": 0.05
+    },
+    {
+      "Slice": "FireBurst2",
+      "Duration": 0.07
+    },
+    {
+      "Slice": "FireBurst3",
+      "Duration": 0.08
+    },
+    {
+      "Slice": "FireBurst4",
+      "Duration": 0.09
+    },
+    {
+      "Slice": "FireBurst5",
+      "Duration": 0.1
+    }
+  ]
+}

@@ -37,6 +37,7 @@ function HD2DData.Enemy(Kind) return ByName("Enemies.etable")[Kind] end
 function HD2DData.Npc(Id) return ByName("Npcs.etable")[Id] end
 function HD2DData.Quest(Stage) return ByName("Quests.etable")["Stage" .. tostring(Stage)] end
 function HD2DData.SubQuest(Id) return ByName("SubQuests.etable")[Id] end
+function HD2DData.Skill(Id) return ByName("Skills.etable")[Id] end
 
 function HD2DData.Region(Map) return ByName("Regions.etable")[Map] end
 
@@ -78,7 +79,7 @@ end
 HD2DData.WeaponOrder = { "Sword", "Spear", "Bow", "Staff", "CrystalSword", "Harpoon" }
 HD2DData.ArmorOrder = { "LeatherVest", "ChainMail", "KnightPlate", "SailorCoat" }
 HD2DData.AccessoryOrder = { "LuckyRing", "SwiftCharm", "LifeAmulet", "CrystalCharm", "PearlRing", "CompassCharm" }
-HD2DData.ConsumableOrder = { "Potion", "HiPotion", "Ether", "Elixir", "GrilledFish" }
+HD2DData.ConsumableOrder = { "Potion", "HiPotion", "Ether", "Antidote", "Elixir", "GrilledFish" }
 HD2DData.MaterialOrder = { "Jelly", "BatWing", "GoblinFang", "OldBone", "Spore", "CrystalShard", "GolemCore", "LostCat", "LighthouseLens" } -- 재료는 HD2DMetaGen
 HD2DData.SubQuestOrder = { "Cat", "Smith", "Scarecrow", "Lighthouse", "Pirates", "Captain" }
 

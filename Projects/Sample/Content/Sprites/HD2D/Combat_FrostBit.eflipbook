@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 4.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "FrostBit0"
+    },
+    {
+      "Slice": "FrostBit1"
+    }
+  ]
+}

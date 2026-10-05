@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "Sprite": "Mage.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "CastSide0",
+      "Duration": 0.28
+    },
+    {
+      "Slice": "CastSide1",
+      "Duration": 0.4
+    }
+  ]
+}

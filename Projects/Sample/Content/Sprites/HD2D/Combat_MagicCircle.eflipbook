@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Combat.esprite",
+  "Fps": 8.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "MagicCircle0"
+    },
+    {
+      "Slice": "MagicCircle1"
+    }
+  ]
+}

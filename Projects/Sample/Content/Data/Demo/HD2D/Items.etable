@@ -291,6 +291,22 @@
       }
     },
     {
+      "Name": "Antidote",
+      "Values": {
+        "Defense": 0,
+        "HealthBonus": 0,
+        "SpeedBonus": 0.0,
+        "CritBonus": 0.0,
+        "DisplayName": "해독제",
+        "Kind": "Cure",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Antidote.png",
+        "Description": "쓴 약초 즙. 독·화상·빙결을 씻어 낸다.",
+        "Price": 20
+      }
+    },
+    {
       "Name": "Harpoon",
       "Values": {
         "Defense": 0,

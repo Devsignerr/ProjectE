@@ -35,32 +35,30 @@ function Pilot:AliveOf(Kind)
 	return N
 end
 
--- 보스전: 공격하며 패턴을 본다 (2단계 뒤 3종을 다 못 봤으면 거리를 두고 기다림 — 최대 15초)
+-- 보스전: 일반 전투 흐름 (예비 동작을 보고 피하며 계속 공격, R로 약점 무기 — 관찰 대기 없이. 선장은 패턴을 순서대로 돌린다)
 function Pilot:FightCaptain(Timeout)
-	local GM = self.GM
+	local GM, P = self.GM, self.Player
 	local Until = self.Time + Timeout
-	local HoldUntil = nil
+	local Dash0, Fight0, Potion0 = P.Stats.Dashes, self.Time, self:PotionsUsed()
+	self.LowHp = 1
 	while not GM.bBossDead and self.Time < Until do
 		local Boss = GM:NearestEnemy(self:Pos(), 3000, function(S) return S.bBoss end)
 		if not GM:IsMenuOpen() then
-			local Seen = self:PatternsSeen()
-			if Boss and Boss.Phase == 2 and Seen < 3 and HoldUntil == nil then
-				HoldUntil = self.Time + 15
-				self:Note(string.format("보스 패턴 관찰 대기 (본 패턴 %d)", Seen))
-			end
-			if Boss and HoldUntil and Seen < 3 and self.Time < HoldUntil then
-				local L = Flat(self:Pos() - Boss.entity:GetWorldPosition()):Length()
-				if L < 650 then self:MoveToward(GM.BossPos + Vector3(-600, 300, 0)) end
-				if Boss.State == "ChargeWindup" and self.Player.DashCooldown <= 0 then self.In.Dash = true end
-			elseif Boss then
+			if Boss then
+				if self.Frame % 120 == 0 then self:SwitchToWeakWeapon(Boss) end
 				self:Engage(Boss, true)
+				self:LeashToArena(GM.BossPos, 700)
 			else
-				self:MoveToward(GM.BossPos)
+				self:MoveRouted(GM.BossPos)
 			end
 			self:Survive()
+			self:TrackLowHp()
 		end
 		self:Yield()
 	end
+	self:Expect(GM.Report.BossBreaks >= 1, "선장 브레이크 (" .. GM.Report.BossBreaks .. ")")
+	self:Note(string.format("선장전 %.0f초, 난이도: 최저 HP %.0f%%, 회복약 %d개, 대시 %d, 쓰러짐 %d", self.Time - Fight0, self.LowHp * 100,
+		self:PotionsUsed() - Potion0, P.Stats.Dashes - Dash0, P.Stats.Deaths))
 end
 
 function Pilot:RunHarborRun()
@@ -129,7 +127,7 @@ function Pilot:RunHarborRun()
 	-- 동쪽 후미: 해적 선장
 	self:EquipBySwitch("Spear")
 	self:GoTo(Vector3(4000, 120, 0), 150, 60, "후미 입구")
-	self:FightCaptain(160)
+	self:FightCaptain(260)
 	self:Expect(GM.bBossDead and GM:IsBossDefeated("Harbor"), "해적 선장 처치")
 	self:Expect(self:PatternsSeen() >= 3, "보스 패턴 3종 이상 (" .. self:PatternsSeen() .. ")")
 	self:Expect((GM.Report.BossPatterns.Summon or 0) >= 1, "보스 2단계 (격노·졸개 소환)")

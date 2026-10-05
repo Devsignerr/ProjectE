@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Zombie_Broodmother.esprite",
+  "Fps": 6.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "AttackSide0"
+    },
+    {
+      "Slice": "AttackSide1"
+    }
+  ]
+}

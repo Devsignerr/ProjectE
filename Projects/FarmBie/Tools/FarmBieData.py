@@ -273,6 +273,47 @@ SPECIAL_AMMO = [
 	("GhostShell", {"For": "Shotgun", "DamageMul": 1.5, "Slice": "Pellet"}),
 ]
 
+# 보스: 종류(Mid 중간 — 10·20·30일차에 돌아가며 / Season 계절 — 마지막 날), 모두 처음부터 크리스탈을 노리고 플레이어를 먼저 치지 않는다(맞으면 AggroTime 동안만 쫓음).
+#   고유 특성: 소환(SummonKind를 SummonInterval마다 SummonCount), 불길(AuraRadius 안 설치물 초당 AuraStructureDps), 치유(AuraRadius 안 좀비 초당 AuraHeal),
+#   둔화(AuraSlow — 반경 안 플레이어 느려짐), 작물 먹기(CropEat 짧음 — 길을 벗어나 작물로)
+BOSS_ROWS = [
+	("Rotgiant",   {"DisplayName": "썩은 거인",     "Kind": "Mid",    "Season": "Any",    "Hp": 900,  "Speed": 70,  "Damage": 30, "Interval": 1.6, "StructureMul": 4.0,
+					"CropEat": 3.0, "Radius": 70, "AggroTime": 4.0, "SummonKind": "", "SummonInterval": 0, "SummonCount": 0, "AuraRadius": 0, "AuraStructureDps": 0,
+					"AuraHeal": 0, "AuraSlow": False, "Cell": 64, "RewardGold": 400, "RewardItems": "CrystalShard*1,Iron*3",
+					"Description": "벽을 종잇장처럼 찢는 거대한 시체. 느리지만 막을 수 없다."}),
+	("Broodmother", {"DisplayName": "구더기 여왕",  "Kind": "Mid",    "Season": "Any",    "Hp": 650,  "Speed": 80,  "Damage": 18, "Interval": 1.3, "StructureMul": 1.5,
+					"CropEat": 2.0, "Radius": 60, "AggroTime": 3.0, "SummonKind": "Walker", "SummonInterval": 7.0, "SummonCount": 2, "AuraRadius": 0, "AuraStructureDps": 0,
+					"AuraHeal": 0, "AuraSlow": False, "Cell": 60, "RewardGold": 400, "RewardItems": "CrystalShard*1,Fiber*10",
+					"Description": "불룩한 등에서 좀비가 기어 나온다. 오래 끌수록 숫자가 불어난다."}),
+	("PlagueScarecrow", {"DisplayName": "역병 허수아비", "Kind": "Mid", "Season": "Any",   "Hp": 600,  "Speed": 120, "Damage": 16, "Interval": 1.1, "StructureMul": 1.2,
+					"CropEat": 0.6, "Radius": 50, "AggroTime": 3.0, "SummonKind": "", "SummonInterval": 0, "SummonCount": 0, "AuraRadius": 0, "AuraStructureDps": 0,
+					"AuraHeal": 0, "AuraSlow": False, "Cell": 56, "RewardGold": 400, "RewardItems": "CrystalShard*1,FertPremium*2",
+					"Description": "밭을 휩쓸며 작물을 삼킨다. 크리스탈로 가는 길에 남는 게 없다."}),
+	("BloomLich",  {"DisplayName": "꽃피는 망자",   "Kind": "Season", "Season": "Spring", "Hp": 1600, "Speed": 75,  "Damage": 24, "Interval": 1.4, "StructureMul": 2.0,
+					"CropEat": 2.0, "Radius": 64, "AggroTime": 4.0, "SummonKind": "Mossling", "SummonInterval": 8.0, "SummonCount": 2, "AuraRadius": 500, "AuraStructureDps": 0,
+					"AuraHeal": 3.0, "AuraSlow": False, "Cell": 64, "RewardGold": 800, "RewardItems": "CrystalShard*2,Iron*5",
+					"Description": "봄의 끝에 피어나는 망자. 곁의 좀비를 꽃가루로 되살린다."}),
+	("SunDevourer", {"DisplayName": "태양 먹는 자", "Kind": "Season", "Season": "Summer", "Hp": 1800, "Speed": 85,  "Damage": 26, "Interval": 1.3, "StructureMul": 2.0,
+					"CropEat": 2.0, "Radius": 64, "AggroTime": 4.0, "SummonKind": "", "SummonInterval": 0, "SummonCount": 0, "AuraRadius": 260, "AuraStructureDps": 18,
+					"AuraHeal": 0, "AuraSlow": False, "Cell": 64, "RewardGold": 900, "RewardItems": "CrystalShard*2,Iron*5",
+					"Description": "한여름 해를 삼킨 괴물. 지나가는 곳의 벽과 덫이 녹아내린다."}),
+	("HarvestReaper", {"DisplayName": "수확의 사신", "Kind": "Season", "Season": "Autumn", "Hp": 1700, "Speed": 135, "Damage": 28, "Interval": 1.0, "StructureMul": 1.8,
+					"CropEat": 0.4, "Radius": 56, "AggroTime": 3.5, "SummonKind": "Harvester", "SummonInterval": 12.0, "SummonCount": 1, "AuraRadius": 0, "AuraStructureDps": 0,
+					"AuraHeal": 0, "AuraSlow": False, "Cell": 64, "RewardGold": 1000, "RewardItems": "CrystalShard*3,Iron*5",
+					"Description": "낫 한 번에 밭 한 줄. 작물을 거둘 때마다 더 빨라진다."}),
+	("FrostColossus", {"DisplayName": "서리 거상",  "Kind": "Season", "Season": "Winter", "Hp": 2600, "Speed": 60,  "Damage": 40, "Interval": 1.8, "StructureMul": 3.5,
+					"CropEat": 3.0, "Radius": 80, "AggroTime": 4.0, "SummonKind": "", "SummonInterval": 0, "SummonCount": 0, "AuraRadius": 420, "AuraStructureDps": 0,
+					"AuraHeal": 0, "AuraSlow": True, "Cell": 72, "RewardGold": 1200, "RewardItems": "CrystalShard*4,Iron*8",
+					"Description": "한 해의 끝을 얼리는 거상. 곁에 서면 몸이 굳는다."}),
+]
+BOSS = {"BossNightMul": 1.5, "MidGoldLoss": 0.2, "SeasonGoldLoss": 0.35, "SeasonSanityLoss": 15}
+BOSS_FIELDS = [
+	Field("BossNightMul", "Float", 1.5, "보스 밤 길이 배율"),
+	Field("MidGoldLoss", "Float", 0.2, "중간 보스 패배 소지금 비율 (+ 쓰러짐)"),
+	Field("SeasonGoldLoss", "Float", 0.35, "계절 보스 패배 소지금 비율"),
+	Field("SeasonSanityLoss", "Int", 15, "계절 보스 패배 정신력"),
+]
+
 # 작업대 제작: 결과 물건·수, 재료 ("물건*수,…" — 작물 희귀도는 "Crop:<작물>:<최소 희귀도>+")
 RECIPE_ROWS = [
 	("Arrow",      {"Output": "Arrow",      "Count": 10, "Inputs": "Wood*1,Fiber*2"}),
@@ -511,6 +552,33 @@ def WriteDefense(Content):
 		Field("Inputs", "String", "", "재료 (작물 희귀도는 :<최소>+)"),
 	])
 	Table(Content, "Recipes", "Recipe", RECIPE_ROWS)
+	Struct(Content, "Boss", "보스", [
+		Field("DisplayName", "String", "", "이름"),
+		Field("Kind", "Enum", "Mid", "중간 / 계절", Values=["Mid", "Season"]),
+		Field("Season", "Enum", "Any", "계절 보스의 계절", Values=["Any", "Spring", "Summer", "Autumn", "Winter"]),
+		Field("Hp", "Int", 500, "체력 (밤 배율을 곱함)"),
+		Field("Speed", "Int", 80, "속도"),
+		Field("Damage", "Int", 20, "공격"),
+		Field("Interval", "Float", 1.4, "공격 간격"),
+		Field("StructureMul", "Float", 2.0, "설치물 피해 배율"),
+		Field("CropEat", "Float", 2.0, "작물 먹는 시간"),
+		Field("Radius", "Int", 60, "몸 반지름"),
+		Field("AggroTime", "Float", 4.0, "맞았을 때 플레이어를 쫓는 시간"),
+		Field("SummonKind", "String", "", "소환 좀비 종류"),
+		Field("SummonInterval", "Float", 0.0, "소환 간격"),
+		Field("SummonCount", "Int", 0, "한 번에 소환 수"),
+		Field("AuraRadius", "Int", 0, "오라 반경"),
+		Field("AuraStructureDps", "Float", 0.0, "오라: 설치물 초당 피해"),
+		Field("AuraHeal", "Float", 0.0, "오라: 좀비 초당 회복"),
+		Field("AuraSlow", "Bool", False, "오라: 플레이어 둔화"),
+		Field("Cell", "Int", 64, "그림 칸 크기 (도트)"),
+		Field("RewardGold", "Int", 0, "처치 보상 돈"),
+		Field("RewardItems", "String", "", "처치 보상 물건"),
+		Field("Description", "String", "", "설명"),
+	])
+	Table(Content, "Bosses", "Boss", BOSS_ROWS)
+	Struct(Content, "BossRules", "보스 규칙", BOSS_FIELDS)
+	Values(Content, "BossRules", "BossRules", BOSS)
 
 
 def WriteFarmMap(Content, Grid):

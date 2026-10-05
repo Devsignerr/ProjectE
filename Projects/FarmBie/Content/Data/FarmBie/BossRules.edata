@@ -1,0 +1,10 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/BossRules.estruct",
+  "Values": {
+    "BossNightMul": 1.5,
+    "MidGoldLoss": 0.2,
+    "SeasonGoldLoss": 0.35,
+    "SeasonSanityLoss": 15
+  }
+}

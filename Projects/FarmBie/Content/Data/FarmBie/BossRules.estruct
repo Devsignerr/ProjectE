@@ -1,0 +1,31 @@
+{
+  "Version": 1,
+  "Name": "BossRules",
+  "Description": "보스 규칙",
+  "Fields": [
+    {
+      "Name": "BossNightMul",
+      "Type": "Float",
+      "Default": 1.5,
+      "Description": "보스 밤 길이 배율"
+    },
+    {
+      "Name": "MidGoldLoss",
+      "Type": "Float",
+      "Default": 0.2,
+      "Description": "중간 보스 패배 소지금 비율 (+ 쓰러짐)"
+    },
+    {
+      "Name": "SeasonGoldLoss",
+      "Type": "Float",
+      "Default": 0.35,
+      "Description": "계절 보스 패배 소지금 비율"
+    },
+    {
+      "Name": "SeasonSanityLoss",
+      "Type": "Int",
+      "Default": 15,
+      "Description": "계절 보스 패배 정신력"
+    }
+  ]
+}

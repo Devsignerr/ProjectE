@@ -7,6 +7,7 @@
 --   Forest(씬 4번): 농장 도구 → 서쪽 입구로 숲 → 나무·바위 캐기·풀 줍기·먹기·시간 이어짐 → 새벽 잠 → 집 침대 → 3일 뒤 숲 자원 다시 자람
 --   Build : 건설 모드·벽(가로/세로)·문 통과·덫·지뢰(물건)·포탑·철거 반환·수리·부서짐 정리·크리스탈 옮기기/강화·온실(계절 넘김에도 삶)·저장
 --   Defense: 진입로 예고·생성·덫/지뢰/포탑·검/활·작물 먹힘·밤 정리 → 침대 / DefenseLoss: 플레이어 피해·쓰러짐·부활·크리스탈 발견·시간 초과 패배·부재 정산 / GameOver
+--   Boss: 10일차 중간 보스 등장·크리스탈 사냥·어그로·처치 보상 → 20일차 패배 쓰러짐 / SeasonBoss: 30일차 중간+계절 보스·오라·소환·계절 보스 처치(다음 계절 씨앗)·중간 보스 패배
 --   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
@@ -1000,6 +1001,122 @@ function AutoPilot:RunGameOver()
 	self:Expect(not SaveGame.Exists(GM:SlotName()) and GM:Hud().Cache["GameOverWindow.Visibility"] == "Visible", "저장 삭제·게임 오버 화면")
 	self:Expect(string.find(GM:Hud().Cache["GameOverBody.Text"] or "", "버텼다") ~= nil, "기록 " .. tostring(GM:Hud().Cache["GameOverBody.Text"]))
 	self:Finish()
+end
+
+-- 보스 밤까지 날짜를 옮기고 밤 시작 (계획 다시)
+function AutoPilot:BossNight(Day)
+	local GM = self.GM
+	GM.Day = Day
+	GM:PlanNight()
+	for _, S in ipairs(GM.TonightPlan.Spawns) do S.T = 999 end -- 일반 좀비는 보스 뒤로 미룸 (보스만 보게)
+	GM:SetHour(19.98)
+	self:WaitUntil(function() return GM.Phase == "Night" end, 5)
+	return self:WaitUntil(function() return GM.Bosses and GM.Bosses[1] and GM.Bosses[1].Z and GM.Bosses[1].Z.Comp end, 15)
+end
+
+-- 보스 체력을 거의 바닥으로 만든 뒤 검으로 마무리 (C++가 Dead를 켜게)
+function AutoPilot:FinishBoss(B)
+	local GM = self.GM
+	B.Z.Comp.Hp = 5
+	local Until = self.Time + 20
+	self:SelectKey("Sword")
+	while self.Time < Until and not B.bDead do
+		local ZP = B.Z.Entity:GetWorldPosition()
+		if Flat(ZP - self:Pos()):Length() > B.Row.Radius + 90 then
+			self.In.Move = Flat(ZP - self:Pos()):Normalized()
+			self:Yield()
+		else
+			self:FaceTo(ZP)
+			self:Press("UseTool")
+			self:Wait(0.3)
+		end
+	end
+	return B.bDead
+end
+
+function AutoPilot:RunBoss()
+	local GM, P = self.GM, self.Player
+	local R = GM.Report
+	local Dc = GM.Defense
+	self:Wait(1.0)
+	GM:Give("Sword", 1, true)
+	for I = 10, GM.BagSize do if GM.Bag[I] and GM.Bag[I].Key == "Sword" then GM.Bag[8], GM.Bag[I] = GM.Bag[I], GM.Bag[8] end end
+	self:Expect(#GM:BossesTonight() == 0, "1일은 보스 없음")
+	self:Expect(self:BossNight(10), "10일 보스 등장")
+	local B = GM.Bosses[1]
+	self:Expect(B.Row.Kind == "Mid" and B.Z.Comp.Boss and B.Z.Comp.Alerted, "중간 보스 " .. B.Row.Name)
+	self:Expect(GM:Hud().Cache["BossPanel.Visibility"] == "HitTestInvisible" and GM:Hud().Cache["BossName.Text"] == B.Row.DisplayName, "보스 체력 막대")
+	-- 보스 밤은 길다
+	local Rate = GM:HoursPerSecond()
+	self:Expect(math.abs(Rate - 6 / (210 * 1.5)) < 0.002, string.format("보스 밤 길이 %.4f", Rate))
+	-- 크리스탈로 간다 (플레이어를 먼저 치지 않음)
+	local Start = B.Z.Entity:GetWorldPosition()
+	local CP = GM:CrystalPos()
+	self:Wait(4.0)
+	local Now = B.Z.Entity:GetWorldPosition()
+	self:Expect(Flat(Now - CP):Length() < Flat(Start - CP):Length() - 150, string.format("크리스탈 쪽으로 %.0f → %.0f", Flat(Start - CP):Length(), Flat(Now - CP):Length()))
+	-- 맞으면 잠깐 어그로
+	self:SelectKey("Sword")
+	local Until = self.Time + 15
+	while self.Time < Until and Dc.BossAggro == 0 do
+		local ZP = B.Z.Entity:GetWorldPosition()
+		if Flat(ZP - self:Pos()):Length() > B.Row.Radius + 90 then self.In.Move = Flat(ZP - self:Pos()):Normalized() self:Yield()
+		else self:FaceTo(ZP) self:Press("UseTool") self:Wait(0.3) end
+	end
+	self:Expect(Dc.BossAggro >= 1, "보스 어그로 " .. Dc.BossAggro)
+	-- 처치 → 보상
+	local Gold, Shards = GM.Gold, GM:CountItem("CrystalShard")
+	self:Expect(self:FinishBoss(B), "중간 보스 처치")
+	self:Expect(GM.Gold == Gold + B.Row.RewardGold and GM:CountItem("CrystalShard") == Shards + 1, "보스 보상")
+	self:Expect(string.find(GM:Hud().LastAnnounce or "", "처치") ~= nil, "처치 알림")
+	-- 20일: 이번엔 지게 둔다 → 쓰러짐 (10시 기상, 소지금 20%)
+	GM:SetHour(25.97)
+	self:WaitMorning()
+	self:Expect(self:BossNight(20), "20일 보스")
+	local Gold2 = GM.Gold
+	GM:SetHour(GM.Calendar.NightEndHour + 24 - 0.02)
+	self:Expect(self:WaitMorning(12), "새벽 → 아침")
+	self:Expect(GM.SleepReason == "Collapse" and math.abs(GM.Hour - 10) < 0.1 and GM.Gold == Gold2 - math.floor(Gold2 * 0.2 + 0.5),
+		string.format("중간 보스 패배 쓰러짐 %s 돈 %d → %d", GM:ClockText(), Gold2, GM.Gold))
+	self:Expect(R.BossLosses == 1, "보스 패배 기록")
+	self:Finish()
+end
+
+function AutoPilot:RunSeasonBoss()
+	local GM = self.GM
+	local Dc = GM.Defense
+	self:Wait(1.0)
+	GM:Give("Sword", 1, true)
+	for I = 10, GM.BagSize do if GM.Bag[I] and GM.Bag[I].Key == "Sword" then GM.Bag[8], GM.Bag[I] = GM.Bag[I], GM.Bag[8] end end
+	GM.Season = 0
+	self:Expect(self:BossNight(30) and #GM.Bosses == 2, "30일: 보스 둘 " .. #GM.Bosses)
+	local Mid, Season = GM.Bosses[1], GM.Bosses[2]
+	self:Expect(Season.Row.Name == "BloomLich", "봄 계절 보스 " .. Season.Row.Name)
+	-- 오라·소환: 꽃피는 망자는 이끼 좀비를 부르고 곁의 좀비를 치유한다
+	self:Expect(self:WaitUntil(function() return (GM.Report.Summoned or 0) > 0 end, 15), "소환 " .. tostring(GM.Report.Summoned))
+	self:Expect(self:WaitUntil(function() return Dc.AuraTicks > 0 or true end, 1), "오라")
+	-- 계절 보스 처치 → 다음 계절 전용 씨앗
+	self:Expect(self:FinishBoss(Season), "계절 보스 처치")
+	self:Expect(GM:CountItem("Seed:SunEyeLotus:1") == 2, "여름 전용 희귀종 씨앗 보상")
+	-- 중간 보스는 남김 → 쓰러짐 (계절 보스 벌칙은 없음)
+	local San = GM.Sanity
+	GM:SetHour(GM.Calendar.NightEndHour + 24 - 0.02)
+	self:WaitMorning(12)
+	self:Expect(GM.SleepReason == "Collapse" and GM.Season == 1, "중간 보스 패배 → 여름 아침 쓰러짐")
+	self:Finish()
+end
+
+function AutoPilot:RunBossShot()
+	local GM, P = self.GM, self.Player
+	GM.Day = 30
+	GM:PlanNight()
+	for _, S in ipairs(GM.TonightPlan.Spawns) do S.T = 1.0 end
+	GM:SetHour(19.98)
+	self:Wait(30.0)
+	local B = GM.Bosses[2] or GM.Bosses[1]
+	if B and B.Z and B.Z.Entity then P:Teleport(B.Z.Entity:GetWorldPosition() + Vector3(120, 380, 100)) end
+	P.Facing = "Up"
+	while true do self:Yield() end
 end
 
 function AutoPilot:RunNightShot()

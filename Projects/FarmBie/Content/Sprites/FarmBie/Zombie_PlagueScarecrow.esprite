@@ -1,0 +1,208 @@
+{
+  "Version": 1,
+  "Texture": "Zombie_PlagueScarecrow.png",
+  "TextureWidth": 1024,
+  "TextureHeight": 115,
+  "UnitsPerPixel": 6.0,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "WalkSide0",
+      "X": 1,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "WalkSide1",
+      "X": 66,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "WalkSide2",
+      "X": 131,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "WalkSide3",
+      "X": 196,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSide0",
+      "X": 261,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackSide1",
+      "X": 326,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "DieSide0",
+      "X": 391,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "DieSide1",
+      "X": 456,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "DieSide2",
+      "X": 521,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "WalkDown0",
+      "X": 586,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "WalkDown1",
+      "X": 651,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "WalkDown2",
+      "X": 716,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "WalkDown3",
+      "X": 781,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackDown0",
+      "X": 846,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "AttackDown1",
+      "X": 911,
+      "Y": 1,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "DieDown0",
+      "X": 1,
+      "Y": 58,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "DieDown1",
+      "X": 66,
+      "Y": 58,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "DieDown2",
+      "X": 131,
+      "Y": 58,
+      "W": 64,
+      "H": 56,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    }
+  ]
+}

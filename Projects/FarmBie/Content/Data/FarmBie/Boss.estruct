@@ -1,0 +1,150 @@
+{
+  "Version": 1,
+  "Name": "Boss",
+  "Description": "보스",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "",
+      "Description": "이름"
+    },
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Default": "Mid",
+      "Description": "중간 / 계절",
+      "Values": [
+        "Mid",
+        "Season"
+      ]
+    },
+    {
+      "Name": "Season",
+      "Type": "Enum",
+      "Default": "Any",
+      "Description": "계절 보스의 계절",
+      "Values": [
+        "Any",
+        "Spring",
+        "Summer",
+        "Autumn",
+        "Winter"
+      ]
+    },
+    {
+      "Name": "Hp",
+      "Type": "Int",
+      "Default": 500,
+      "Description": "체력 (밤 배율을 곱함)"
+    },
+    {
+      "Name": "Speed",
+      "Type": "Int",
+      "Default": 80,
+      "Description": "속도"
+    },
+    {
+      "Name": "Damage",
+      "Type": "Int",
+      "Default": 20,
+      "Description": "공격"
+    },
+    {
+      "Name": "Interval",
+      "Type": "Float",
+      "Default": 1.4,
+      "Description": "공격 간격"
+    },
+    {
+      "Name": "StructureMul",
+      "Type": "Float",
+      "Default": 2.0,
+      "Description": "설치물 피해 배율"
+    },
+    {
+      "Name": "CropEat",
+      "Type": "Float",
+      "Default": 2.0,
+      "Description": "작물 먹는 시간"
+    },
+    {
+      "Name": "Radius",
+      "Type": "Int",
+      "Default": 60,
+      "Description": "몸 반지름"
+    },
+    {
+      "Name": "AggroTime",
+      "Type": "Float",
+      "Default": 4.0,
+      "Description": "맞았을 때 플레이어를 쫓는 시간"
+    },
+    {
+      "Name": "SummonKind",
+      "Type": "String",
+      "Default": "",
+      "Description": "소환 좀비 종류"
+    },
+    {
+      "Name": "SummonInterval",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "소환 간격"
+    },
+    {
+      "Name": "SummonCount",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "한 번에 소환 수"
+    },
+    {
+      "Name": "AuraRadius",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "오라 반경"
+    },
+    {
+      "Name": "AuraStructureDps",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "오라: 설치물 초당 피해"
+    },
+    {
+      "Name": "AuraHeal",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "오라: 좀비 초당 회복"
+    },
+    {
+      "Name": "AuraSlow",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "오라: 플레이어 둔화"
+    },
+    {
+      "Name": "Cell",
+      "Type": "Int",
+      "Default": 64,
+      "Description": "그림 칸 크기 (도트)"
+    },
+    {
+      "Name": "RewardGold",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "처치 보상 돈"
+    },
+    {
+      "Name": "RewardItems",
+      "Type": "String",
+      "Default": "",
+      "Description": "처치 보상 물건"
+    },
+    {
+      "Name": "Description",
+      "Type": "String",
+      "Default": "",
+      "Description": "설명"
+    }
+  ]
+}

@@ -48,6 +48,13 @@ public:
 			.Property(&FFarmZombieComponent::AggroTime, "AggroTime", "맞았을 때 플레이어를 쫓는 시간 (초)").Range(0.0f, 60.0f, 0.1f)
 			.Property(&FFarmZombieComponent::bAlerted, "Alerted", "크리스탈을 알아챔")
 			.Property(&FFarmZombieComponent::bDead, "Dead", "죽음")
+			.Property(&FFarmZombieComponent::SummonKind, "SummonKind", "소환 종류")
+			.Property(&FFarmZombieComponent::SummonInterval, "SummonInterval", "소환 간격 (초)").Range(0.0f, 120.0f, 0.1f)
+			.Property(&FFarmZombieComponent::SummonCount, "SummonCount", "소환 수")
+			.Property(&FFarmZombieComponent::AuraRadius, "AuraRadius", "오라 반경").Range(0.0f, 5000.0f, 1.0f)
+			.Property(&FFarmZombieComponent::AuraStructureDps, "AuraStructureDps", "오라 설치물 초당 피해").Range(0.0f, 1000.0f, 0.1f)
+			.Property(&FFarmZombieComponent::AuraHeal, "AuraHeal", "오라 좀비 초당 회복").Range(0.0f, 1000.0f, 0.1f)
+			.Property(&FFarmZombieComponent::bAuraSlow, "AuraSlow", "오라 플레이어 둔화")
 			.AsComponent();
 		Registry.RegisterType<FFarmDefenseComponent>("FarmDefenseComponent", "디펜스 상태 (FarmBie)")
 			.Property(&FFarmDefenseComponent::bActive, "Active", "밤 디펜스 중")
@@ -89,6 +96,8 @@ public:
 			.Property(&FFarmDefenseComponent::FlowBuilds, "FlowBuilds", "흐름장 계산 수")
 			.Property(&FFarmDefenseComponent::CrystalHp, "CrystalHp", "크리스탈 내구도")
 			.Property(&FFarmDefenseComponent::BossAggro, "BossAggro", "보스 어그로 횟수")
+			.Property(&FFarmDefenseComponent::SummonRequests, "SummonRequests", "보스 소환 요청 종류,x,y;")
+			.Property(&FFarmDefenseComponent::AuraTicks, "AuraTicks", "보스 오라 적용 수")
 			.AsComponent();
 		E_LOG(LogFarmBie, Display, "FarmBie 게임 모듈 로드");
 	}

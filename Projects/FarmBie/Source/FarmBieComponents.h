@@ -54,6 +54,14 @@ struct FFarmZombieComponent
 	float       AggroTime          = 0.0f;   // 보스가 맞았을 때 플레이어를 쫓는 시간 (초)
 	bool        bAlerted           = false;  // 크리스탈을 알아챔 → 크리스탈로 돌진
 	bool        bDead              = false;
+	// 보스 고유 특성 (Bosses.etable)
+	std::string SummonKind;                 // 소환: SummonInterval마다 SummonCount (디펜스 상태 SummonRequests로 Lua에 요청)
+	float       SummonInterval     = 0.0f;
+	int32       SummonCount        = 0;
+	float       AuraRadius         = 0.0f;
+	float       AuraStructureDps   = 0.0f;   // 반경 안 설치물(크리스탈 제외) 초당 피해
+	float       AuraHeal           = 0.0f;   // 반경 안 다른 좀비 초당 회복
+	bool        bAuraSlow          = false;  // 반경 안 플레이어 둔화
 
 	// 런타임 (등록하지 않음)
 	FEntity  Body;
@@ -63,6 +71,7 @@ struct FFarmZombieComponent
 	float    FlashTimer   = 0.0f;
 	float    AggroTimer   = 0.0f;
 	float    ExplodeTimer = -1.0f;       // 자폭 준비 (깜빡임) — 0 이하가 되면 터짐
+	float    SummonTimer  = 0.0f;
 	FVector3 Knockback    = FVector3::ZeroVector;
 	FVector3 Facing       = FVector3(0.0f, 1.0f, 0.0f);
 	int32    AnimState    = -1;          // 0 걷기 1 공격 2 죽음
@@ -117,6 +126,8 @@ struct FFarmDefenseComponent
 	int32       FlowBuilds     = 0;
 	float       CrystalHp      = 0.0f;
 	int32       BossAggro      = 0;       // 보스가 플레이어를 쫓기 시작한 횟수
+	std::string SummonRequests;           // "종류,x,y;" 보스 소환 요청 (Lua가 만들고 비움)
+	int32       AuraTicks      = 0;       // 보스 오라가 설치물·좀비·플레이어에 닿은 횟수 (검증용)
 
 	// 런타임 (등록하지 않음)
 	int32 LastAttackSeq = 0;

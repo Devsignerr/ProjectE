@@ -1,0 +1,148 @@
+{
+  "Entities": [
+    {
+      "Name": "Crystal",
+      "Parent": -1,
+      "Components": {
+        "FarmStructureComponent": {
+          "Kind": "Crystal",
+          "Hp": 400.0,
+          "MaxHp": 400.0,
+          "TX": 0,
+          "TY": 0,
+          "Blocks": true,
+          "Crystal": true,
+          "Destroyed": false
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Model",
+      "Parent": 0,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/FarmBie/Build/Crystal.gltf"
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Collision",
+      "Parent": 0,
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            40.0,
+            70.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            70.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Glow",
+      "Parent": 0,
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.72,
+            0.45,
+            1.0
+          ],
+          "Intensity": 6.0,
+          "Radius": 650.0,
+          "CastShadows": false
+        },
+        "PrefabLinkComponent": {
+          "Id": "4",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            40.0,
+            160.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    }
+  ],
+  "NextId": 5,
+  "Version": 1
+}

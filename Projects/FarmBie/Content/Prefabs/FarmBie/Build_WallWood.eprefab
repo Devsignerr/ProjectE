@@ -1,0 +1,110 @@
+{
+  "Entities": [
+    {
+      "Name": "WallWood",
+      "Parent": -1,
+      "Components": {
+        "FarmStructureComponent": {
+          "Kind": "WallWood",
+          "Hp": 120.0,
+          "MaxHp": 120.0,
+          "TX": 0,
+          "TY": 0,
+          "Blocks": true,
+          "Crystal": false,
+          "Destroyed": false
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Model",
+      "Parent": 0,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/FarmBie/Build/WallWood.gltf"
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Collision",
+      "Parent": 0,
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            24.0,
+            70.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            70.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    }
+  ],
+  "NextId": 4,
+  "Version": 1
+}

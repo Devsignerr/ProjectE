@@ -18,6 +18,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "Tools", "DemoMap"))
 sys.path.insert(0, HERE)
 import FarmBieArt  # noqa: E402
+import FarmBieBuild  # noqa: E402
 import FarmBieCrops  # noqa: E402
 import FarmBieData  # noqa: E402
 import FarmBieUI  # noqa: E402
@@ -213,6 +214,37 @@ def WritePrefab(Name, Entities):
 	WriteJson(os.path.join(CONTENT, *PREFABS.split("/"), f"{Name}.eprefab"), {"Entities": Entities, "NextId": len(Entities) + 1, "Version": 1})
 
 
+def TileCenter(TX, TY):
+	return (GRID_ORIGIN[0] + (TX + 0.5) * TILE, GRID_ORIGIN[1] + (TY + 0.5) * TILE)
+
+
+def WriteBuildPrefabs():
+	# 설치물 프리팹: 루트(FarmStructureComponent — FarmBuild.lua가 칸·내구도를 채움) > Model [+ Collision(플레이어도 막는 것)] [+ 크리스탈 빛]
+	Rows = dict(FarmBieData.BUILD_ROWS)
+	for Id, Row in list(Rows.items()) + [("Crystal", {"Hp": 400, "Blocks": True, "Solid": True})]:
+		Entities = [{"Name": Id, "Parent": -1, "Components": {
+			"FarmStructureComponent": {"Kind": Id, "Hp": float(Row["Hp"]), "MaxHp": float(Row["Hp"]), "TX": 0, "TY": 0, "Blocks": Row["Blocks"],
+									   "Crystal": Id == "Crystal", "Destroyed": False},
+			"PrefabLinkComponent": Link(1), "TransformComponent": Transform()}},
+			{"Name": "Model", "Parent": 0, "Components": {"ModelComponent": {"AssetPath": f"{FarmBieBuild.FOLDER}/{Id}.gltf"},
+														  "PrefabLinkComponent": Link(2), "TransformComponent": Transform()}}]
+		if Row["Solid"]:
+			Half = (40.0, 40.0, 70.0) if Id in ("Turret", "Crystal") else (50.0, 24.0, 70.0)
+			Entities.append({"Name": "Collision", "Parent": 0, "Components": {"BoxColliderComponent": {"HalfExtents": list(Half)},
+																				  "PrefabLinkComponent": Link(3), "TransformComponent": Transform((0, 0, 70))}})
+		if Id == "Crystal":
+			Entities.append({"Name": "Glow", "Parent": 0, "Components": {
+				"PointLightComponent": {"Color": [0.72, 0.45, 1.0], "Intensity": 6.0, "Radius": 650.0, "CastShadows": False},
+				"PrefabLinkComponent": Link(4), "TransformComponent": Transform((0, 40, 160))}})
+		WritePrefab(f"Build_{Id}", Entities)
+	# 온실 (고정 부지 — 모델만, 안쪽은 걸어 다님)
+	WritePrefab("Build_Greenhouse", [
+		{"Name": "Greenhouse", "Parent": -1, "Components": {"PrefabLinkComponent": Link(1), "TransformComponent": Transform()}},
+		{"Name": "Model", "Parent": 0, "Components": {"ModelComponent": {"AssetPath": f"{FarmBieBuild.FOLDER}/Greenhouse.gltf"},
+													  "PrefabLinkComponent": Link(2), "TransformComponent": Transform()}},
+	])
+
+
 def WritePrefabs():
 	Foot = -(PLAYER_RADIUS + PLAYER_HALF)
 	WritePrefab("Player", [
@@ -345,6 +377,14 @@ def AddFarmstead(B):
 	B.Place("Bucket", "bucket_water", -820.0, -1050.0, 0.0, KS)
 	B.Place("Sack_0", "sack", 1500.0, -1050.0, 20.0, KS)
 	B.Place("Sack_1", "sack", 1570.0, -1000.0, 80.0, KS)
+	# 온실 부지: 귀퉁이 말뚝 4 (짓기 전 표시 — FarmBuild.lua가 지으면 숨김)
+	TX, TY, W, H = GREENHOUSE_TILES
+	X0, Y0 = TileCenter(TX, TY)
+	X1, Y1 = TileCenter(TX + W - 1, TY + H - 1)
+	for I, (X, Y) in enumerate(((X0 - 50, Y0 - 50), (X1 + 50, Y0 - 50), (X0 - 50, Y1 + 50), (X1 + 50, Y1 + 50))):
+		B.S.Add(f"GreenhouseStake_{I}", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": f"{MATS}/WoodPost.emat"}},
+				(X, Y, B.Height(X, Y) + 40.0), None, (0.1, 0.1, 0.8))
+	B.Reserve((X0 + X1) * 0.5, (Y0 + Y1) * 0.5, 250.0)
 	# 남쪽 입구 보부상 천막 자리 (F3에서 보부상이 온다)
 	B.Place("MerchantTent", "tent", 700.0, 1650.0, -90.0, KS * 1.3, Collide=True)
 	B.Place("MerchantCrate", "crate_B_small", 450.0, 1720.0, 15.0, KS * 1.4)
@@ -352,11 +392,11 @@ def AddFarmstead(B):
 
 def AddEnvironment(B, TimeOfDay, TerrainAsset="Terrain/FarmBie/Farm.eterrain", Min=PLAY_MIN, Max=PLAY_MAX):
 	S = B.S
-	S.Add("Sun", {"DirectionalLightComponent": {"Color": [1.0, 0.95, 0.86], "Intensity": 4.6}}, (0, 0, 3000), QuatFromEuler(Pitch=-50, Yaw=60.0))
+	S.Add("Sun", {"DirectionalLightComponent": {"Color": [1.0, 0.95, 0.86], "Intensity": 5.4}}, (0, 0, 3000), QuatFromEuler(Pitch=-50, Yaw=60.0))
 	S.Add("Sky", {
 		"SkyAtmosphereComponent": {"MoonIntensity": 0.2, "MoonColor": [0.6, 0.72, 1.0], "NightSkyColor": [0.008, 0.012, 0.026], "StarIntensity": 0.3},
-		"TimeOfDayComponent": {"TimeOfDay": TimeOfDay, "DayLengthMinutes": 0.0, "MaxSunElevation": 60.0, "NorthAzimuth": 0.0, "AnimateInEditor": False},
-		"SkyLightComponent": {"Intensity": 2.6},
+		"TimeOfDayComponent": {"TimeOfDay": TimeOfDay, "DayLengthMinutes": 0.0, "MaxSunElevation": 60.0, "NorthAzimuth": 180.0, "AnimateInEditor": False},
+		"SkyLightComponent": {"Intensity": 1.9},
 		"HeightFogComponent": {
 			"Color": [0.55, 0.6, 0.65], "Density": 0.0004, "HeightFalloff": 0.05, "StartDistance": 3500.0, "MaxOpacity": 0.4,
 			"DirectionalInscatteringColor": [0.9, 0.8, 0.6], "Volumetric": False, "VolumetricDistance": 6000.0,
@@ -400,6 +440,8 @@ def AddCamera(B, Start):
 WELL = (-950.0, -1250.0)
 MERCHANT_SPOT = (520.0, 1480.0)  # 남쪽 입구 천막 앞
 SHIPPING_BIN = (380.0, -950.0)
+GREENHOUSE_TILES = (38, 23, 6, 4)   # 온실 부지 (TX, TY, 가로, 세로 칸) — 밭 동쪽
+CRYSTAL_START = (18, 11)            # 크리스탈 처음 칸 (집 서쪽 마당)
 SLEEP_SPOT = (HOUSE[0], HOUSE[1] + 260.0)  # 집 문 앞 (잠자기 상호작용)
 LAMPS = [(-420.0, -1000.0), (420.0, -1200.0), (-1300.0, -600.0), (1300.0, -600.0), (-900.0, 500.0), (900.0, 500.0), (0.0, 1250.0), (-2000.0, 150.0), (2000.0, -300.0)]
 
@@ -589,7 +631,11 @@ def Main():
 	FarmBieCrops.WriteSprites(os.path.join(CONTENT, *SPRITES.split("/")))
 	X0, Y0 = PLAY_MIN[0] + FENCE_INSET + 60.0, PLAY_MIN[1] + FENCE_INSET + 60.0
 	FarmBieData.WriteFarmMap(CONTENT, {"Tile": TILE, "Width": GRID_W, "Height": GRID_H, "OriginX": GRID_ORIGIN[0], "OriginY": GRID_ORIGIN[1],
-									   "FarmMinX": X0, "FarmMinY": Y0, "FarmMaxX": -X0, "FarmMaxY": -Y0, "Well": [WELL[0], WELL[1]]})
+									   "FarmMinX": X0, "FarmMinY": Y0, "FarmMaxX": -X0, "FarmMaxY": -Y0, "Well": [WELL[0], WELL[1]],
+									   "Greenhouse": list(GREENHOUSE_TILES), "GreenhouseCost": FarmBieData.GREENHOUSE["Cost"],
+									   "GreenhouseGold": FarmBieData.GREENHOUSE["Gold"], "CrystalStart": list(CRYSTAL_START)})
+	FarmBieBuild.WriteModels(CONTENT, GREENHOUSE_TILES[2:])
+	WriteBuildPrefabs()
 	FarmBieUI.WriteHud(CONTENT)
 	_, _, H, Weights = BuildTerrain()
 	WriteTerrain(os.path.join(CONTENT, "Terrain", "FarmBie", "Farm.eterrain"), H, Weights)
@@ -605,10 +651,12 @@ def Main():
 	os.makedirs(os.path.join(CONTENT, "Scenes", "Tests"), exist_ok=True)
 	BuildScene(Height, AutoPlay="Basic").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmAutoPlay.escene"))
 	BuildScene(Height, AutoPlay="Time").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmTime.escene"))
+	BuildScene(Height, AutoPlay="Build").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmBuild.escene"))
 	BuildScene(Height, AutoPlay="Sanity").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmSanity.escene"))
 	BuildScene(Height, AutoPlay="Economy").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmEconomy.escene"))
 	BuildScene(Height, AutoPlay="Farm").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmFarming.escene"))
 	if "--views" in sys.argv:
+		BuildScene(Height, AutoPlay="BuildShot").Save(os.path.join(CONTENT, "Scenes", "_FarmBuildShot.escene"))
 		BuildForestScene(ForestHeight, "Shot10").Save(os.path.join(CONTENT, "Scenes", "_ForestShot.escene"))
 		# 확인용 (커밋하지 않음): 시각별 화면
 		BuildScene(Height, AutoPlay="ShopShot").Save(os.path.join(CONTENT, "Scenes", "_FarmShopShot.escene"))

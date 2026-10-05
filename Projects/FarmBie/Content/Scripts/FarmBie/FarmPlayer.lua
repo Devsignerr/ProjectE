@@ -77,7 +77,7 @@ function FarmPlayer:GatherInput()
 	local MX, MY = Input.GetAction("Move")
 	local In = { Move = Vector3(MX, -MY, 0), Dodge = Input.WasActionPressed("Dodge"), Interact = Input.WasActionPressed("Interact"),
 	             UseTool = Input.WasActionPressed("UseTool"), Pause = Input.WasActionPressed("Pause"), Inventory = Input.WasActionPressed("Inventory"),
-	             Eat = Input.WasActionPressed("Eat") }
+	             Eat = Input.WasActionPressed("Eat"), Build = Input.WasActionPressed("Build"), Rotate = Input.WasActionPressed("Rotate") }
 	self:MenuNavigation(In, MX, MY)
 	for I = 1, 9 do
 		if Input.WasActionPressed("Slot" .. I) then In.Slot = I end
@@ -131,8 +131,18 @@ function FarmPlayer:OnUpdate(Dt)
 		return
 	end
 	GM:UpdateInteract(Pos)
-	if In.Slot then GM:SelectSlot(In.Slot) end
-	if In.SlotStep then GM:SelectSlot(GM.Selected + In.SlotStep) end
+	if In.Build then GM:ToggleBuildMode() end
+	if GM.BuildMode then
+		if In.Slot then GM:SelectBuild(In.Slot) end
+		if In.SlotStep then GM:SelectBuild(GM.BuildIndex + In.SlotStep) end
+		if In.Rotate then
+			GM.BuildRot = GM.BuildRot == 0 and 90 or 0
+			GM:Hud():Toast("", GM.BuildRot == 0 and "방향: 가로" or "방향: 세로")
+		end
+	else
+		if In.Slot then GM:SelectSlot(In.Slot) end
+		if In.SlotStep then GM:SelectSlot(GM.Selected + In.SlotStep) end
+	end
 	GM:UpdateCursor(Pos, self:GetFacingVector())
 	local Move = In.Move
 	if Move:Length() > 1 then Move = Move:Normalized() end
@@ -152,6 +162,12 @@ function FarmPlayer:OnUpdate(Dt)
 		self:UpdateAnimation(Vector3(0, 0, 0))
 		return
 	end
+	if GM.BuildMode and In.UseTool then
+		local TX, TY = GM:TargetTile(Pos, self:GetFacingVector())
+		GM:ApplyBuild(TX, TY)
+		In.UseTool = false
+	end
+	if GM.CarryingCrystal then In.UseTool = false end
 	if In.Eat then
 		local S = GM:SelectedItem()
 		if S and GM:CanEat(S.Key) then GM:Eat(S.Key) end

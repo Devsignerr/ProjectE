@@ -1,0 +1,31 @@
+{
+  "Version": 1,
+  "Name": "CrystalLevel",
+  "Description": "크리스탈 강화 단계",
+  "Fields": [
+    {
+      "Name": "MaxHp",
+      "Type": "Int",
+      "Default": 400,
+      "Description": "최대 내구도"
+    },
+    {
+      "Name": "DetectRadius",
+      "Type": "Int",
+      "Default": 650,
+      "Description": "좀비가 알아채는 반경 (cm)"
+    },
+    {
+      "Name": "Cost",
+      "Type": "String",
+      "Default": "",
+      "Description": "이 단계로 올리는 재료"
+    },
+    {
+      "Name": "Gold",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "이 단계로 올리는 돈"
+    }
+  ]
+}

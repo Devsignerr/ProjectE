@@ -94,9 +94,31 @@ end
 function Hud:UpdateHotbar()
 	local GM = self.GM
 	if not GM.Bag then return end
+	if GM.BuildMode then
+		-- 건설 막대: 설치물 아이콘, 재료가 모자라면 흐리게
+		for I = 1, 9 do
+			local W = I - 1
+			local E = GM:BuildEntry(I)
+			self:Set("SlotBg" .. W, "Texture", I == GM.BuildIndex and "UI/FarmBie/SlotSel.png" or "UI/FarmBie/Slot.png")
+			self:Show("SlotIcon" .. W, E ~= nil)
+			self:Set("SlotCount" .. W, "Text", "")
+			if E then
+				self:Set("SlotIcon" .. W, "Texture", E.Icon)
+				local bOk = not E.bMax and GM:HasCost(E.Cost) and GM.Gold >= E.Gold
+				self:Set("SlotIcon" .. W, "Opacity", bOk and 1.0 or 0.4)
+			end
+		end
+		self:Show("WaterRow", false)
+		if (self.ItemNameTime or 0) > 0 then
+			self.ItemNameTime = self.ItemNameTime - Time.GetUnscaledDelta()
+			if self.ItemNameTime <= 0 then self:Set("ItemName", "Text", "") end
+		end
+		return
+	end
 	for I = 1, 9 do
 		local S = GM.Bag[I]
 		local W = I - 1
+		self:Set("SlotIcon" .. W, "Opacity", 1.0)
 		self:Set("SlotBg" .. W, "Texture", I == GM.Selected and "UI/FarmBie/SlotSel.png" or "UI/FarmBie/Slot.png")
 		self:Show("SlotIcon" .. W, S ~= nil)
 		if S then

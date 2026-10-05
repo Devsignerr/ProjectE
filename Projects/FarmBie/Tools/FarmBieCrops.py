@@ -659,6 +659,68 @@ def DrawToolIcon(Name):
 		C.Ellipse(8, 6, 5, 2.6, (210, 110, 200))
 		C.Px(5, 6, (250, 230, 250))
 		C.Px(10, 5, (250, 230, 250))
+	elif Name == "Iron":
+		C.Rect(2, 7, 13, 12, (110, 116, 126))
+		C.Rect(3, 6, 14, 6, (160, 166, 176))
+		C.Rect(4, 8, 11, 9, (170, 176, 186))
+	elif Name == "CrystalShard":
+		for Y in range(14):
+			W = 1 + (Y if Y < 7 else 13 - Y) // 2
+			C.Rect(8 - W, Y + 1, 8 + W - 1, Y + 1, (160, 90, 230))
+		C.Rect(7, 3, 8, 11, (220, 180, 255))
+	elif Name == "Mine":
+		C.Ellipse(8, 10, 6.5, 3.5, (70, 74, 82))
+		C.Ellipse(8, 9, 5, 2.5, (110, 116, 126))
+		C.Rect(7, 4, 8, 7, (130, 136, 146))
+		C.Rect(7, 3, 8, 3, (240, 60, 40))
+	elif Name == "WallWood":
+		for X in (2, 6, 10):
+			C.Rect(X, 3, X + 3, 14, (140, 92, 52))
+			C.Px(X + 1, 2, (110, 72, 40))
+		C.Rect(1, 6, 14, 6, (190, 160, 100))
+		C.Rect(1, 11, 14, 11, (190, 160, 100))
+	elif Name == "WallStone":
+		C.Rect(1, 4, 14, 14, (130, 132, 128))
+		for Y in (7, 10):
+			C.Rect(1, Y, 14, Y, (90, 92, 90))
+		for X, Y in ((5, 4), (10, 4), (3, 8), (8, 8), (12, 8), (5, 11), (10, 11)):
+			C.Rect(X, Y, X, Y + 2, (90, 92, 90))
+	elif Name == "WallIron":
+		C.Rect(1, 3, 14, 14, (80, 86, 96))
+		for X in (2, 7, 12):
+			C.Rect(X, 3, X + 1, 14, (150, 156, 166))
+		for X, Y in ((4, 6), (10, 6), (4, 11), (10, 11)):
+			C.Px(X, Y, (200, 204, 210))
+	elif Name == "Gate":
+		C.Rect(1, 2, 2, 14, (90, 58, 34))
+		C.Rect(13, 2, 14, 14, (90, 58, 34))
+		C.Rect(3, 5, 12, 14, (150, 100, 56))
+		C.Rect(3, 8, 12, 8, (90, 92, 100))
+		C.Rect(3, 12, 12, 12, (90, 92, 100))
+	elif Name == "Spike":
+		C.Rect(1, 12, 14, 14, (140, 92, 52))
+		for X in (2, 6, 10):
+			C.Line(X + 1, 11, X + 2, 4, (200, 204, 214))
+			C.Px(X + 2, 3, (240, 244, 250))
+	elif Name == "Turret":
+		C.Rect(3, 9, 12, 14, (130, 132, 128))
+		C.Rect(2, 8, 13, 8, (90, 92, 90))
+		C.Rect(7, 4, 8, 7, (110, 72, 40))
+		C.Rect(3, 3, 13, 4, (150, 100, 56))
+		C.Line(13, 1, 13, 6, (110, 72, 40))
+	elif Name == "Greenhouse":
+		C.Rect(1, 6, 14, 14, (180, 220, 230))
+		C.Line(1, 6, 7, 1, (110, 72, 40))
+		C.Line(14, 6, 8, 1, (110, 72, 40))
+		C.Rect(1, 6, 1, 14, (110, 72, 40))
+		C.Rect(14, 6, 14, 14, (110, 72, 40))
+		C.Rect(6, 9, 9, 14, (120, 180, 90))
+	elif Name == "CrystalUp":
+		for Y in range(12):
+			W = 1 + (Y if Y < 6 else 11 - Y) // 2
+			C.Rect(7 - W, Y + 3, 7 + W, Y + 3, (160, 90, 230))
+		C.Rect(12, 1, 13, 6, (120, 230, 120))
+		C.Rect(10, 3, 15, 4, (120, 230, 120))
 	elif Name in ("FertBasic", "FertPremium"):
 		Col = (120, 200, 110) if Name == "FertBasic" else (196, 130, 240)
 		C.Rect(3, 4, 12, 14, (186, 160, 120))
@@ -674,5 +736,6 @@ def WriteIcons(Folder, UpscaleSave):
 		for R in range(4):
 			UpscaleSave(DrawSeedPacket(Crop, R), os.path.join(Folder, f"Seed_{Crop['Id']}_{R}.png"))
 			UpscaleSave(DrawCropIcon(Crop, R), os.path.join(Folder, f"Crop_{Crop['Id']}_{R}.png"))
-	for Name in ("Hoe", "Can", "FertBasic", "FertPremium", "Axe", "Pick", "Wood", "Stone", "Fiber", "Herb", "Mushroom"):
+	for Name in ("Hoe", "Can", "FertBasic", "FertPremium", "Axe", "Pick", "Wood", "Stone", "Fiber", "Herb", "Mushroom", "Iron", "CrystalShard", "Mine",
+				 "WallWood", "WallStone", "WallIron", "Gate", "Spike", "Turret", "Greenhouse", "CrystalUp"):
 		UpscaleSave(DrawToolIcon(Name), os.path.join(Folder, f"{Name}.png"))

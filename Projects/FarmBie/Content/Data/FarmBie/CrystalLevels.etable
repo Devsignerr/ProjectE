@@ -1,0 +1,51 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/CrystalLevel.estruct",
+  "Rows": [
+    {
+      "Name": "Level1",
+      "Values": {
+        "MaxHp": 400,
+        "DetectRadius": 650,
+        "Cost": "",
+        "Gold": 0
+      }
+    },
+    {
+      "Name": "Level2",
+      "Values": {
+        "MaxHp": 600,
+        "DetectRadius": 580,
+        "Cost": "CrystalShard*1,Stone*10",
+        "Gold": 300
+      }
+    },
+    {
+      "Name": "Level3",
+      "Values": {
+        "MaxHp": 850,
+        "DetectRadius": 510,
+        "Cost": "CrystalShard*2,Iron*3",
+        "Gold": 700
+      }
+    },
+    {
+      "Name": "Level4",
+      "Values": {
+        "MaxHp": 1150,
+        "DetectRadius": 440,
+        "Cost": "CrystalShard*4,Iron*6",
+        "Gold": 1500
+      }
+    },
+    {
+      "Name": "Level5",
+      "Values": {
+        "MaxHp": 1500,
+        "DetectRadius": 370,
+        "Cost": "CrystalShard*7,Iron*10",
+        "Gold": 3000
+      }
+    }
+  ]
+}

@@ -66,6 +66,40 @@
       ],
       "Description": "우물 위치 (물 채우기)",
       "Element": "Float"
+    },
+    {
+      "Name": "Greenhouse",
+      "Type": "Array",
+      "Default": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "Description": "온실 부지 칸 (TX, TY, 가로, 세로)",
+      "Element": "Int"
+    },
+    {
+      "Name": "GreenhouseCost",
+      "Type": "String",
+      "Default": "",
+      "Description": "온실 재료"
+    },
+    {
+      "Name": "GreenhouseGold",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "온실 돈"
+    },
+    {
+      "Name": "CrystalStart",
+      "Type": "Array",
+      "Default": [
+        0,
+        0
+      ],
+      "Description": "크리스탈 처음 칸",
+      "Element": "Int"
     }
   ]
 }

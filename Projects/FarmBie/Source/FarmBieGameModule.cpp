@@ -1,4 +1,7 @@
+#include "FarmBieComponents.h"
+
 #include "Core/Log.h"
+#include "Core/Reflection/TypeInfo.h"
 #include "Scene/GameModule.h"
 
 E_DEFINE_LOG_CATEGORY(LogFarmBie, Log)
@@ -9,6 +12,17 @@ class FFarmBieGameModule final : public IGameModule
 public:
 	void OnLoad() override
 	{
+		FTypeRegistry& Registry = FTypeRegistry::Get();
+		Registry.RegisterType<FFarmStructureComponent>("FarmStructureComponent", "농장 설치물 (FarmBie)")
+			.Property(&FFarmStructureComponent::Kind, "Kind", "종류 (Buildables 행)")
+			.Property(&FFarmStructureComponent::Hp, "Hp", "내구도").Range(0.0f, 100000.0f, 1.0f)
+			.Property(&FFarmStructureComponent::MaxHp, "MaxHp", "최대 내구도").Range(1.0f, 100000.0f, 1.0f)
+			.Property(&FFarmStructureComponent::TX, "TX", "격자 X")
+			.Property(&FFarmStructureComponent::TY, "TY", "격자 Y")
+			.Property(&FFarmStructureComponent::bBlocks, "Blocks", "길을 막음")
+			.Property(&FFarmStructureComponent::bCrystal, "Crystal", "크리스탈")
+			.Property(&FFarmStructureComponent::bDestroyed, "Destroyed", "부서짐")
+			.AsComponent();
 		E_LOG(LogFarmBie, Display, "FarmBie 게임 모듈 로드");
 	}
 };

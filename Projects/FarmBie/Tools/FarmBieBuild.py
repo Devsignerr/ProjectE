@@ -168,6 +168,23 @@ def Greenhouse(W, H):
 	return B
 
 
+def Tower():
+	# 낡은 돌탑: 둥근 몸통 + 층 띠 + 총안 + 문 (원점 = 바닥 가운데, 문은 +Y)
+	B = _New(STONE, STONE_D, WOOD_D, CRYSTAL)
+	B.Lathe("BuildStone", (0, 0, 0), [(240.0, 0.0), (230.0, 120.0), (210.0, 700.0), (205.0, 980.0)], 16)
+	for Z in (240.0, 520.0, 800.0):
+		B.Lathe("BuildStoneDark", (0, 0, Z), [(214.0 + (800.0 - Z) * 0.02, 0.0), (222.0 + (800.0 - Z) * 0.02, 10.0), (214.0 + (800.0 - Z) * 0.02, 20.0)], 16)
+	B.Lathe("BuildStoneDark", (0, 0, 980.0), [(230.0, 0.0), (235.0, 30.0), (0.0, 30.0)], 16)
+	for K in range(8):
+		A = K / 8.0 * math.tau
+		B.Box("BuildStone", (math.cos(A) * 215.0, math.sin(A) * 215.0, 1030.0), (60.0, 60.0, 50.0), Yaw=math.degrees(A))
+	B.Box("BuildWoodDark", (0, 212.0, 110.0), (130.0, 20.0, 220.0))           # 문
+	B.Box("BuildStoneDark", (0, 216.0, 230.0), (160.0, 24.0, 24.0))
+	for Z in (420.0, 700.0):
+		B.Box("BuildCrystal", (0, 210.0, Z), (40.0, 10.0, 70.0))             # 보랏빛 창
+	return B
+
+
 def Workbench():
 	B = _New(WOOD, WOOD_D, IRON_L, ROPE)
 	B.Box("BuildWood", (0, 0, 78.0), (150.0, 70.0, 10.0))
@@ -184,7 +201,7 @@ def Workbench():
 
 MODELS = {
 	"WallWood": WallWood, "WallStone": WallStone, "WallIron": WallIron, "Gate": Gate, "Spike": Spike, "Mine": Mine, "Turret": Turret,
-	"Crystal": Crystal, "Workbench": Workbench,
+	"Crystal": Crystal, "Workbench": Workbench, "Tower": Tower,
 }
 
 

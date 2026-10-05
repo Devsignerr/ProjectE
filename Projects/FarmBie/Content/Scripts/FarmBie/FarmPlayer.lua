@@ -266,7 +266,9 @@ end
 function FarmPlayer:UpdateHurt(Dt)
 	if (self.HurtTimer or 0) > 0 then
 		self.HurtTimer = self.HurtTimer - Dt
-		self.Sprite.FlashColor = Vector4(1, 0.25, 0.2, self.HurtTimer > 0 and 0.7 or 0)
+		-- FlashColor 대신 Color 곱하기 (FlashColor는 번쩍임이 남는 엔진 문제 — Docs/Rules/FarmBie.md)
+		local Red = self.HurtTimer > 0 and 1 or 0
+		self.Sprite.Color = Vector4(1, 1 - 0.6 * Red, 1 - 0.65 * Red, 1)
 	end
 end
 

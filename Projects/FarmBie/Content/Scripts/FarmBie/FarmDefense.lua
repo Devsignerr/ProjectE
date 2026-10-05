@@ -127,7 +127,7 @@ function Def:NightElapsed()
 	return (self.Hour - self.Calendar.NightStartHour) / self:HoursPerSecond()
 end
 
-function Def:SpawnZombie(Kind, Entrance, HpMul)
+function Def:SpawnZombie(Kind, Entrance, HpMul, DamageMul)
 	local Row = D.ByName("Zombies.etable")[Kind]
 	local Jitter = Vector3((self:NightRandom() - 0.5) * 220, (self:NightRandom() - 0.5) * 220, 0)
 	if Entrance.Name == "West" or Entrance.Name == "East" then Jitter.X = Jitter.X * 0.3 else Jitter.Y = Jitter.Y * 0.3 end
@@ -139,7 +139,7 @@ function Def:SpawnZombie(Kind, Entrance, HpMul)
 		local C = E:GetComponent("FarmZombieComponent")
 		Z.Comp = C
 		C.Hp, C.MaxHp = Row.Hp * HpMul, Row.Hp * HpMul
-		C.Speed, C.Damage, C.AttackInterval = Row.Speed, Row.Damage, Row.Interval
+		C.Speed, C.Damage, C.AttackInterval = Row.Speed, Row.Damage * (DamageMul or 1.0), Row.Interval
 		C.StructureDamageMul, C.CropEatTime, C.BodyRadius = Row.StructureMul, Row.CropEat, Row.Radius
 		C.Explode, C.ExplodeRadius, C.ExplodeDamage = Row.Explode, Row.ExplodeRadius, Row.ExplodeDamage
 		C.RegenPerSec, C.SlowOnHit = Row.Regen, Row.Slow
@@ -409,6 +409,10 @@ end
 
 -- ---- 쓰러짐·부활
 function Def:OnPlayerDown(Reason)
+	if self.MapId == "Tower" then
+		self:TowerDefeat()
+		return
+	end
 	if self.PlayerDown or self.Phase == "Sleep" or self.Phase == "GameOver" then return end
 	self.PlayerDown = self.Night.RespawnTime
 	self.Report.PlayerDowns = (self.Report.PlayerDowns or 0) + 1

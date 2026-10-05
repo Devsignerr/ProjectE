@@ -8,7 +8,7 @@ local D = Script.Require("Scripts/FarmBie/FarmData.lua")
 local FarmGame = {
 	Properties = {
 		AutoPlay  = "",       -- 자동 검증 시나리오 (FarmAutoPilot.lua — 맵 이동으로 이어지면 Persistent "FarmBie_AutoPlay")
-		Map       = "Farm",   -- Farm | Forest (밭·출하·보부상은 농장에서만)
+		Map       = "Farm",   -- Farm | Forest | Tower (밭·출하·보부상은 농장에서만)
 		CameraBounds = "",    -- 카메라 초점 범위 "minx,miny,maxx,maxy"
 		Slot      = "1",      -- 저장 슬롯 ("Test" = 자동 검증 전용 — 시작할 때 지운다)
 		SleepSpot = "0,0",    -- 집 문 앞 "x,y" (잠자기 상호작용·기상 자리)
@@ -19,11 +19,12 @@ local FarmGame = {
 for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua", "Scripts/FarmBie/FarmInventory.lua", "Scripts/FarmBie/FarmField.lua",
                          "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua", "Scripts/FarmBie/FarmVitals.lua",
                          "Scripts/FarmBie/FarmForage.lua", "Scripts/FarmBie/FarmBuild.lua",
-                         "Scripts/FarmBie/FarmDefense.lua", "Scripts/FarmBie/FarmCraft.lua", "Scripts/FarmBie/FarmBoss.lua" }) do
+                         "Scripts/FarmBie/FarmDefense.lua", "Scripts/FarmBie/FarmCraft.lua", "Scripts/FarmBie/FarmBoss.lua",
+                         "Scripts/FarmBie/FarmTower.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do FarmGame[Name] = Fn end
 end
 
-local SaveParts = { "Time", "Inventory", "Field", "Economy", "Vitals", "Forage", "Build", "Defense" }
+local SaveParts = { "Time", "Inventory", "Field", "Economy", "Vitals", "Forage", "Build", "Defense", "Tower" }
 local SessionSlot = "FarmBie_Session"
 local SaveVersion = 1
 
@@ -74,6 +75,7 @@ function FarmGame:OnStart()
 	self:SyncCropTiles()
 	if not self.TonightPlan then self:PlanNight() end
 	if self.bResumed and self.Phase == "Night" then self:ResumeNight() end
+	self:InitTower() -- 세션(TowerRun)을 불러온 뒤 — 탑 씬이면 층을 꾸민다
 	self:ApplyDayNight(true)
 	self.bReady = true
 end
@@ -114,6 +116,8 @@ function FarmGame:OnUpdate(Dt)
 		self:UpdateStructures()
 		self:UpdateDefense(Dt)
 		self:UpdateBoss(Dt)
+	elseif self.MapId == "Tower" then
+		self:UpdateTower(Dt)
 	end
 	self:UpdateVitals(Dt)
 end

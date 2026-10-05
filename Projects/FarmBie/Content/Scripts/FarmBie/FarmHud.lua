@@ -140,7 +140,9 @@ function Hud:UpdateHotbar()
 end
 
 function Hud:UpdateDefensePanel(GM)
+	if GM.MapId == "Tower" then return end -- 탑은 FarmTower:UpdateTower가 같은 패널을 쓴다
 	local Dc = GM.Defense
+	self:Show("CrystalRow", true)
 	local bNight = GM.Phase == "Night" and GM.MapId == "Farm" and Dc ~= nil
 	self:Show("DefensePanel", bNight)
 	if not bNight then return end

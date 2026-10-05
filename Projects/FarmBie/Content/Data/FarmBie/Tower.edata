@@ -1,0 +1,47 @@
+{
+  "Version": 1,
+  "Struct": "Data/FarmBie/Tower.estruct",
+  "Values": {
+    "Floors": 20,
+    "GuardianEvery": 5,
+    "BaseEnemies": 4,
+    "EnemiesPerFloor": 0.5,
+    "HpPerFloor": 0.15,
+    "DamagePerFloor": 0.06,
+    "GoldPerFloor": 30,
+    "LootLossOnDown": 0.5,
+    "WeaponFloors": [
+      "Sword,3",
+      "Bow,7",
+      "Shotgun,12"
+    ],
+    "KindFloors": [
+      "Walker,1",
+      "Runner,3",
+      "Mossling,4",
+      "Bomber,6",
+      "Brute,8",
+      "Scorcher,10",
+      "Harvester,12",
+      "Frostbite,14"
+    ],
+    "GuardianBosses": [
+      "Broodmother",
+      "Rotgiant",
+      "SunDevourer",
+      "FrostColossus"
+    ],
+    "GuardianHpMul": 0.6,
+    "Origin": [
+      -1200.0,
+      -700.0
+    ],
+    "Width": 24,
+    "Height": 14,
+    "Tile": 100.0,
+    "FarmDoor": [
+      1850.0,
+      -1330.0
+    ]
+  }
+}

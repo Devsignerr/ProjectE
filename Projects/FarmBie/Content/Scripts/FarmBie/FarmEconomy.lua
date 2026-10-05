@@ -76,6 +76,7 @@ function Eco:ShipItems()
 		self.Shipped[#self.Shipped + 1] = { Key = E.Key, Count = E.Count }
 	end
 	self.Report.Shipped = (self.Report.Shipped or 0) + Value
+	self:Sfx("Coins", 0.7)
 	self:Hud():Toast("UI/FarmBie/Coin.png", string.format("출하 상자에 넣었다 (내일 아침 +%d)", Value), { 1.0, 0.86, 0.45, 1.0 })
 end
 

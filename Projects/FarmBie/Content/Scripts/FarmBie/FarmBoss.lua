@@ -66,6 +66,7 @@ function Boss:SpawnBoss(B)
 		C.SummonKind, C.SummonInterval, C.SummonCount = Row.SummonKind, Row.SummonInterval, Row.SummonCount
 		C.AuraRadius, C.AuraStructureDps, C.AuraHeal, C.AuraSlow = Row.AuraRadius, Row.AuraStructureDps, Row.AuraHeal, Row.AuraSlow
 	end)
+	self:Sfx("Roar", 0.9)
 	self:Hud():Announce(Row.DisplayName, Row.Kind == "Season" and "계절의 끝을 알리는 보스가 나타났다!" or "보스가 크리스탈을 노린다!", 3.5)
 	Log.Info(string.format("[FarmBie] 보스 등장: %s (%s)", Row.DisplayName, Row.Name))
 end
@@ -138,6 +139,7 @@ function Boss:OnBossDefeated(Row)
 		end
 	end
 	self.Report.BossKills = (self.Report.BossKills or 0) + 1
+	self:Sfx("Bell", 0.8)
 	self.Report["BossKill_" .. Row.Name] = 1
 	self:Hud():Announce(Row.DisplayName .. " 처치!", "보상: " .. table.concat(Parts, ", "), 4.0)
 	Log.Info(string.format("[FarmBie] 보스 처치: %s — %s", Row.DisplayName, table.concat(Parts, ", ")))

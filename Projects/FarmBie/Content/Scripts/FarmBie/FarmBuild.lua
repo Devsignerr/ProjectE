@@ -165,6 +165,7 @@ function Build:ApplyBuild(TX, TY)
 		self:PayCost(E.Cost)
 		self:PlaceStructure(E.Id, TX, TY, (E.Row.Kind == "Wall" or E.Row.Kind == "Gate") and self.BuildRot or 0, E.Row.Hp)
 		self.Report.Built = (self.Report.Built or 0) + 1
+		self:Sfx("Equip", 0.7, 0.8)
 	elseif Action == "Demolish" then
 		local S = self:StructureAt(TX, TY)
 		local Row = D.ByName("Buildables.etable")[S.Id]
@@ -180,6 +181,7 @@ function Build:ApplyBuild(TX, TY)
 		self.Gold = self.Gold - E.Gold
 		self:SetCrystalLevel(self.Crystal.Level + 1, true)
 		self.Report.CrystalUps = (self.Report.CrystalUps or 0) + 1
+		self:Sfx("Bell", 0.6, 1.3)
 		self:Hud():Announce("크리스탈 강화!", string.format("%d단계 — 내구도 %d, 감지 반경 %dcm", self.Crystal.Level, self:CrystalRow().MaxHp, self:CrystalRow().DetectRadius), 3.0)
 		self:SelectBuild(self.BuildIndex)
 	end

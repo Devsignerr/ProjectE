@@ -20,7 +20,7 @@ for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua", "Scripts/FarmBie/FarmI
                          "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua", "Scripts/FarmBie/FarmVitals.lua",
                          "Scripts/FarmBie/FarmForage.lua", "Scripts/FarmBie/FarmBuild.lua",
                          "Scripts/FarmBie/FarmDefense.lua", "Scripts/FarmBie/FarmCraft.lua", "Scripts/FarmBie/FarmBoss.lua",
-                         "Scripts/FarmBie/FarmTower.lua" }) do
+                         "Scripts/FarmBie/FarmTower.lua", "Scripts/FarmBie/FarmSound.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do FarmGame[Name] = Fn end
 end
 
@@ -41,7 +41,13 @@ function FarmGame:OnStart()
 	-- 맵 이동으로 이어지는 자동 검증: 시나리오·슬롯을 Persistent로 받는다
 	local Auto = Game.GetPersistent("FarmBie_AutoPlay", "")
 	if self.Properties.AutoPlay == "" and Auto ~= "" then self.Properties.AutoPlay = Auto end
-	if self.Properties.AutoPlay ~= "" then self.Properties.Slot = "Test" end
+	-- 슬롯: 타이틀에서 고른 것(Persistent FarmBie_Slot) → 자동 검증이면 "Test" → 씬 속성
+	local ChosenSlot = Game.GetPersistent("FarmBie_Slot", "")
+	if ChosenSlot ~= "" then
+		self.Properties.Slot = ChosenSlot
+	elseif self.Properties.AutoPlay ~= "" then
+		self.Properties.Slot = "Test"
+	end
 	self.SleepSpot = Parse2(self.Properties.SleepSpot)
 	self:InitVitals()
 	self:InitTime()
@@ -76,6 +82,7 @@ function FarmGame:OnStart()
 	if not self.TonightPlan then self:PlanNight() end
 	if self.bResumed and self.Phase == "Night" then self:ResumeNight() end
 	self:InitTower() -- 세션(TowerRun)을 불러온 뒤 — 탑 씬이면 층을 꾸민다
+	self:InitSound()
 	self:ApplyDayNight(true)
 	self.bReady = true
 end
@@ -105,6 +112,7 @@ function FarmGame:OnUpdate(Dt)
 			self.ArrivePos = nil
 		end
 	end
+	self:UpdateSound()
 	if self.TravelTarget then
 		self:UpdateTravel()
 		return
@@ -204,6 +212,9 @@ function FarmGame:OnDayStart(bNewSeason)
 	self:RefreshNodes()
 	if Income > 0 then self.MorningNotes[#self.MorningNotes + 1] = string.format("출하 수입 +%d", Income) end
 	if self:IsMerchantDay() then self.MorningNotes[#self.MorningNotes + 1] = "보부상이 남쪽 천막에 왔다" end
+	self:Sfx("Rooster", 0.6)
+	if self:IsMerchantDay() then Timer.After(1.4, function() self:Sfx("Bell", 0.45) end) end
+	if Income > 0 then Timer.After(0.8, function() self:Sfx("Coins", 0.7) end) end
 	for _, Note in ipairs(self.PendingNightNotes or {}) do table.insert(self.MorningNotes, 1, Note) end
 	self.PendingNightNotes = nil
 	if self.Defense then self.Report.TotalKills = (self.Report.TotalKills or 0) + self.Defense.Kills; self.Defense.Kills = 0 end

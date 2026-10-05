@@ -57,7 +57,8 @@ function Def:PlanNight()
 	end
 	-- 좀비 수·종류
 	local Season = SeasonIds[self.Season + 1]
-	local Count = math.floor(N.BaseCount + N.PerDay * self.Day + N.PerSeason * self.Season + 0.5)
+	local YearMul = 1 + N.CountPerYear * (self.Year - 1)
+	local Count = math.floor((N.BaseCount + N.PerDay * self.Day + N.PerSeason * self.Season) * YearMul + 0.5)
 	local Kinds, Total = {}, 0
 	for _, Row in ipairs(D.Rows("Zombies.etable")) do
 		if self.Day >= Row.MinDay and (Row.Season == "Any" or Row.Season == Season) then
@@ -77,7 +78,7 @@ function Def:PlanNight()
 		local T = 2.0 + (I - 1) / math.max(1, Count) * Window
 		Spawns[#Spawns + 1] = { T = T, Kind = Pick.Name, Entrance = Chosen[1 + (I - 1) % #Chosen] }
 	end
-	self.TonightPlan = { Entrances = Chosen, Spawns = Spawns, HpMul = 1 + N.HpPerDay * self.Day + N.HpPerSeason * self.Season }
+	self.TonightPlan = { Entrances = Chosen, Spawns = Spawns, HpMul = (1 + N.HpPerDay * self.Day + N.HpPerSeason * self.Season) * (1 + N.HpPerYear * (self.Year - 1)) }
 	self.NightKills = 0
 	self:ShowWarnings(true)
 	return self.TonightPlan
@@ -119,6 +120,7 @@ function Def:OnNightStart()
 		self.KillBase = 0
 	end
 	self.Report.Nights = (self.Report.Nights or 0) + 1
+	if self.MapId == "Farm" and self.TonightPlan and #self.TonightPlan.Spawns > 0 then self:Sfx("Alarm", 0.5) end
 	if self.OnBossNightStart then self:OnBossNightStart() end
 end
 
@@ -233,7 +235,10 @@ function Def:UpdateDefense(Dt)
 	if not self.bNightCleared and Plan and self.SpawnIndex > #Plan.Spawns and self:PendingZombies() == 0 and #self:LiveZombies() == 0 and self:BossCleared() then
 		self.bNightCleared = true
 		self.Report.NightsCleared = (self.Report.NightsCleared or 0) + 1
-		if #Plan.Spawns > 0 then self:Hud():Announce("밤을 버텼다!", "남은 시간은 쉬어도 된다 — 집 앞에서 잠자기", 3.5) end
+		if #Plan.Spawns > 0 then
+			self:Hud():Announce("밤을 버텼다!", "남은 시간은 쉬어도 된다 — 집 앞에서 잠자기", 3.5)
+			self:Sfx("Bell", 0.6)
+		end
 		Log.Info(string.format("[FarmBie] 밤 정리: %s 처치 %d", self:DateText(), Dc.Kills))
 	end
 end
@@ -420,6 +425,7 @@ function Def:OnPlayerDown(Reason)
 	local P = self:Player()
 	if P then P:SetDown(true) end
 	self:LoseSanity(self.Vitals.DeathSanityLoss, "쓰러짐")
+	self:Sfx("Sting", 0.7)
 end
 
 function Def:RespawnPlayer()
@@ -445,6 +451,7 @@ function Def:GameOver(Reason)
 	SaveGame.Delete(self:SlotName())
 	local Hud = self:Hud()
 	Hud:Show("GameOverWindow", true, "Visible")
+	self:Sfx("Sting", 1.0, 0.8)
 	Hud:Set("GameOverTitle", "Text", Reason or "크리스탈이 무너졌다")
 	Hud:Set("GameOverBody", "Text", string.format("%d년차 %s까지 %d일을 버텼다.\n쓰러뜨린 좀비 %d · 거둔 작물 %d · 번 돈 %d",
 		self.Year, self:DateText(), Days, (self.Report.TotalKills or 0) + (self.Defense and self.Defense.Kills or 0), self.Report.Harvested or 0, self.Report.Income or 0))

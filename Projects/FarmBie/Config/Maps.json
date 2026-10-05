@@ -1,6 +1,6 @@
 {
   "EditorStartupMap": "Scenes/Farm.escene",
-  "GameDefaultMap": "Scenes/Farm.escene",
+  "GameDefaultMap": "Scenes/Title.escene",
   "ServerDefaultMap": "",
   "PlayerPrefab": ""
 }

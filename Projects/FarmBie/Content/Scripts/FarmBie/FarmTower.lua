@@ -183,6 +183,7 @@ function Tower:SpawnGuardian(Id, Pos, HpMul)
 		C.AuraRadius, C.AuraStructureDps, C.AuraHeal, C.AuraSlow = Row.AuraRadius, Row.AuraStructureDps, Row.AuraHeal, Row.AuraSlow
 	end)
 	self:Hud():Announce(Row.DisplayName, "탑의 수호자", 2.5)
+	self:Sfx("Roar", 0.8)
 end
 
 -- 매 프레임 (탑 씬)
@@ -225,6 +226,7 @@ function Tower:UpdateTower(Dt)
 		local C = self.ChestSpot
 		Scene.SpawnPrefab(Prefabs .. "TowerChest.eprefab", Vector3(C.X, C.Y, 0), function(E) self.TowerPieces[#self.TowerPieces + 1] = E end)
 		self.Report.TowerCleared = (self.Report.TowerCleared or 0) + 1
+		self:Sfx("Bell", 0.6)
 		local Top = self.TowerRun.Floor >= self.TowerData.Floors
 		self:Hud():Announce(Top and "탑 정복!" or string.format("%d층 정리!", self.TowerRun.Floor), "보물상자가 나타났다" .. (Top and "" or " · 북쪽 계단이 열렸다"), 3.0)
 		if Top then self.Report.TowerConquered = (self.Report.TowerConquered or 0) + 1 end
@@ -280,6 +282,7 @@ function Tower:OpenTowerChest()
 	end
 	if self:CountItem("Bow") > 0 then Parts[#Parts + 1] = self:GiveLoot("Arrow", 10) end
 	self.Report.TowerChests = (self.Report.TowerChests or 0) + 1
+	self:Sfx("Coins", 0.8)
 	self:Hud():Announce("보물상자", table.concat(Parts, ", "), 3.5)
 end
 
@@ -300,6 +303,7 @@ function Tower:TowerDefeat()
 	self.Gold = math.max(0, self.Gold - GoldLost)
 	self.Health = self.Vitals.MaxHealth * 0.5
 	self.Report.TowerDowns = (self.Report.TowerDowns or 0) + 1
+	self:Sfx("Sting", 0.7)
 	self.TowerLostText = #Lost > 0 and ("잃은 전리품: " .. table.concat(Lost, ", ") .. string.format(", %d골드", GoldLost)) or "잃은 전리품 없음"
 	Log.Info("[FarmBie] 탑에서 쓰러짐 — " .. self.TowerLostText)
 	self.TravelBanner = { "탑에서 쓰러졌다", self.TowerLostText }

@@ -121,10 +121,12 @@ function Craft:PlayerAttack(WeaponKey, Pos, Facing)
 		self:Take(Ammo, 1)
 		Mul = Mul * AmmoMul
 		Dc.AttackKind = "Shot"
+		self:Sfx("Shot", 0.6, Row.Shots > 1 and 0.8 or 1.2)
 		Dc.ShotCount, Dc.ShotSpread, Dc.ShotSpeed, Dc.ShotSlice = Row.Shots, Row.Spread, Row.ShotSpeed, Slice
 		self.Report.Shots = (self.Report.Shots or 0) + 1
 	else
 		Dc.AttackKind = "Melee"
+		self:Sfx("Swing", 0.5, 0.9 + (self.Report.Swings or 0) % 3 * 0.08)
 		self.Report.Swings = (self.Report.Swings or 0) + 1
 	end
 	Dc.AttackPos = Pos

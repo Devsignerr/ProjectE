@@ -94,6 +94,7 @@ function Forage:HitNodeAt(Key, Pos, Facing)
 	end
 	if not Best then return nil end
 	Best.Hits = Best.Hits + 1
+	self:Sfx(Tool == "Axe" and "Hit" or "Block", 0.5, Tool == "Axe" and 0.75 or 1.3)
 	self.Report.NodeHits = (self.Report.NodeHits or 0) + 1
 	if Best.Hits >= Best.Row.Hits then self:HarvestNode(Best) end
 	return Best

@@ -231,6 +231,7 @@ ZOMBIE_ROWS = [
 # 밤 난이도 (해마다 같은 구성 반복): 좀비 수 = Base + PerDay×일 + PerSeason×계절, 체력 배율 = 1 + HpPerDay×일 + HpPerSeason×계절
 NIGHT = {
 	"BaseCount": 6, "PerDay": 0.55, "PerSeason": 4, "HpPerDay": 0.03, "HpPerSeason": 0.3,
+	"CountPerYear": 0.25, "HpPerYear": 0.35,  # 같은 1년을 반복할수록 (2년차 = 수 ×1.25·체력 ×1.35)
 	"SpawnWindow": 0.55,     # 밤 길이의 앞 이 비율 동안 나온다
 	"EntrancesPerNight": 2,  # 그 밤에 쓰는 진입로 수 (낮에 예고)
 	"CrystalAlertRadius": 900, "BlockCost": 6.0,
@@ -245,6 +246,8 @@ NIGHT_FIELDS = [
 	Field("PerSeason", "Int", 4, "계절당 더해지는 수"),
 	Field("HpPerDay", "Float", 0.03, "일차당 체력 배율 증가"),
 	Field("HpPerSeason", "Float", 0.3, "계절당 체력 배율 증가"),
+	Field("CountPerYear", "Float", 0.25, "해마다 수 배율 증가"),
+	Field("HpPerYear", "Float", 0.35, "해마다 체력 배율 증가 (보스 포함)"),
 	Field("SpawnWindow", "Float", 0.55, "밤 앞부분 이 비율 동안 나옴"),
 	Field("EntrancesPerNight", "Int", 2, "그 밤의 진입로 수"),
 	Field("CrystalAlertRadius", "Int", 900, "크리스탈 발견 호출 반경"),

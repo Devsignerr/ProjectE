@@ -1,6 +1,8 @@
 -- FarmBie 창 (FarmGame에 섞이는 메서드 모음): 상점(보부상)·소지품. 창이 열리면 게임 시간을 멈추고(Game.SetTimeScale 0) 입력을 여기서 받는다.
 --   입력 표(플레이어가 만든다): MenuUp/MenuDown/MenuLeft/MenuRight(누른 순간 + 누르고 있으면 반복), Confirm(E/도구), Cancel(Esc/구르기), Inventory(I)
 --   위젯 이름은 Tools/FarmBieUI.py(ShopWindow/BagWindow)와 약속이다.
+local O = Script.Require("Scripts/FarmBie/FarmOptions.lua")
+
 local Menu = {}
 
 local ShopRows = 9
@@ -20,6 +22,7 @@ function Menu:OpenMenu(Name)
 	Hud:Show("ShopWindow", Name == "Shop" or Name == "Craft")
 	Hud:Show("BagWindow", Name == "Bag")
 	Hud:ShowPrompt(nil)
+	self:Sfx("Open", 0.7)
 	self:RefreshMenu()
 end
 
@@ -27,9 +30,43 @@ function Menu:CloseMenu()
 	local Hud = self:Hud()
 	Hud:Show("ShopWindow", false)
 	Hud:Show("BagWindow", false)
+	O.Close(self, Hud)
 	self.Menu = nil
 	self.HeldSlot = nil
+	self:Sfx("Close", 0.7)
 	Game.SetTimeScale(1.0)
+end
+
+-- ---- 일시정지 (Esc): 계속하기 · 설정 · 타이틀로 · 게임 끝내기 — 저장은 잠잘 때만이므로 나갈 때 경고
+function Menu:OpenPause()
+	self:OpenMenu("Pause")
+	O.Open(self, self:Hud(), self:PausePage())
+	self.Report.Paused = (self.Report.Paused or 0) + 1
+end
+
+function Menu:PausePage()
+	local Hud = self:Hud()
+	local function Back(Index) return function() O.Open(self, Hud, self:PausePage(), Index) end end
+	local Lost = "오늘 아침 이후의 진행은 저장되지 않는다"
+	return { Title = "일시정지", Sub = string.format("%d년차 %s %s · 저장은 잠잘 때", self.Year, self:DateText(), self:ClockText()),
+		Back = function() self:CloseMenu() end, Items = {
+		{ Label = "계속하기", Act = function() self:CloseMenu() end },
+		{ Label = "설정", Act = function()
+			O.Open(self, Hud, O.SettingsPage(self.Settings, function(S) self:ApplySettings(S) end, Back(2)))
+		end },
+		{ Label = "타이틀로", Act = function() O.Open(self, Hud, O.ConfirmPage("타이틀로 갈까?", Lost, function() self:GoToTitle() end, Back(3))) end },
+		{ Label = "게임 끝내기", Act = function() O.Open(self, Hud, O.ConfirmPage("게임을 끝낼까?", Lost, function() Game.Quit() end, Back(4))) end },
+	} }
+end
+
+function Menu:GoToTitle()
+	if self.bLeaving then return end
+	self.bLeaving = true
+	self:CloseMenu()
+	Game.SetTimeScale(1.0)
+	Game.SetPersistent("FarmBie_Session", nil)
+	Log.Info("[FarmBie] 타이틀로")
+	Game.OpenScene("Scenes/Title.escene")
 end
 
 function Menu:OpenShop()
@@ -49,12 +86,18 @@ function Menu:OpenBag()
 end
 
 function Menu:MenuInput(In)
+	if self.Menu == "Pause" then
+		O.Input(self, self:Hud(), In, function(Name) self:Sfx(Name, 0.7) end)
+		return
+	end
+	if In.MenuUp or In.MenuDown or In.MenuLeft or In.MenuRight then self:Sfx("Click", 0.4) end
 	if self.Menu == "Shop" then
 		local Count = #self.Stock
 		if In.MenuUp then self.MenuIndex = math.max(1, self.MenuIndex - 1) end
 		if In.MenuDown then self.MenuIndex = math.min(math.max(1, Count), self.MenuIndex + 1) end
 		if In.Confirm then
 			local bOk, Text = self:Buy(self.MenuIndex)
+			self:Sfx(bOk and "Buy" or "Error", 0.7)
 			if Text ~= "" then self:Hud():Toast(bOk and self:ItemInfo(self.Stock[self.MenuIndex].Key).Icon or "", Text, bOk and nil or { 1.0, 0.55, 0.45, 1.0 }) end
 		end
 		if In.Cancel or In.Inventory then self:CloseMenu() return end
@@ -65,6 +108,7 @@ function Menu:MenuInput(In)
 		if In.Confirm then
 			local R = self.CraftList[self.MenuIndex]
 			local bOk, Text = self:DoCraft(R)
+			self:Sfx(bOk and "Confirm" or "Error", 0.7)
 			self:Hud():Toast(bOk and self:ItemInfo(R.Output).Icon or "", Text, bOk and nil or { 1.0, 0.55, 0.45, 1.0 })
 		end
 		if In.Cancel or In.Inventory then self:CloseMenu() return end

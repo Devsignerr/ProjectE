@@ -1,0 +1,264 @@
+{
+  "Name": "HD2DCaveDrips",
+  "Version": 2,
+  "Emitters": [
+    {
+      "Name": "Drops",
+      "Enabled": true,
+      "SimTarget": "GPU",
+      "LocalSpace": false,
+      "Duration": 10.0,
+      "Loop": true,
+      "MaxParticles": 300,
+      "Seed": 901,
+      "FixedBounds": {
+        "Min": [
+          -4500.0,
+          -1500.0,
+          -200.0
+        ],
+        "Max": [
+          4500.0,
+          1500.0,
+          900.0
+        ]
+      },
+      "EmitterUpdate": [
+        {
+          "Module": "SpawnRate",
+          "Enabled": true,
+          "Inputs": {
+            "SpawnRate": {
+              "Mode": 0,
+              "A": [
+                14.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "ParticleSpawn": [
+        {
+          "Module": "InitializeParticle",
+          "Enabled": true,
+          "Inputs": {
+            "Lifetime": {
+              "Mode": 1,
+              "A": [
+                1.2,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                1.6,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Color": {
+              "Mode": 1,
+              "A": [
+                0.55,
+                0.75,
+                0.95,
+                0.7
+              ],
+              "B": [
+                0.7,
+                0.9,
+                1.0,
+                0.9
+              ]
+            },
+            "SpriteSize": {
+              "Mode": 1,
+              "A": [
+                1.2,
+                4.0,
+                0.0,
+                0.0
+              ],
+              "B": [
+                1.6,
+                6.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SpriteRotation": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Mass": {
+              "Mode": 0,
+              "A": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "ShapeLocation",
+          "Enabled": true,
+          "Inputs": {
+            "Shape": {
+              "Mode": 0,
+              "A": [
+                2.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Radius": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "BoxSize": {
+              "Mode": 0,
+              "A": [
+                7600.0,
+                1500.0,
+                40.0,
+                0.0
+              ]
+            },
+            "Height": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "SurfaceOnly": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Offset": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                650.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "AddVelocity",
+          "Enabled": true,
+          "Inputs": {
+            "Velocity": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                -150.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "ParticleUpdate": [
+        {
+          "Module": "GravityForce",
+          "Enabled": true,
+          "Inputs": {
+            "Gravity": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                -900.0,
+                0.0
+              ]
+            }
+          }
+        },
+        {
+          "Module": "Collision",
+          "Enabled": true,
+          "Inputs": {
+            "PlaneHeight": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Restitution": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "Friction": {
+              "Mode": 0,
+              "A": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "KillOnCollide": {
+              "Mode": 0,
+              "A": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        }
+      ],
+      "Renderers": [
+        {
+          "Type": 0,
+          "Enabled": true,
+          "BlendMode": 1,
+          "Texture": "",
+          "SubImageColumns": 1,
+          "SubImageRows": 1,
+          "Alignment": 1,
+          "VelocityStretch": 0.02,
+          "Mesh": "primitive:sphere",
+          "RibbonWidth": 1.0
+        }
+      ]
+    }
+  ]
+}

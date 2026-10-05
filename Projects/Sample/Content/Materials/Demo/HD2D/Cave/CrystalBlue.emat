@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DCaveCrystalBlue",
+  "BaseColorFactor": [
+    0.1,
+    0.35,
+    0.6,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.22,
+    1.0,
+    2.2
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.15,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

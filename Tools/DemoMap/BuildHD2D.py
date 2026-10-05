@@ -76,6 +76,17 @@ CREEK_BED = -95.0
 FALLS = (-430.0, -2300.0)        # 폭포 웅덩이 가운데 (폭포 면은 그 뒤 벼랑)
 FALLS_BASIN = (-430.0, -2640.0)  # 벼랑 위 작은 못 (폭포가 넘쳐 흐르는 곳)
 WHEAT = (4250.0, -1300.0, 5250.0, -300.0)  # 밀밭 (X0, Y0, X1, Y1 — Y1이 카메라 쪽 울타리)
+# 들판 뒤 언덕 밑 성채 (modular_fort_01 조립 — Asset/DemoKits/HD2D/HD2DCastle.gltf): 바깥면(카메라 쪽) Y, 서쪽 끝 X, 배율.
+#   카메라(피치 28·시야각 24)가 놀이 영역 뒤 15~20m까지만 보므로 더 멀면 화면 위로 잘려 보이지 않는다 → 놀이 영역 뒤 4m에 성벽 아랫부분이 보이게
+CASTLE = (850.0, -2380.0, 0.6)
+CASTLE_LENGTH = 4500.0  # 키트 단위 cm (탑 + 성벽 + 성문 + 성벽 + 탑)
+CASTLE_KIT = "Asset/DemoKits/HD2D/HD2DCastle.gltf"
+# 폭포 옆 벼랑 동굴 입구 (HD2DCave.escene으로 가는 이동 트리거) / 돌아왔을 때 나타나는 자리
+CAVE_GATE = (330.0, -1985.0)
+CAVE_EXIT_SPAWN = (330.0, -1650.0)
+# 여관(선술집 겸) 문 앞 빈자리 — 저장 지점 등 게임 배치용
+INN_DOOR_SPOT = (-3665.0, -1150.0)
+NOTICE_BOARD = (-2780.0, -800.0)
 EXTRA_FOLIAGE = []  # BuildScene이 채우는 추가 폴리지 (꽃·밀·긴 풀) — Main이 풀과 함께 쓴다
 
 
@@ -109,6 +120,12 @@ def BuildHeights():
 	H += np.exp(-(((X - 4000.0) / 900.0) ** 2 + ((Y + 1650.0) / 650.0) ** 2)) * 160.0
 	# 폭포 벼랑: 개울 머리 뒤로 바위턱이 솟는다 (가운데 = 폭포, 양옆으로 낮아짐)
 	H += Smoothstep(-2380.0, -2520.0, Y) * 380.0 * np.exp(-((X - FALLS[0]) / 1300.0) ** 2)
+	# 성채 터: 성벽 띠를 언덕 높이 평균으로 고른다
+	CX0, CY0, CS = CASTLE
+	Strip = Smoothstep(250.0, 0.0, np.maximum(np.maximum(CX0 - 200.0 - X, X - (CX0 + CASTLE_LENGTH * CS + 200.0)), np.maximum(CY0 - 700.0 - Y, Y - (CY0 + 120.0))))
+	Target = float(np.mean(H[Strip > 0.99])) if np.any(Strip > 0.99) else 0.0
+	FALLS_INFO["CastleZ"] = Target
+	H = H * (1.0 - Strip) + Target * Strip
 	# 광장·길은 평평하게
 	Flat = np.maximum(Smoothstep(1.25, 0.95, EllipseValue(X, Y, PLAZA)), Smoothstep(320.0, 160.0, SegmentDistance(X, Y, PATH)))
 	H = H * (1.0 - Flat)
@@ -283,6 +300,9 @@ VIEW_STARTS = {
 	"Falls":   (-850.0, -1350.0),
 	"Bridge":  (350.0, 250.0),
 	"Ruins":   (1500.0, -1100.0),
+	"CaveGate": (330.0, -1600.0),
+	"Castle":  (2300.0, -1450.0),
+	"Inn":     (-3500.0, -1150.0),
 }
 OVERVIEW_VIEWS = {
 	"Village": (-2300.0, 3600.0, 3200.0, -38.0, -90.0, 40.0),
@@ -753,8 +773,8 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	# 들판 나무(전나무)·바위·덤불 (길·연못·야영지·소환 지점은 비움)
 	HD2DGameplay.ReserveSpots(Reserve)
 	#   카메라 쪽(+Y)에는 큰 나무를 두지 않는다 (피치 28도 — 나무 뒤 10m 넘게 캐릭터를 가림) → 덤불 무리
-	Trees = [(600.0, -1500.0, 1.0), (1900.0, -1750.0, 1.1), (5100.0, -1450.0, 1.2), (5600.0, -300.0, 1.2), (1250.0, -2250.0, 1.4),
-			 (2450.0, -2300.0, 1.3), (4800.0, -2250.0, 1.4), (300.0, -1250.0, 0.9), (3200.0, -1850.0, 1.1)]
+	#   동굴 입구(CAVE_GATE) 앞과 성채 앞은 비운다 (나무가 입구·성벽을 가렸다)
+	Trees = [(1900.0, -1750.0, 1.1), (5100.0, -1450.0, 1.2), (5600.0, -300.0, 1.2), (4800.0, -2250.0, 1.4), (3200.0, -1850.0, 1.1)]
 	for Index, (X, Y) in enumerate(((5050.0, 1050.0), (2750.0, 1250.0), (3900.0, 1250.0), (4600.0, 1150.0))):
 		for K in range(3):
 			BX, BY = X + Rng.uniform(-120, 120), Y + Rng.uniform(-60, 60)
@@ -778,6 +798,36 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 		PH_(f"FieldBush_{Index}", Id, X, Y, Rng.uniform(0, 360), Rng.uniform(1.8, 2.6) if Id == "flower_gazania" else Rng.uniform(0.5, 0.9), Sink=4.0)
 		Reserve(X, Y, 70.0)
 
+	# ---- 들판 뒤 성채 (흐린 원경 — 성벽 아랫부분과 성문이 화면 위쪽에 걸린다)
+	CX0, CY0, CS = CASTLE
+	CastleZ = FALLS_INFO["CastleZ"]
+	S.Model("Castle", CASTLE_KIT, (CX0, CY0, CastleZ), 0.0, CS)
+	GateX = CX0 + (600.0 + 1482.0 + 741.0 * 0.5) * CS
+	for Side in (-1, 1):
+		BX = GateX + Side * 300.0 * CS * 1.4
+		S.Model(f"Castle_Banner{Side}", "Asset/KayKit/Dungeon/banner_patternA_red.glb", (BX, CY0 + 30.0, CastleZ + 180.0), 90.0, 0.8)
+		Point(f"Castle_GateLight{Side}", (GateX + Side * 200.0, CY0 + 120.0, CastleZ + 260.0), (1.0, 0.6, 0.28), 6.0, 700.0,
+			  Flicker={"Style": "Fire", "Seed": 70 + Side, "Amount": 0.2})
+		S.Add(f"Castle_Torch{Side}", {"ModelComponent": {"AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"}}, (GateX + Side * 200.0, CY0 + 40.0, CastleZ + 230.0),
+			  QuatFromEuler(Yaw=-90.0), (0.8, 0.8, 0.8))
+		Particles(f"Castle_TorchFlame{Side}", "Particles/Demo/CampfireLanternFlame.eparticle", (GateX + Side * 200.0, CY0 + 58.0, CastleZ + 287.0))
+	# ---- 폭포 옆 벼랑 동굴 입구 + 이동 트리거 (HD2DTravel.lua — lane 계약) + 돌아오는 자리
+	GX, GY = CAVE_GATE
+	E.CaveMouth("CaveMouth", GX, GY - 40.0)
+	S.Add("CaveGate_Travel", {
+		"BoxColliderComponent": {"HalfExtents": [150.0, 70.0, 130.0], "IsTrigger": True},
+		"ScriptComponent": {"ScriptAsset": "Scripts/Demo/HD2D/HD2DTravel.lua", "ExecutionLocation": 0,
+							"PropertyOverrides": json.dumps({"TargetScene": "Scenes/Demo/HD2DCave.escene", "SpawnName": "CaveEntry"}, ensure_ascii=False)}},
+		(GX, GY + 95.0, Height(GX, GY + 95.0) + 120.0))
+	S.Add("Spawn_CaveExit", {}, (CAVE_EXIT_SPAWN[0], CAVE_EXIT_SPAWN[1], Height(*CAVE_EXIT_SPAWN)), QuatFromEuler(Yaw=90.0))
+	Reserve(GX, GY + 100.0, 280.0)
+	Reserve(*CAVE_EXIT_SPAWN, 150.0)
+	# ---- 게시판 (광장, 계단 서쪽) + 여관 간판 (선술집 겸 여관 — 문 앞 INN_DOOR_SPOT은 비워 둔다)
+	E.NoticeBoard("NoticeBoard", NOTICE_BOARD[0], NOTICE_BOARD[1])
+	E.HangingSign("Inn_Sign", INN_DOOR_SPOT[0] + 150.0, -1600.0 + 280.0, TERRACE_H + 255.0, "Bed")
+	E.HangingSign("Inn_SignMug", -3560.0 + 330.0, -1600.0 + 280.0, TERRACE_H + 255.0, "Mug")
+	Reserve(INN_DOOR_SPOT[0], INN_DOOR_SPOT[1], 110.0)
+
 	# ---- 먼 배경: 언덕 위 전나무 숲 (화면 위쪽 = 놀이 영역 뒤 15~25m) + 먼 산
 	HillRng = np.random.default_rng(57)
 	Taken = []
@@ -786,6 +836,10 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 		Spacing = 260.0 if Y > -3600.0 else 340.0
 		if math.hypot(X - FALLS[0], Y - FALLS[1]) < 600.0 or math.hypot(X - FALLS_BASIN[0], Y - FALLS_BASIN[1]) < 420.0:
 			continue
+		if CASTLE[0] - 500.0 < X < CASTLE[0] + CASTLE_LENGTH * CASTLE[2] + 500.0 and Y > CASTLE[1] - 1300.0:
+			continue  # 성채 앞·성벽 위
+		if abs(X - CAVE_GATE[0]) < 900.0 and Y > CAVE_GATE[1] - 600.0:
+			continue  # 동굴 입구 바위
 		if Y > -2350.0 and HillRng.random() < 0.6:
 			continue  # 놀이 영역 바로 뒤는 조금 성기게
 		if any((X - TX) ** 2 + (Y - TY) ** 2 < Spacing ** 2 for TX, TY in Taken[-400:]) or not Free(X, Y, 150.0):
@@ -895,6 +949,7 @@ def Main():
 	Sampler = FHeightSampler(H, Stack)
 	WriteMaterials()
 	Env.WriteMaterials(CONTENT)
+	Env.WriteCastleKit(CONTENT, CASTLE_KIT)
 	Env.WriteParticles(CONTENT, (PLAY_MAX[0] - PLAY_MIN[0] + 1600.0, PLAY_MAX[1] - PLAY_MIN[1] + 1400.0))
 	HD2DGameplay.WriteAll(CONTENT, CAMERA_DISTANCE, PLAY_MIN, PLAY_MAX)
 	Scene, Grass, Dry = BuildScene(Sampler)

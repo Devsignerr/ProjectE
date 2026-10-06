@@ -68,8 +68,10 @@ namespace FWaterMath
 				}
 				continue;
 			}
-			float T0 = (-HalfExtents[Axis] - O) / D;
-			float T1 = (HalfExtents[Axis] - O) / D;
+			// 위 분기로 D ≈ 0은 걸러지지만 MSVC /O2가 상수 전파 후 C4723을 내므로 나눗수 자체를 0이 아니게 둔다
+			const float SafeD = (FMath::Abs(D) < 1.0e-8f) ? 1.0f : D;
+			float       T0    = (-HalfExtents[Axis] - O) / SafeD;
+			float       T1    = (HalfExtents[Axis] - O) / SafeD;
 			if (T0 > T1)
 			{
 				const float Swap = T0;
